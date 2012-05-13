@@ -132,6 +132,32 @@ static struct tnt_stream *tmake_oplist( AV *ops ) {
 
 }
 
+static void hash_ssave(HV *h, const char *k, const char *v) {
+	hv_store( h, k, strlen(k), newSVpvn( v, strlen(v) ), 0 );
+}
+
+static void hash_isave(HV *h, const char *k, uint32_t v) {
+	hv_store( h, k, strlen(k), newSViv( v ), 0 );
+}
+
+static AV * extract_tuples(struct tnt_reply *r) {
+	struct tnt_iter it;
+	tnt_iter_list(&it, TNT_REPLY_LIST(r));
+	AV *res = newAV();
+	while (tnt_next(&it)) {
+		struct tnt_iter ifl;
+		struct tnt_tuple *tu = TNT_ILIST_TUPLE(&it);
+		tnt_iter(&ifl, tu);
+		AV *t = newAV();
+		while (tnt_next(&ifl)) {
+			char *data = TNT_IFIELD_DATA(&ifl);
+			uint32_t size = TNT_IFIELD_SIZE(&ifl);
+			av_push(t, newSVpvn(data, size));
+		}
+		av_push(res, newRV((SV *) t));
+	}
+	return res;
+}
 
 MODULE = DR::Tarantool		PACKAGE = DR::Tarantool
 PROTOTYPES: ENABLE
@@ -269,5 +295,42 @@ SV * _pkt_call( req_id, flags, proc, tuple )
 		tnt_tuple_free( t );
 		RETVAL = newSVpvn( TNT_SBUF_DATA( s ), TNT_SBUF_SIZE( s ) );
 		tnt_stream_free( s );
+	OUTPUT:
+		RETVAL
+
+
+
+HV * _pkt_parse_response( response )
+	SV *response
+
+	CODE:
+		if ( !SvOK(response) )
+			croak( "response is undefined" );
+		STRLEN size;
+		char *data = SvPV( response, size );
+		struct tnt_reply reply;
+		tnt_reply_init( &reply );
+		size_t offset = 0;
+		int cnt = tnt_reply( &reply, data, size, &offset );
+		int i, j;
+
+		HV *res = newHV();
+		if ( cnt < 0 ) {
+			hash_ssave(res, "status", "fatal");
+			hash_ssave(res, "error", "Can't parse server response");
+		} else if ( cnt > 0 ) {
+			hash_ssave(res, "status", "buffer");
+			hash_ssave(res, "error", "Input data too short");
+		} else {
+			hash_ssave(res, "status", "ok");
+			hash_isave(res, "code", reply.code );
+			hash_isave(res, "req_id", reply.reqid );
+			hash_isave(res, "type", reply.op );
+			AV *tuples = extract_tuples( &reply );
+			hv_store(res, "tuples", 6, newRV((SV *)tuples), 0);
+		}
+
+		RETVAL = res;
+
 	OUTPUT:
 		RETVAL
