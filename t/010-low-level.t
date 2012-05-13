@@ -57,17 +57,6 @@ cmp_ok $a[3], '~~', 13, 'space no';
 cmp_ok $a[4], '~~', 14, 'flags';
 cmp_ok $a[5], '~~', 4,  'tuple size';
 
-# update
-$sbody = DR::Tarantool::_pkt_update( 15, 16, 17, [ 18 ], [ [ 1 => add => 1 ] ]);
-ok defined $sbody, '* update body';
-@a = unpack '( L< )*', $sbody;
-cmp_ok $a[0], '~~', 19, 'update type';
-cmp_ok $a[1], '~~', length($sbody) - 3 * 4, 'body length';
-cmp_ok $a[2], '~~', 15, 'request id';
-cmp_ok $a[3], '~~', 16, 'space no';
-cmp_ok $a[4], '~~', 17, 'flags';
-cmp_ok $a[5], '~~', 1,  'tuple size';
-
 # delete
 $sbody = DR::Tarantool::_pkt_delete( 119, 120, 121, [ 122, 123 ] );
 ok defined $sbody, '* delete body';
@@ -91,3 +80,18 @@ cmp_ok $a[3], '~~', 125, 'flags';
 cmp_ok $a[4], '~~', 'tproc',  'proc name';
 cmp_ok $a[5], '~~', 2, 'tuple size';
 
+# update
+my @ops = map { [ int rand 100, $_, int rand 100 ] }
+    qw(add and or xor set delete insert);
+$sbody = DR::Tarantool::_pkt_update( 15, 16, 17, [ 18 ], \@ops);
+ok defined $sbody, '* update body';
+@a = unpack '( L< )*', $sbody;
+cmp_ok $a[0], '~~', 19, 'update type';
+cmp_ok $a[1], '~~', length($sbody) - 3 * 4, 'body length';
+cmp_ok $a[2], '~~', 15, 'request id';
+cmp_ok $a[3], '~~', 16, 'space no';
+cmp_ok $a[4], '~~', 17, 'flags';
+cmp_ok $a[5], '~~', 1,  'tuple size';
+
+
+$sbody = DR::Tarantool::_pkt_call( 124, 125, 'tproc', [  ]);
