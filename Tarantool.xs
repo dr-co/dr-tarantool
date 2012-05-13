@@ -7,10 +7,9 @@
 #include <string.h>
 
 
-static struct tnt_tuple* tmake_tuple(AV *t) {
+static struct tnt_tuple* tmake_tuple( AV *t ) {
 	struct tnt_tuple *r = NULL;
 	int i;
-
 
 	for (i = 0; i <= av_len( t ); i++) {
 		STRLEN size;
@@ -120,7 +119,7 @@ static struct tnt_stream *tmake_oplist( AV *ops ) {
 MODULE = DR::Tarantool		PACKAGE = DR::Tarantool
 PROTOTYPES: ENABLE
 
-SV * _pkt_select(req_id, ns, idx, offset, limit, keys)
+SV * _pkt_select( req_id, ns, idx, offset, limit, keys )
 	unsigned req_id
 	unsigned ns
 	unsigned idx
@@ -167,7 +166,7 @@ SV * _pkt_select(req_id, ns, idx, offset, limit, keys)
 		RETVAL
 
 
-SV * _pkt_ping(req_id)
+SV * _pkt_ping( req_id )
 	unsigned req_id
 
 	CODE:
@@ -179,7 +178,7 @@ SV * _pkt_ping(req_id)
 	OUTPUT:
 		RETVAL
 
-SV * _pkt_insert(req_id, ns, flags, tuple)
+SV * _pkt_insert( req_id, ns, flags, tuple )
 	unsigned req_id
 	unsigned ns
 	unsigned flags
@@ -197,7 +196,7 @@ SV * _pkt_insert(req_id, ns, flags, tuple)
 	OUTPUT:
 		RETVAL
 
-SV * _pkt_update(req_id, ns, flags, tuple, operations)
+SV * _pkt_update( req_id, ns, flags, tuple, operations )
 	unsigned req_id
 	unsigned ns
 	unsigned flags
@@ -222,7 +221,7 @@ SV * _pkt_update(req_id, ns, flags, tuple, operations)
 	OUTPUT:
 		RETVAL
 
-SV * _pkt_delete(req_id, ns, flags, tuple)
+SV * _pkt_delete( req_id, ns, flags, tuple )
 	unsigned req_id
 	unsigned ns
 	unsigned flags
@@ -239,7 +238,7 @@ SV * _pkt_delete(req_id, ns, flags, tuple)
 	OUTPUT:
 		RETVAL
 
-SV * _pkt_call(req_id, flags, proc, tuple)
+SV * _pkt_call( req_id, flags, proc, tuple )
 	unsigned req_id
 	unsigned flags
 	char *proc

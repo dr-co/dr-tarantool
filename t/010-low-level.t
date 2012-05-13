@@ -7,7 +7,7 @@ use open qw(:std :utf8);
 use lib qw(lib ../lib);
 use lib qw(blib/lib blib/arch ../blib/lib ../blib/arch);
 
-use Test::More tests    => 1;
+use Test::More tests    => 43;
 use Encode qw(decode encode);
 
 
@@ -80,4 +80,14 @@ cmp_ok $a[3], '~~', 120, 'space no';
 # cmp_ok $a[4], '~~', 121, 'flags';  # libtarantool ignores flags
 cmp_ok $a[4], '~~', 2,  'tuple size';
 
-# SV * _pkt_update(req_id, ns, flags, tuple, operations)
+# call
+$sbody = DR::Tarantool::_pkt_call( 124, 125, 'tproc', [ 126, 127 ]);
+ok defined $sbody, '* call body';
+@a = unpack 'L< L< L< L< w/Z* L< L<', $sbody;
+cmp_ok $a[0], '~~', 22, 'call type';
+cmp_ok $a[1], '~~', length($sbody) - 3 * 4, 'body length';
+cmp_ok $a[2], '~~', 124, 'request id';
+cmp_ok $a[3], '~~', 125, 'flags';
+cmp_ok $a[4], '~~', 'tproc',  'proc name';
+cmp_ok $a[5], '~~', 2, 'tuple size';
+
