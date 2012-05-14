@@ -112,3 +112,32 @@ for (13, 17, 19, 20, 22, 65280) {
     cmp_ok $res->{type}, '~~', $_, 'request type';
     ok(($res->{code} ~~ 0x101 or $res->{type} == 65280), 'code');
 }
+
+
+__END__
+sub pack_tuple {
+    my @f = map "$_", @_;
+    $_ = pack 'w / a*', $_ for @f;
+    my $tuple = pack 'L< a*', scalar(@f), @f;
+    my $fq_tuple = pack 'L< / a*', $tuple;
+    return $fq_tuple;
+}
+
+
+sub pack_tuples {
+    return pack 'L< a*', scalar(@_), join '' => map { pack_tuple @$_ } @_;
+}
+
+my $sel_response = pack_tuples [ 'abc', 'def' ], [ 'ghi', 'jkl' ];
+$sel_response = pack 'L< L< L< L< a*' =>
+    17,
+    length($sel_response) + 4,
+    11,
+    0,
+    $sel_response;
+
+$res = DR::Tarantool::_pkt_parse_response( $sel_response );
+
+note explain $res, [ $sel_response ];
+
+

@@ -322,15 +322,37 @@ HV * _pkt_parse_response( response )
 			hash_ssave(res, "status", "buffer");
 			hash_ssave(res, "error", "Input data too short");
 		} else {
-			hash_ssave(res, "status", "ok");
 			hash_isave(res, "code", reply.code );
 			hash_isave(res, "req_id", reply.reqid );
-			hash_isave(res, "type", reply.op );
-			AV *tuples = extract_tuples( &reply );
-			hv_store(res, "tuples", 6, newRV((SV *)tuples), 0);
-		}
+        		hash_isave(res, "type", reply.op );
+        		hash_isave(res, "count", reply.count);
+        		if (reply.code) {
+        		    hash_ssave( res, "errstr", reply.error );
+			    hash_ssave(res, "status", "error");
 
+                        } else {
+			    hash_ssave(res, "status", "ok");
+                            AV *tuples = extract_tuples( &reply );
+                            hv_store(
+                                res, "tuples", 6, newRV_noinc((SV *)tuples), 0
+                            );
+                        }
+		}
+                sv_2mortal( (SV *) res );
 		RETVAL = res;
+		tnt_reply_free( &reply );
 
 	OUTPUT:
 		RETVAL
+
+void _pkt_parse_response_leak( response )
+    SV *response
+
+    CODE:
+    STRLEN size;
+    char *data = SvPV( response, size );
+    struct tnt_reply reply;
+    tnt_reply_init( &reply );
+    size_t offset = 0;
+    tnt_reply( &reply, data, size, &offset );
+    tnt_reply_free( &reply );
