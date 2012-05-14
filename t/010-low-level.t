@@ -7,7 +7,7 @@ use open qw(:std :utf8);
 use lib qw(lib ../lib);
 use lib qw(blib/lib blib/arch ../blib/lib ../blib/arch);
 
-use Test::More tests    => 77;
+use Test::More tests    => 80;
 use Encode qw(decode encode);
 
 
@@ -104,13 +104,17 @@ like $res->{error}, qr{too short}, 'error message';
 cmp_ok $res->{status}, '~~', 'buffer', 'status';
 
 for (13, 17, 19, 20, 22, 65280) {
-    my $data = pack 'L< L< L< L<', $_, 4, $_ + 100, 0x0101;
+    my $msg = "test message";
+    my $data = pack 'L< L< L< L< Z*',
+        $_, 5 + length $msg, $_ + 100, 0x0101, $msg;
     $res = DR::Tarantool::_pkt_parse_response( $data );
     isa_ok $res => 'HASH', 'well input ' . $_;
-    ok(($res->{status}, '~~', 'error' or $res->{type} == 65280), "status $_");
     cmp_ok $res->{req_id}, '~~', $_ + 100, 'request id';
     cmp_ok $res->{type}, '~~', $_, 'request type';
-    ok(($res->{code} ~~ 0x101 or $res->{type} == 65280), 'code');
+    cmp_ok $res->{status}, '~~', 'error', "status $_"
+        unless $res->{type} == 65280;
+    ok $res->{code} ~~ 0x101, 'code' unless $res->{type} == 65280;;
+    cmp_ok $res->{errstr}, '~~', $msg, 'errstr' unless $res->{type} == 65280;
 }
 
 
