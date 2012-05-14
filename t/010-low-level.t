@@ -107,7 +107,7 @@ for (13, 17, 19, 20, 22, 65280) {
     my $data = pack 'L< L< L< L<', $_, 4, $_ + 100, 0x0101;
     $res = DR::Tarantool::_pkt_parse_response( $data );
     isa_ok $res => 'HASH', 'well input ' . $_;
-    cmp_ok $res->{status}, '~~', 'ok', 'status ' . $_;
+    ok(($res->{status}, '~~', 'error' or $res->{type} == 65280), "status $_");
     cmp_ok $res->{req_id}, '~~', $_ + 100, 'request id';
     cmp_ok $res->{type}, '~~', $_, 'request type';
     ok(($res->{code} ~~ 0x101 or $res->{type} == 65280), 'code');
