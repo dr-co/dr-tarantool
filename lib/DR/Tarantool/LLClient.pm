@@ -106,6 +106,16 @@ sub insert {
     return;
 }
 
+sub select :method {
+    my ($self, $ns, $idx, $offset, $limit, $keys, $cb ) = @_;
+
+    my $id = $self->_req_id;
+    my $pkt = DR::Tarantool::_pkt_select(
+        $id, $ns, $idx, $offset, $limit, $keys
+    );
+    $self->_request( $id, $pkt, $cb );
+    return;
+}
 
 sub _read_header {
     my ($self) = @_;

@@ -7,7 +7,7 @@ use open qw(:std :utf8);
 use lib qw(lib ../lib);
 use lib qw(blib/lib blib/arch ../blib/lib ../blib/arch);
 
-use constant PLAN       => 8;
+use constant PLAN       => 34;
 use Test::More tests    => PLAN;
 use Encode qw(decode encode);
 
@@ -74,7 +74,7 @@ SKIP: {
 
     # insert
     for my $cv (condvar AnyEvent) {
-        my $cnt = 2;
+        my $cnt = 3;
         $client->insert(
             0,
             1,
@@ -113,7 +113,7 @@ SKIP: {
         $client->insert(
             0,
             3,
-            [ pack('L<', 1), 'abc' ],
+            [ pack('L<', 1), 'aaa' ],
             sub {
                 my ($res) = @_;
                 cmp_ok $res->{code} & 0x00002002, '~~', 0x00002002,
@@ -121,6 +121,56 @@ SKIP: {
                 cmp_ok $res->{status}, '~~', 'error', 'status';
                 cmp_ok $res->{type}, '~~', 13, 'type';
                 like $res->{errstr}, qr{already exists}, 'errstr';
+                $cv->send if --$cnt == 0;
+            }
+        );
+        $cv->recv;
+    }
+
+    # select
+    for my $cv (condvar AnyEvent) {
+        my $cnt = 2;
+        $client->select(
+            0, #ns
+            0, #idx
+            0, #offset
+            2, # limit
+            [ [ pack 'L<', 1 ], [ pack 'L<', 2 ] ],
+            sub {
+                my ($res) = @_;
+                cmp_ok $res->{code}, '~~', 0, '* select reply code';
+                cmp_ok $res->{status}, '~~', 'ok', 'status';
+                cmp_ok $res->{type}, '~~', 17, 'type';
+
+                cmp_ok
+                    scalar(grep { $_->[1] ~~ 'abc' } @{ $res->{tuples} }),
+                    '~~',
+                    1,
+                    'first tuple'
+                ;
+                cmp_ok
+                    scalar(grep { $_->[1] ~~ 'cde' } @{ $res->{tuples} }),
+                    '~~',
+                    1,
+                    'second tuple'
+                ;
+                $cv->send if --$cnt == 0;
+            }
+        );
+
+        $client->select(
+            0, #ns
+            0, #idx
+            0, #offset
+            2, # limit
+            [ [ pack 'L<', 3 ], [ pack 'L<', 4 ] ],
+            sub {
+                my ($res) = @_;
+                cmp_ok $res->{code}, '~~', 0, 'select reply code';
+                cmp_ok $res->{status}, '~~', 'ok', 'status';
+                cmp_ok $res->{type}, '~~', 17, 'type';
+
+                ok !@{ $res->{tuples} }, 'empty response';
                 $cv->send if --$cnt == 0;
             }
         );
