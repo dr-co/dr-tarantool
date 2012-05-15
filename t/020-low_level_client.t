@@ -7,7 +7,7 @@ use open qw(:std :utf8);
 use lib qw(lib ../lib);
 use lib qw(blib/lib blib/arch ../blib/lib ../blib/arch);
 
-use constant PLAN       => 60;
+use constant PLAN       => 68;
 use Test::More tests    => PLAN;
 use Encode qw(decode encode);
 
@@ -44,7 +44,8 @@ SKIP: {
     # connect
     for my $cv (condvar AnyEvent) {
         DR::Tarantool::LLClient->connect(
-            port    => $tnt->primary_port,
+            port                    => $tnt->primary_port,
+            reconnect_after_fatal   => 0.1,
             cb      => sub {
                 $client = shift;
                 $cv->send;
@@ -292,17 +293,17 @@ SKIP: {
             sub {
                 my ($res) = @_;
 
-                    cmp_ok $res->{code}, '~~', 0, '* call reply code';
-                    cmp_ok $res->{status}, '~~', 'ok', 'status';
-                    cmp_ok $res->{type}, '~~', 22, 'type';
-                    cmp_ok $res->{tuples}[0][1], '~~', 'abcdef',
-                        'updated tuple 1';
-                    cmp_ok
-                        $res->{tuples}[0][2],
-                        '~~',
-                        (pack 'L<', ( (4567 | 23) & 345 ) ^ 744 ),
-                        'updated tuple 2'
-                    ;
+                cmp_ok $res->{code}, '~~', 0, '* call reply code';
+                cmp_ok $res->{status}, '~~', 'ok', 'status';
+                cmp_ok $res->{type}, '~~', 22, 'type';
+                cmp_ok $res->{tuples}[0][1], '~~', 'abcdef',
+                    'updated tuple 1';
+                cmp_ok
+                    $res->{tuples}[0][2],
+                    '~~',
+                    (pack 'L<', ( (4567 | 23) & 345 ) ^ 744 ),
+                    'updated tuple 2'
+                ;
                 $cv->send if --$cnt == 0;
             }
         );
@@ -333,6 +334,36 @@ SKIP: {
         }
     }
 
+
+    $client->_fatal_error('abc');
+    ok !$client->{handle}, 'disconnected';
+    for my $cv (condvar AnyEvent) {
+        my $tmr;
+        $tmr = AE::timer 0.5, 0, sub { undef $tmr; $cv->send };
+        $cv->recv;
+    }
+
+    ok $client->{handle}, 'reconnected';
+
+    # call after reconnect
+    for my $cv (condvar AnyEvent) {
+        my $cnt = 1;
+        $client->call_lua(
+            'box.select' => [ 0, 0, pack 'L<', 2 ],
+            0,
+            sub {
+                my ($res) = @_;
+
+                cmp_ok $res->{code}, '~~', 0, '* call after reconnect code';
+                cmp_ok $res->{status}, '~~', 'ok', 'status';
+                cmp_ok $res->{type}, '~~', 22, 'type';
+                cmp_ok $res->{tuples}[0][1], '~~', 'abcdef', 'tuple 1';
+                $cv->send if --$cnt == 0;
+            }
+        );
+        $cv->recv;
+    }
+
     $tnt->kill;
 
     # socket error
@@ -349,6 +380,25 @@ SKIP: {
                 $cv->send if --$cnt == 0;
             }
         );
+
+        $cv->recv;
+    }
+
+    for my $cv (condvar AnyEvent) {
+        my $cnt = 1;
+        $client->call_lua(
+            'box.select' => [ 0, 0, pack 'L<', 2 ],
+            0,
+            sub {
+                my ($res) = @_;
+
+                cmp_ok $res->{status}, '~~', 'fatal', '* fatal status';
+                like $res->{errstr} => qr{Connection isn't established},
+                    'Error string';
+                $cv->send if --$cnt == 0;
+            }
+        );
+
         $cv->recv;
     }
 }

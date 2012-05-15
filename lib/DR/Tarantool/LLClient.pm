@@ -118,6 +118,15 @@ our %requests;
 
 Creates a connection to L<tarantool | http://tarantool.org>
 
+    DR::Tarantool::LLClient->connect(
+        host => '127.0.0.1',
+        port => '33033',
+        cb   => {
+            my ($tnt) = @_;
+            ...
+        }
+    );
+
 =head3 Arguments
 
 =over
@@ -125,6 +134,11 @@ Creates a connection to L<tarantool | http://tarantool.org>
 =item host & port
 
 Host and port to connect.
+
+=item reconnect_after_fatal
+
+Interval to reconnect after fatal errors. If the field is defined and more
+than zero driver will try to reconnect server using this interval.
 
 =item cb
 
@@ -143,6 +157,8 @@ sub connect {
     my $host = $opts{host} || 'localhost';
     my $port = $opts{port} or croak "port is undefined";
 
+    my $reconnect_after_fatal   = $opts{reconnect_after_fatal} || 0;
+
     tcp_connect $host, $port, sub {
         my ($fh) = @_;
         unless ( $fh ) {
@@ -151,8 +167,9 @@ sub connect {
         }
 
         my $driver = bless {
-            host        => $host,
-            port        => $port,
+            host                => $host,
+            port                => $port,
+            reconnect_period    => $reconnect_after_fatal,
         } => ref($class) || $class;
 
         my $self = $driver;
@@ -466,6 +483,14 @@ sub _read_reply {
 
 sub _request {
     my ($self, $id, $pkt, $cb ) = @_;
+
+    unless($self->{handle}) {
+        $cb->({
+            status  => 'fatal',
+            errstr  => "Connection isn't established"
+        });
+        return;
+    }
     $self->{ wait }{ $id } = $cb;
     $self->{handle}->push_write( $pkt );
 }
@@ -482,7 +507,37 @@ sub _fatal_error {
         my $cb = delete $self->{ wait }{ $_ };
         $cb->({ status  => 'fatal',  errstr  => $msg, req_id => $_ });
     }
+
     undef $self->{handle};
+
+
+    if ($self->{reconnect_period} and !$self->{reconnect_timer}) {
+        $self->{reconnect_timer} = AE::timer
+            $self->{reconnect_period},
+            $self->{reconnect_period},
+            sub {
+                return if $self->{connecting};
+                $self->{connecting} = 1;
+
+                tcp_connect $self->{host}, $self->{port}, sub {
+                    my ($fh) = @_;
+                    if ($fh) {
+                        $self->{handle} = AnyEvent::Handle->new(
+                            fh          => $fh,
+                            on_error    => $self->_socket_error,
+                            on_eof      => $self->_socket_eof,
+                        );
+                        $self->{handle}->push_read(
+                            chunk => 12, $self->_read_header
+                        );
+                        delete $self->{reconnect_timer};
+                    }
+                    delete $self->{connecting};
+                };
+
+            }
+        ;
+    }
 }
 
 
