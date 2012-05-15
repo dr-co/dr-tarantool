@@ -75,11 +75,11 @@ sub tnt_connect {
 }
 
 
+=head2 ping
 
+Pings tarantool.
 
-
-
-
+=cut
 
 sub ping :method {
     my ($self, $cb) = @_;
@@ -88,6 +88,13 @@ sub ping :method {
     $self->_request( $id, $pkt, $cb );
     return;
 }
+
+
+=head2 insert
+
+Inserts tuple.
+
+=cut
 
 sub insert :method {
     my ($self, $space, $flags, $tuple, $cb) = @_;
@@ -101,6 +108,12 @@ sub insert :method {
     return;
 }
 
+=head2 select
+
+Selects tuple(s).
+
+=cut
+
 sub select :method {
     my ($self, $ns, $idx, $offset, $limit, $keys, $cb ) = @_;
 
@@ -111,6 +124,12 @@ sub select :method {
     return;
 }
 
+=head2 update
+
+Updates tuple.
+
+=cut
+
 sub update :method {
     my ($self, $ns, $flags, $tuple, $ops, $cb) = @_;
 
@@ -120,6 +139,12 @@ sub update :method {
     return;
 
 }
+
+=head2 delete
+
+Deletes tuple.
+
+=cut
 
 sub delete :method {
     my ($self, $ns, $flags, $key, $cb) = @_;
