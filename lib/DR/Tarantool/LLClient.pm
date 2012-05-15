@@ -433,6 +433,12 @@ sub _read_reply {
         my (undef, $data) = @_;
         my $res = DR::Tarantool::_pkt_parse_response( $hdr . $data );
 
+
+        if ($res->{status} =~ /^(fatal|buffer)$/) {
+            $self->_fatal_error( $res->{errstr} );
+            return;
+        }
+
         my $id = $res->{req_id};
         my $cb = delete $self->{ wait }{ $id };
         if ('CODE' eq ref $cb) {
@@ -457,19 +463,22 @@ sub _req_id {
     return ++$req_id;
 }
 
+
+sub _fatal_error {
+    my ($self, $msg) = @_;
+    for (keys %{ $self->{ wait } }) {
+        my $cb = delete $self->{ wait }{ $_ };
+        $cb->({ status  => 'fatal',  errstr  => $msg, req_id => $_ });
+    }
+    undef $self->{handle};
+}
+
+
 sub _socket_error {
     my ($self) = @_;
     return sub {
         my (undef, $fatal, $msg) = @_;
-        for (keys %{ $self->{ wait } }) {
-            my $cb = delete $self->{ wait }{ $_ };
-            $cb->(
-                {
-                    status  => 'fatal',
-                    errstr  => "Socket error: $msg"
-                }
-            );
-        }
+        $self->_fatal_error("Socket error: $msg");
 
     }
 }
@@ -477,15 +486,7 @@ sub _socket_error {
 sub _socket_eof {
     my ($self) = @_;
     return sub {
-        for (keys %{ $self->{ wait } }) {
-            my $cb = delete $self->{ wait }{ $_ };
-            $cb->(
-                {
-                    status  => 'fatal',
-                    errstr  => "Socket error: Server closed connection"
-                }
-            );
-        }
+        $self->_fatal_error("Socket error: Server closed connection");
     }
 }
 
