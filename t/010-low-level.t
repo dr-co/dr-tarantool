@@ -70,7 +70,7 @@ cmp_ok $a[3], '~~', 120, 'space no';
 cmp_ok $a[4], '~~', 2,  'tuple size';
 
 # call
-$sbody = DR::Tarantool::_pkt_call( 124, 125, 'tproc', [ 126, 127 ]);
+$sbody = DR::Tarantool::_pkt_call_lua( 124, 125, 'tproc', [ 126, 127 ]);
 ok defined $sbody, '* call body';
 @a = unpack 'L< L< L< L< w/Z* L< L<', $sbody;
 cmp_ok $a[0], '~~', 22, 'call type';
@@ -94,13 +94,13 @@ cmp_ok $a[4], '~~', 17, 'flags';
 cmp_ok $a[5], '~~', 1,  'tuple size';
 
 
-$sbody = DR::Tarantool::_pkt_call( 124, 125, 'tproc', [  ]);
+$sbody = DR::Tarantool::_pkt_call_lua( 124, 125, 'tproc', [  ]);
 
 # parser
 ok !eval { DR::Tarantool::_pkt_parse_response( undef ) }, '* parser: undef';
 my $res = DR::Tarantool::_pkt_parse_response( '' );
 isa_ok $res => 'HASH', 'empty input';
-like $res->{error}, qr{too short}, 'error message';
+like $res->{errstr}, qr{too short}, 'error message';
 cmp_ok $res->{status}, '~~', 'buffer', 'status';
 
 for (13, 17, 19, 20, 22, 65280) {

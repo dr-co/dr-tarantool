@@ -287,7 +287,7 @@ SV * _pkt_delete( req_id, ns, flags, tuple )
 	OUTPUT:
 		RETVAL
 
-SV * _pkt_call( req_id, flags, proc, tuple )
+SV * _pkt_call_lua( req_id, flags, proc, tuple )
 	unsigned req_id
 	unsigned flags
 	char *proc
@@ -323,10 +323,11 @@ HV * _pkt_parse_response( response )
 		HV *res = newHV();
 		if ( cnt < 0 ) {
 			hash_ssave(res, "status", "fatal");
-			hash_ssave(res, "error", "Can't parse server response");
+			hash_ssave(res,
+			    "errstr", "Can't parse server response");
 		} else if ( cnt > 0 ) {
 			hash_ssave(res, "status", "buffer");
-			hash_ssave(res, "error", "Input data too short");
+			hash_ssave(res, "errstr", "Input data too short");
 		} else {
 			hash_isave(res, "code", reply.code );
 			hash_isave(res, "req_id", reply.reqid );
