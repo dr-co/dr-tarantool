@@ -598,4 +598,14 @@ sub _check_operations {
     $self->_check_operation( $_ ) for @$list;
 }
 
+=head1 COPYRIGHT AND LICENSE
+
+Copyright (C) 2012 by L<Dmitry E. Oboukhov | mailto:unera@debian.org>
+
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself, either Perl version 5.10.1 or,
+at your option, any later version of Perl 5 you may have available.
+
+=cut
+
 1;
