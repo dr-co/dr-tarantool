@@ -135,14 +135,23 @@ Creates a connection to L<tarantool | http://tarantool.org>
 
 Host and port to connect.
 
-=item reconnect_after_fatal
+=item reconnect_period
 
-Interval to reconnect after fatal errors. If the field is defined and more
-than zero driver will try to reconnect server using this interval.
+Interval to reconnect after fatal errors or unsuccessful connects.
+If the field is defined and more than zero driver will try to
+reconnect server using this interval.
+
+B<Important>: driver wont reconnect after B<the first> unsuccessful connection.
+It will call B<callback> instead.
+
+=item reconnect_always
+
+Constantly trying to reconnect even after the first unsuccessful connection.
 
 =item cb
 
-Done callback.
+Done callback. The callback will receive a client instance that
+is already connected with server or error string.
 
 =back
 
@@ -151,43 +160,70 @@ Done callback.
 sub connect {
     my ($class, %opts) = @_;
 
-    my $cb = $opts{cb};
-    $class->_check_cb( $cb );
+    $class->_check_cb( my $cb = $opts{cb} || sub { } );
 
     my $host = $opts{host} || 'localhost';
     my $port = $opts{port} or croak "port is undefined";
 
-    my $reconnect_after_fatal   = $opts{reconnect_after_fatal} || 0;
+    my $reconnect_period    = $opts{reconnect_period} || 0;
+    my $reconnect_always    = $opts{reconnect_always} || 0;
 
-    tcp_connect $host, $port, sub {
-        my ($fh) = @_;
-        unless ( $fh ) {
-            $cb->( $! );
-            return;
-        }
+    my $self = bless {
+        host                => $host,
+        port                => $port,
+        reconnect_period    => $reconnect_period,
+        reconnect_always    => $reconnect_always,
+        first_connect       => 1,
+        connection_status   => 'not_connected',
+    } => ref($class) || $class;
 
-        my $driver = bless {
-            host                => $host,
-            port                => $port,
-            reconnect_period    => $reconnect_after_fatal,
-        } => ref($class) || $class;
+    $self->_connect_reconnect( $cb );
 
-        my $self = $driver;
-        weaken $self;
+    return $self;
+}
 
-        $self->{handle} = AnyEvent::Handle->new(
-            fh          => $fh,
-            on_error    => $self->_socket_error,
-            on_eof      => $self->_socket_eof,
-        );
 
-        $cb->( $self );
+=head2 is_connected
 
-        $self->{handle}->push_read( chunk => 12, $self->_read_header );
-        return;
+Returns B<TRUE> if driver and server are connected with.
 
-    };
-    return;
+=cut
+
+sub is_connected {
+    my ($self) = @_;
+    return $self->{handle} ? 1 : 0;
+}
+
+=head2 connection_status
+
+Returns string that informs You about status of connection. Return value can be:
+
+=over
+
+=item ok
+
+Connection is established
+
+=item not_connected
+
+Connection isn't established yet, or was disconnected.
+
+=item connecting
+
+Driver tries connecting server
+
+=item fatal
+
+Driver tried connecting but receives an error. Driver can repeat connecting
+processes (see B<reconnect_period> option).
+
+=back
+
+=cut
+
+sub connection_status {
+    my ($self) = @_;
+    $self->{connection_status} || 'unknown';
 }
 
 
@@ -500,7 +536,6 @@ sub _req_id {
     return ++$req_id;
 }
 
-
 sub _fatal_error {
     my ($self, $msg) = @_;
     for (keys %{ $self->{ wait } }) {
@@ -509,35 +544,59 @@ sub _fatal_error {
     }
 
     undef $self->{handle};
+    $self->{connection_status} = 'not_connected',
+    $self->_connect_reconnect;
+}
 
+sub _connect_reconnect {
 
-    if ($self->{reconnect_period} and !$self->{reconnect_timer}) {
-        $self->{reconnect_timer} = AE::timer
-            $self->{reconnect_period},
-            $self->{reconnect_period},
-            sub {
-                return if $self->{connecting};
-                $self->{connecting} = 1;
+    my ($self, $cb) = @_;
 
-                tcp_connect $self->{host}, $self->{port}, sub {
-                    my ($fh) = @_;
-                    if ($fh) {
-                        $self->{handle} = AnyEvent::Handle->new(
-                            fh          => $fh,
-                            on_error    => $self->_socket_error,
-                            on_eof      => $self->_socket_eof,
-                        );
-                        $self->{handle}->push_read(
-                            chunk => 12, $self->_read_header
-                        );
-                        delete $self->{reconnect_timer};
-                    }
+    $self->_check_cb( $cb ) if $cb;
+    return if $self->{reconnect_timer};
+    return if $self->{connecting};
+    return unless $self->{first_connect} or $self->{reconnect_period};
+
+    $self->{reconnect_timer} = AE::timer
+        $self->{first_connect} ? 0 : $self->{reconnect_period},
+        $self->{reconnect_period} || 0,
+        sub {
+            return if $self->{connecting};
+            $self->{connecting} = 1;
+
+            $self->{connection_status} = 'connecting';
+
+            tcp_connect $self->{host}, $self->{port}, sub {
+                my ($fh) = @_;
+                delete $self->{connecting};
+                if ($fh) {
+                    $self->{handle} = AnyEvent::Handle->new(
+                        fh          => $fh,
+                        on_error    => $self->_socket_error,
+                        on_eof      => $self->_socket_eof,
+                    );
+                    $self->{handle}->push_read(
+                        chunk => 12, $self->_read_header
+                    );
+
+                    delete $self->{reconnect_timer};
+                    delete $self->{first_connect};
+                    $self->{connection_status} = 'ok';
+
+                    $cb->( $self ) if $cb;
+                    return;
+                }
+
+                my $emsg = $!;
+                if ($self->{first_connect} and not $self->{reconnect_always}) {
+                    $cb->( $! ) if $cb;
+                    delete $self->{reconnect_timer};
                     delete $self->{connecting};
-                };
-
-            }
-        ;
-    }
+                }
+                $self->{connection_status} = "Couldn't connect to server: $!";
+            };
+        }
+    ;
 }
 
 

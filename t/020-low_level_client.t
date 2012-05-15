@@ -7,7 +7,7 @@ use open qw(:std :utf8);
 use lib qw(lib ../lib);
 use lib qw(blib/lib blib/arch ../blib/lib ../blib/arch);
 
-use constant PLAN       => 68;
+use constant PLAN       => 71;
 use Test::More tests    => PLAN;
 use Encode qw(decode encode);
 
@@ -45,7 +45,7 @@ SKIP: {
     for my $cv (condvar AnyEvent) {
         DR::Tarantool::LLClient->connect(
             port                    => $tnt->primary_port,
-            reconnect_after_fatal   => 0.1,
+            reconnect_period        => 0.1,
             cb      => sub {
                 $client = shift;
                 $cv->send;
@@ -328,6 +328,16 @@ SKIP: {
                         }
                     }
                 );
+                DR::Tarantool::LLClient->connect(
+                    port                    => $tnt->primary_port,
+                    reconnect_period        => 100,
+                    cb      => sub {
+                        if (--$cnt == 0) {
+                            $cv->send;
+                            undef $tmr;
+                        }
+                    }
+                );
             };
 
             $cv->recv;
@@ -336,14 +346,14 @@ SKIP: {
 
 
     $client->_fatal_error('abc');
-    ok !$client->{handle}, 'disconnected';
+    ok !$client->is_connected, 'disconnected';
     for my $cv (condvar AnyEvent) {
         my $tmr;
         $tmr = AE::timer 0.5, 0, sub { undef $tmr; $cv->send };
         $cv->recv;
     }
 
-    ok $client->{handle}, 'reconnected';
+    ok $client->is_connected, 'reconnected';
 
     # call after reconnect
     for my $cv (condvar AnyEvent) {
@@ -400,5 +410,58 @@ SKIP: {
         );
 
         $cv->recv;
+    }
+
+
+    # connect to shotdowned tarantool
+    for my $cv (condvar AnyEvent) {
+        DR::Tarantool::LLClient->connect(
+            port                    => $tnt->primary_port,
+            reconnect_period        => 0,
+            cb      => sub {
+                $client = shift;
+                $cv->send;
+            }
+        );
+
+        $cv->recv;
+    }
+    ok !ref $client, 'First unsuccessful connect';
+
+    for my $cv (condvar AnyEvent) {
+        DR::Tarantool::LLClient->connect(
+            port                    => $tnt->primary_port,
+            reconnect_period        => 100,
+            cb      => sub {
+                $client = shift;
+                $cv->send;
+            }
+        );
+
+        $cv->recv;
+    }
+    ok !ref $client, 'First unsuccessful connect without repeats';
+
+    {
+        my $done_reconnect = 0;
+        for my $cv (condvar AnyEvent) {
+            DR::Tarantool::LLClient->connect(
+                port                    => $tnt->primary_port,
+                reconnect_period        => .1,
+                reconnect_always        => 1,
+                cb      => sub {
+                    $done_reconnect++;
+                }
+            );
+
+            my $timer;
+            $timer = AE::timer .5, 0 => sub {
+                undef $timer;
+                $cv->send;
+            };
+
+            $cv->recv;
+        }
+        ok !$done_reconnect, 'reconnect_always option';
     }
 }
