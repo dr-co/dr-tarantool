@@ -161,6 +161,7 @@ sub connect {
         $self->{handle} = AnyEvent::Handle->new(
             fh          => $fh,
             on_error    => $self->_socket_error,
+            on_eof      => $self->_socket_eof,
         );
 
         $cb->( $self );
@@ -459,7 +460,32 @@ sub _req_id {
 sub _socket_error {
     my ($self) = @_;
     return sub {
+        my (undef, $fatal, $msg) = @_;
+        for (keys %{ $self->{ wait } }) {
+            my $cb = delete $self->{ wait }{ $_ };
+            $cb->(
+                {
+                    status  => 'fatal',
+                    errstr  => "Socket error: $msg"
+                }
+            );
+        }
 
+    }
+}
+
+sub _socket_eof {
+    my ($self) = @_;
+    return sub {
+        for (keys %{ $self->{ wait } }) {
+            my $cb = delete $self->{ wait }{ $_ };
+            $cb->(
+                {
+                    status  => 'fatal',
+                    errstr  => "Socket error: Server closed connection"
+                }
+            );
+        }
     }
 }
 

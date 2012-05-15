@@ -7,7 +7,7 @@ use open qw(:std :utf8);
 use lib qw(lib ../lib);
 use lib qw(blib/lib blib/arch ../blib/lib ../blib/arch);
 
-use constant PLAN       => 58;
+use constant PLAN       => 60;
 use Test::More tests    => PLAN;
 use Encode qw(decode encode);
 
@@ -303,6 +303,25 @@ SKIP: {
                         (pack 'L<', ( (4567 | 23) & 345 ) ^ 744 ),
                         'updated tuple 2'
                     ;
+                $cv->send if --$cnt == 0;
+            }
+        );
+        $cv->recv;
+    }
+
+    $tnt->kill;
+
+    # socket error
+    for my $cv (condvar AnyEvent) {
+        my $cnt = 1;
+        $client->call_lua(
+            'box.select' => [ 0, 0, pack 'L<', 2 ],
+            0,
+            sub {
+                my ($res) = @_;
+
+                cmp_ok $res->{status}, '~~', 'fatal', 'fatal status';
+                like $res->{errstr} => qr{Socket error}, 'Error string';
                 $cv->send if --$cnt == 0;
             }
         );

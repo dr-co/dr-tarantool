@@ -113,6 +113,7 @@ sub kill :method {
     if ($self->{child}) {
         kill 'TERM' => $self->{child};
         waitpid $self->{child}, 0;
+        delete $self->{child};
     }
 }
 
