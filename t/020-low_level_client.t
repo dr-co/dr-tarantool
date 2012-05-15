@@ -7,7 +7,7 @@ use open qw(:std :utf8);
 use lib qw(lib ../lib);
 use lib qw(blib/lib blib/arch ../blib/lib ../blib/arch);
 
-use constant PLAN       => 34;
+use constant PLAN       => 47;
 use Test::More tests    => PLAN;
 use Encode qw(decode encode);
 
@@ -78,7 +78,7 @@ SKIP: {
         $client->insert(
             0,
             1,
-            [ pack('L<', 1), 'abc' ],
+            [ pack('L<', 1), 'abc', pack 'L<', 1234 ],
             sub {
                 my ($res) = @_;
                 cmp_ok $res->{code}, '~~', 0, '* insert reply code';
@@ -96,7 +96,7 @@ SKIP: {
         $client->insert(
             0,
             1,
-            [ pack('L<', 2), 'cde' ],
+            [ pack('L<', 2), 'cde', pack 'L<', 4567 ],
             sub {
                 my ($res) = @_;
                 cmp_ok $res->{code}, '~~', 0, 'insert reply code';
@@ -113,7 +113,7 @@ SKIP: {
         $client->insert(
             0,
             3,
-            [ pack('L<', 1), 'aaa' ],
+            [ pack('L<', 1), 'aaa', pack 'L<', 1234 ],
             sub {
                 my ($res) = @_;
                 cmp_ok $res->{code} & 0x00002002, '~~', 0x00002002,
@@ -126,6 +126,7 @@ SKIP: {
         );
         $cv->recv;
     }
+
 
     # select
     for my $cv (condvar AnyEvent) {
@@ -175,6 +176,73 @@ SKIP: {
             }
         );
         $cv->recv;
+    }
+
+    # update
+    for my $cv (condvar AnyEvent) {
+        my $cnt = 2;
+        $client->update(
+            0, # ns
+            1, # flags
+            [ pack 'L<', 1 ], # keys
+            [
+                [ 1 => set      => 'abcdef' ],
+                [ 1 => substr   => 2, 2, ],
+                [ 1 => substr   => 100, 1, 'tail' ],
+                [ 2 => 'delete' ],
+                [ 2 => insert   => pack 'L<' => 123 ],
+                [ 3 => insert   => 'third' ],
+                [ 4 => insert   => 'fourth' ],
+            ],
+            sub {
+                my ($res) = @_;
+                cmp_ok $res->{code}, '~~', 0, '* update reply code';
+                cmp_ok $res->{status}, '~~', 'ok', 'status';
+                cmp_ok $res->{type}, '~~', 19, 'type';
+
+                cmp_ok $res->{tuples}[0][1], '~~', 'abeftail',
+                    'updated tuple 1';
+                cmp_ok $res->{tuples}[0][2], '~~', (pack 'L<', 123),
+                    'updated tuple 2';
+                cmp_ok $res->{tuples}[0][3], '~~', 'third', 'updated tuple 3';
+                cmp_ok $res->{tuples}[0][4], '~~', 'fourth', 'updated tuple 4';
+                $cv->send if --$cnt == 0;
+            }
+        );
+
+        $client->update(
+            0, # ns
+            1, # flags
+            [ pack 'L<', 2 ], # keys
+            [
+                [ 1 => set      => 'abcdef' ],
+                [ 2 => or       => 23 ],
+                [ 2 => and      => 345 ],
+            ],
+            sub {
+                my ($res) = @_;
+                cmp_ok $res->{code}, '~~', 0, '* update reply code';
+                cmp_ok $res->{status}, '~~', 'ok', 'status';
+                cmp_ok $res->{type}, '~~', 19, 'type';
+
+                cmp_ok $res->{tuples}[0][1], '~~', 'abcdef',
+                    'updated tuple 1';
+
+
+                cmp_ok $res->{tuples}[0][1], '~~', 'abcdef',
+                    'updated tuple 1';
+                cmp_ok
+                    $res->{tuples}[0][2],
+                    '~~',
+                    (pack 'L<', (4567 | 23) & 345 ),
+                    'updated tuple 2'
+                ;
+                $cv->send if --$cnt == 0;
+            }
+        );
+
+        $cv->recv;
+
     }
 
 

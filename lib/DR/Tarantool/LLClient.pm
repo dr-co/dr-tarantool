@@ -8,6 +8,7 @@ use AnyEvent;
 use AnyEvent::Socket;
 use AnyEvent::Handle;
 use Carp;
+
 use Scalar::Util 'weaken';
 require DR::Tarantool;
 use Data::Dumper;
@@ -86,7 +87,7 @@ sub socket_error {
 
 
 
-sub ping {
+sub ping :method {
     my ($self, $cb) = @_;
     my $id = $self->_req_id;
     my $pkt = DR::Tarantool::_pkt_ping( $id );
@@ -94,7 +95,7 @@ sub ping {
     return;
 }
 
-sub insert {
+sub insert :method {
     my ($self, $space, $flags, $tuple, $cb) = @_;
     croak "insert: tuple must be ARRAYREF" unless ref $tuple eq 'ARRAY';
     croak "insert: callback isn't defined" unless ref $cb eq 'CODE';
@@ -110,11 +111,20 @@ sub select :method {
     my ($self, $ns, $idx, $offset, $limit, $keys, $cb ) = @_;
 
     my $id = $self->_req_id;
-    my $pkt = DR::Tarantool::_pkt_select(
-        $id, $ns, $idx, $offset, $limit, $keys
-    );
+    my $pkt =
+        DR::Tarantool::_pkt_select($id, $ns, $idx, $offset, $limit, $keys);
     $self->_request( $id, $pkt, $cb );
     return;
+}
+
+sub update :method {
+    my ($self, $ns, $flags, $tuple, $ops, $cb) = @_;
+
+    my $id = $self->_req_id;
+    my $pkt = DR::Tarantool::_pkt_update($id, $ns, $flags, $tuple, $ops);
+    $self->_request( $id, $pkt, $cb );
+    return;
+
 }
 
 sub _read_header {
@@ -153,7 +163,7 @@ sub _request {
 }
 
 sub _req_id {
-    $req_id //= 0;
+    return $req_id = 0 unless defined $req_id;
     return ++$req_id;
 }
 

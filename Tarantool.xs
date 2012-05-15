@@ -101,11 +101,17 @@ static struct tnt_stream *tmake_oplist( AV *ops ) {
 
 		/* substr */
 		if ( strcmp(opname, "substr") == 0 ) {
-			if (asize < 5)
+			if (asize < 4)
 				croak("Too short argument list for substr");
 			unsigned offset = SvIV( *av_fetch( aop, 2, 0 ) );
 			unsigned length = SvIV( *av_fetch( aop, 3, 0 ) );
-			char * data = SvPV( *av_fetch( aop, 4, 0 ), size );
+			char * data;
+			if ( asize > 4 && SvOK( *av_fetch( aop, 4, 0 ) ) ) {
+			    data = SvPV( *av_fetch( aop, 4, 0 ), size );
+			} else {
+			    data = "";
+			    size = 0;
+                        }
 			tnt_update_splice( b, fno, offset, length, data, size );
 			continue;
 		}
