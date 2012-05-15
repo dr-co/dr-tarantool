@@ -8,7 +8,7 @@ use File::Temp qw(tempfile tempdir);
 use File::Path 'rmtree';
 use File::Spec::Functions qw(catfile);
 use Cwd;
-# use Test::TCP;
+use IO::Socket::INET;
 use feature 'state';
 
 =head1 NAME
@@ -50,7 +50,6 @@ sub run {
     $self->_start_tarantool;
     $self;
 }
-
 
 sub started {
     my ($self) = @_;
@@ -128,14 +127,19 @@ sub DESTROY {
 }
 
 sub _find_free_port {
-    state $start_port = 10010;
+    state $start_port = 10000;
 
-    $start_port++;
+    while( ++$start_port < 60000 ) {
+        return $start_port if IO::Socket::INET->new(
+            Listen    => 5,
+            LocalAddr => '127.0.0.1',
+            LocalPort => $start_port,
+            Proto     => 'tcp',
+            (($^O eq 'MSWin32') ? () : (ReuseAddr => 1)),
+        );
+    }
 
-
-#     return empty_port();
-
-    return $start_port;
+    croak "Can't find free port";
 
 }
 
