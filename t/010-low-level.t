@@ -7,7 +7,7 @@ use open qw(:std :utf8);
 use lib qw(lib ../lib);
 use lib qw(blib/lib blib/arch ../blib/lib ../blib/arch);
 
-use Test::More tests    => 80;
+use Test::More tests    => 126;
 use Encode qw(decode encode);
 
 
@@ -17,7 +17,9 @@ BEGIN {
     binmode $builder->failure_output, ":utf8";
     binmode $builder->todo_output,    ":utf8";
 
-    use_ok 'DR::Tarantool'
+    use_ok 'DR::Tarantool';
+    use_ok 'File::Spec::Functions', 'catfile';
+    use_ok 'File::Basename', 'dirname';
 }
 
 
@@ -118,30 +120,27 @@ for (13, 17, 19, 20, 22, 65280) {
 }
 
 
-__END__
-sub pack_tuple {
-    my @f = map "$_", @_;
-    $_ = pack 'w / a*', $_ for @f;
-    my $tuple = pack 'L< a*', scalar(@f), @f;
-    my $fq_tuple = pack 'L< / a*', $tuple;
-    return $fq_tuple;
+my $cfg_dir = catfile dirname(__FILE__), 'test-data';
+ok -d $cfg_dir, 'directory with test data';
+my @bins = glob catfile $cfg_dir, '*.bin';
+
+
+for my $bin (@bins) {
+    my ($type, $err, $status) =
+        $bin =~ /(?>0*)?(\d+?)-0*(\d+)-(\w+)\.bin$/;
+    next unless defined $bin;
+    ok -r $bin, "$bin is readable";
+
+    ok open(my $fh, '<:raw', $bin), "open $bin";
+    my $pkt;
+    { local $/; $pkt = <$fh>; }
+    ok $pkt, 'response body was read';
+
+    my $res = DR::Tarantool::_pkt_parse_response( $pkt );
+    cmp_ok $res->{status}, '~~', $status, 'status';
+    cmp_ok $res->{type}, '~~', $type, 'status';
+    cmp_ok $res->{code}, '~~', $err, 'error code';
+    ok $res->{errstr}, 'errstr' if $res->{code};
+
 }
-
-
-sub pack_tuples {
-    return pack 'L< a*', scalar(@_), join '' => map { pack_tuple @$_ } @_;
-}
-
-my $sel_response = pack_tuples [ 'abc', 'def' ], [ 'ghi', 'jkl' ];
-$sel_response = pack 'L< L< L< L< a*' =>
-    17,
-    length($sel_response) + 4,
-    11,
-    0,
-    $sel_response;
-
-$res = DR::Tarantool::_pkt_parse_response( $sel_response );
-
-note explain $res, [ $sel_response ];
-
 

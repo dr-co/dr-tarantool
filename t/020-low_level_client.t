@@ -309,6 +309,30 @@ SKIP: {
         $cv->recv;
     }
 
+    # memory leak (You have touse external tool to watch memory)
+    if ($ENV{DRV_LEAK_TEST}) {
+        for my $cv (condvar AnyEvent) {
+
+            my $cnt = 1000000;
+
+            my $tmr;
+            $tmr = AE::timer 0.0001, 0.0001 => sub {
+                $client->call_lua(
+                    'box.select' => [ 0, 0, pack 'L<', 2 ],
+                    0,
+                    sub {
+                        if (--$cnt == 0) {
+                            $cv->send;
+                            undef $tmr;
+                        }
+                    }
+                );
+            };
+
+            $cv->recv;
+        }
+    }
+
     $tnt->kill;
 
     # socket error
@@ -320,7 +344,7 @@ SKIP: {
             sub {
                 my ($res) = @_;
 
-                cmp_ok $res->{status}, '~~', 'fatal', 'fatal status';
+                cmp_ok $res->{status}, '~~', 'fatal', '* fatal status';
                 like $res->{errstr} => qr{Socket error}, 'Error string';
                 $cv->send if --$cnt == 0;
             }

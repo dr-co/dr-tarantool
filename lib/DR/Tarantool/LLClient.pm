@@ -423,12 +423,14 @@ sub _read_header {
         my (undef, $data) = @_;
         croak "Unexpected data length" unless $data and length $data == 12;
         my (undef, $blen ) = unpack 'L< L<', $data;
+
         $self->{handle}->push_read( chunk => $blen, $self->_read_reply($data) );
     }
 }
 
 sub _read_reply {
     my ($self, $hdr) = @_;
+
     return sub {
         my (undef, $data) = @_;
         my $res = DR::Tarantool::_pkt_parse_response( $hdr . $data );
@@ -438,6 +440,16 @@ sub _read_reply {
             $self->_fatal_error( $res->{errstr} );
             return;
         }
+
+#       write responses as binfile for tests
+#         {
+#             my $sname = sprintf 't/test-data/%05d-%03d-%s.bin',
+#                 $res->{type} || 0, $res->{code}, $res->{status};
+#             open my $fh, '>:raw', $sname;
+#             print $fh $hdr;
+#             print $fh $data;
+#         }
+
 
         my $id = $res->{req_id};
         my $cb = delete $self->{ wait }{ $id };

@@ -160,7 +160,7 @@ static AV * extract_tuples(struct tnt_reply *r) {
 			uint32_t size = TNT_IFIELD_SIZE(&ifl);
 			av_push(t, newSVpvn(data, size));
 		}
-		av_push(res, newRV((SV *) t));
+		av_push(res, newRV_noinc((SV *) t));
 	}
 	return res;
 }
@@ -352,14 +352,3 @@ HV * _pkt_parse_response( response )
 	OUTPUT:
 		RETVAL
 
-void _pkt_parse_response_leak( response )
-    SV *response
-
-    CODE:
-    STRLEN size;
-    char *data = SvPV( response, size );
-    struct tnt_reply reply;
-    tnt_reply_init( &reply );
-    size_t offset = 0;
-    tnt_reply( &reply, data, size, &offset );
-    tnt_reply_free( &reply );
