@@ -17,8 +17,7 @@ DR::Tarantool::StartTest - finds and starts tarantool on free port.
 
 =head1 SYNOPSIS
 
- my $t = run DR::Tarantool::StartTest ( $spaces_cfg );
- my $t = run DR::Tarantool::StartTest ( -f => $spaces_cfg );
+ my $t = run DR::Tarantool::StartTest ( cfg => $file_spaces_cfg );
 
 =head1 DESCRIPTION
 
@@ -28,14 +27,13 @@ The module tries to find and then to start B<tarantool_box>.
 
 
 sub run {
-    my ($module, $cfg) = @_;
-    if (@_ > 2 and $cfg ~~ '-f') {
-        my $file = $_[2];
-        croak "File not found" unless -r $file;
-        open my $fh, '<:utf8', $file or die "$@\n";
-        local $/;
-        $cfg = <$fh>;
-    }
+    my ($module, %opts) = @_;
+
+    my $cfg_file = $opts{cfg} or croak "config file not defined";
+    croak "File not found" unless -r $cfg_file;
+    open my $fh, '<:utf8', $cfg_file or die "$@\n";
+    local $/;
+    my $cfg = <$fh>;
 
     my %self = (
         admin_port      => $module->_find_free_port,
@@ -140,7 +138,6 @@ sub _find_free_port {
     }
 
     croak "Can't find free port";
-
 }
 
 1;

@@ -7,7 +7,7 @@ use open qw(:std :utf8);
 use lib qw(lib ../lib);
 use lib qw(blib/lib blib/arch ../blib/lib ../blib/arch);
 
-use constant PLAN       => 49;
+use constant PLAN       => 53;
 use Test::More tests    => PLAN;
 use Encode qw(decode encode);
 
@@ -31,7 +31,7 @@ ok -d $cfg_dir, 'directory with test data';
 my $tcfg = catfile $cfg_dir, 'llc-easy.cfg';
 ok -r $tcfg, $tcfg;
 
-my $tnt = run DR::Tarantool::StartTest( -f => $tcfg );
+my $tnt = run DR::Tarantool::StartTest( cfg => $tcfg );
 
 SKIP: {
     unless ($tnt->started and !$ENV{SKIP_TNT}) {
@@ -243,9 +243,10 @@ SKIP: {
     }
 
 
+
     # delete
     for my $cv (condvar AnyEvent) {
-        my $cnt = 1;
+        my $cnt = 2;
         $client->delete(
             0, # ns
             1, # flags
@@ -262,6 +263,23 @@ SKIP: {
 #                     'deleted tuple 2';
 #                 cmp_ok $res->{tuples}[0][3], '~~', 'third', 'deleted tuple 3';
 #                 cmp_ok $res->{tuples}[0][4], '~~', 'fourth', 'deleted tuple 4';
+                $cv->send if --$cnt == 0;
+            }
+        );
+
+        $client->select(
+            0, #ns
+            0, #idx
+            0, #offset
+            2, # limit
+            [ [ pack 'L<', 1 ], [ pack 'L<', 1 ] ],
+            sub {
+                my ($res) = @_;
+                cmp_ok $res->{code}, '~~', 0, '* select reply code';
+                cmp_ok $res->{status}, '~~', 'ok', 'status';
+                cmp_ok $res->{type}, '~~', 17, 'type';
+
+                ok !@{ $res->{tuples} }, 'really removed';
                 $cv->send if --$cnt == 0;
             }
         );

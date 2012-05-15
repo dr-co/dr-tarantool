@@ -5,7 +5,15 @@ use ExtUtils::MakeMaker;
 WriteMakefile(
     NAME              => 'DR::Tarantool',
     VERSION_FROM      => 'lib/DR/Tarantool.pm', # finds $VERSION
-    PREREQ_PM         => {}, # e.g., Module::Name => 1.1
+    PREREQ_PM         => {
+            'Carp'                      => 0,
+            'File::Temp'                => 0,
+            'File::Path'                => 0,
+            'File::Spec::Functions'     => 0,
+            'Cwd'                       => 0,
+            'IO::Socket::INET'          => 0,
+            'AnyEvent'                  => 0,
+    }, # e.g., Module::Name => 1.1
     ABSTRACT_FROM  => 'lib/DR/Tarantool.pm', # retrieve abstract from module
     AUTHOR         => 'Dmitry E. Oboukhov <unera@debian.org>',
     LIBS              => ['-ltarantool'], # e.g., '-lm'
