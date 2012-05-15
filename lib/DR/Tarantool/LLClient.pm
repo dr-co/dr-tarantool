@@ -62,7 +62,7 @@ sub tnt_connect {
 
         $self->{handle} = AnyEvent::Handle->new(
             fh          => $fh,
-            on_error    => $self->socket_error,
+            on_error    => $self->_socket_error,
         );
 
         $cb->( $self );
@@ -77,12 +77,6 @@ sub tnt_connect {
 
 
 
-sub socket_error {
-    my ($self) = @_;
-    return sub {
-
-    }
-}
 
 
 
@@ -127,6 +121,14 @@ sub update :method {
 
 }
 
+sub delete :method {
+    my ($self, $ns, $flags, $key, $cb) = @_;
+    my $id = $self->_req_id;
+    my $pkt = DR::Tarantool::_pkt_delete($id, $ns, $flags, $key);
+    $self->_request( $id, $pkt, $cb );
+    return;
+}
+
 sub _read_header {
     my ($self) = @_;
     return sub {
@@ -165,6 +167,13 @@ sub _request {
 sub _req_id {
     return $req_id = 0 unless defined $req_id;
     return ++$req_id;
+}
+
+sub _socket_error {
+    my ($self) = @_;
+    return sub {
+
+    }
 }
 
 1;

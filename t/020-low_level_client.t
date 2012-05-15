@@ -7,7 +7,7 @@ use open qw(:std :utf8);
 use lib qw(lib ../lib);
 use lib qw(blib/lib blib/arch ../blib/lib ../blib/arch);
 
-use constant PLAN       => 47;
+use constant PLAN       => 49;
 use Test::More tests    => PLAN;
 use Encode qw(decode encode);
 
@@ -34,8 +34,8 @@ ok -r $tcfg, $tcfg;
 my $tnt = run DR::Tarantool::StartTest( -f => $tcfg );
 
 SKIP: {
-    unless ($tnt->started) {
-        diag $tnt->log;
+    unless ($tnt->started and !$ENV{SKIP_TNT}) {
+        diag $tnt->log unless $ENV{SKIP_TNT};
         skip "tarantool isn't started", PLAN - 7;
     }
 
@@ -218,6 +218,7 @@ SKIP: {
                 [ 1 => set      => 'abcdef' ],
                 [ 2 => or       => 23 ],
                 [ 2 => and      => 345 ],
+                [ 2 => xor      => 744 ],
             ],
             sub {
                 my ($res) = @_;
@@ -227,14 +228,10 @@ SKIP: {
 
                 cmp_ok $res->{tuples}[0][1], '~~', 'abcdef',
                     'updated tuple 1';
-
-
-                cmp_ok $res->{tuples}[0][1], '~~', 'abcdef',
-                    'updated tuple 1';
                 cmp_ok
                     $res->{tuples}[0][2],
                     '~~',
-                    (pack 'L<', (4567 | 23) & 345 ),
+                    (pack 'L<', ( (4567 | 23) & 345 ) ^ 744 ),
                     'updated tuple 2'
                 ;
                 $cv->send if --$cnt == 0;
@@ -246,4 +243,29 @@ SKIP: {
     }
 
 
+    # delete
+    for my $cv (condvar AnyEvent) {
+        my $cnt = 1;
+        $client->delete(
+            0, # ns
+            1, # flags
+            [ pack 'L<', 1 ], # keys
+            sub {
+                my ($res) = @_;
+                cmp_ok $res->{code}, '~~', 0, '* delete reply code';
+                cmp_ok $res->{status}, '~~', 'ok', 'status';
+                cmp_ok $res->{type}, '~~', 20, 'type';
+
+#                 cmp_ok $res->{tuples}[0][1], '~~', 'abeftail',
+#                     'deleted tuple 1';
+#                 cmp_ok $res->{tuples}[0][2], '~~', (pack 'L<', 123),
+#                     'deleted tuple 2';
+#                 cmp_ok $res->{tuples}[0][3], '~~', 'third', 'deleted tuple 3';
+#                 cmp_ok $res->{tuples}[0][4], '~~', 'fourth', 'deleted tuple 4';
+                $cv->send if --$cnt == 0;
+            }
+        );
+
+        $cv->recv;
+    }
 }
