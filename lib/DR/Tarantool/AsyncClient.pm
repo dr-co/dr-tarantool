@@ -134,6 +134,7 @@ Pings server.
 sub ping {
     my ($self, $cb, %opts) = &_split_args;
     $self->_llc->ping(sub {
+        $self->{last_result} = $_[0];
         $cb->($_[0]{status} ~~ 'ok' ? 1 : 0);
     });
 }
