@@ -53,6 +53,20 @@ DR::Tarantool::AsyncClient - async client for L<tarantool|http://tarantool.org>
 =cut
 
 
+sub _split_args {
+
+    if (@_ % 2) {
+        my ($self, %opts) = @_;
+        my $cb = delete $opts{cb};
+        return ($self, $cb, %opts);
+    }
+
+    my $cb = pop;
+    splice @_, 1, 0, $cb;
+    return @_;
+}
+
+
 sub connect {
     my $class = shift;
     my ($cb, %opts);
@@ -97,4 +111,31 @@ sub connect {
     return;
 
 }
+
+sub _llc { return $_[0]{llc} }
+
+
+=head2 ping
+
+Pings server.
+
+    $client->ping(sub { my ($status) = @_; ... });
+
+=head3 Arguments
+
+=over
+
+=item cb
+
+=back
+
+=cut
+
+sub ping {
+    my ($self, $cb, %opts) = &_split_args;
+    $self->_llc->ping(sub {
+        $cb->($_[0]{status} ~~ 'ok' ? 1 : 0);
+    });
+}
+
 1;

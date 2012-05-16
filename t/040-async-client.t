@@ -7,7 +7,7 @@ use open qw(:std :utf8);
 use lib qw(lib ../lib);
 use lib qw(blib/lib blib/arch ../blib/lib ../blib/arch);
 
-use constant PLAN       => 72;
+use constant PLAN       => 11;
 use Test::More tests    => PLAN;
 use Encode qw(decode encode);
 
@@ -86,6 +86,19 @@ SKIP: {
         last;
     }
 
+
+
+    # ping
+    for my $cv (condvar AnyEvent) {
+        $client->ping(
+            sub {
+                my ($status) = @_;
+                cmp_ok $status, '~~', 1, '* ping';
+                $cv->send;
+            }
+        );
+        $cv->recv;
+    }
 
 
 }
