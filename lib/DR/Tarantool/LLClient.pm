@@ -158,9 +158,19 @@ is already connected with server or error string.
 =cut
 
 sub connect {
-    my ($class, %opts) = @_;
+    my $class = shift;
 
-    $class->_check_cb( my $cb = $opts{cb} || sub { } );
+    my (%opts, $cb);
+
+    if (@_ % 2) {
+        $cb = pop;
+        %opts = @_;
+    } else {
+        %opts = @_;
+        $cb = delete $opts{cb};
+    }
+
+    $class->_check_cb( $cb || sub {  });
 
     my $host = $opts{host} || 'localhost';
     my $port = $opts{port} or croak "port is undefined";

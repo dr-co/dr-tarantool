@@ -2,7 +2,7 @@
 README
 Makefile.PL
 t
-t/010-low-level.t
+t/010-xs.t
 t/030-spaces.t
 t/040-async-client.t
 t/020-low_level_client.t

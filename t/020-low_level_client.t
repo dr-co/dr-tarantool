@@ -67,7 +67,7 @@ SKIP: {
                 my ($res) = @_;
                 cmp_ok $res->{code}, '~~', 0, '* ping reply code';
                 cmp_ok $res->{status}, '~~', 'ok', 'status';
-                cmp_ok $res->{type}, '~~', 65280, 'type';
+                cmp_ok $res->{type}, '~~', TNT_PING, 'type';
                 $cv->send;
             }
         );
@@ -80,12 +80,12 @@ SKIP: {
         $client->insert(
             0,
             [ pack('L<', 1), 'abc', pack 'L<', 1234 ],
-            1,
+            TNT_FLAG_RETURN,
             sub {
                 my ($res) = @_;
                 cmp_ok $res->{code}, '~~', 0, '* insert reply code';
                 cmp_ok $res->{status}, '~~', 'ok', 'status';
-                cmp_ok $res->{type}, '~~', 13, 'type';
+                cmp_ok $res->{type}, '~~', TNT_INSERT, 'type';
 
                 cmp_ok $res->{tuples}[0][0], '~~', pack('L<', 1), 'key';
                 cmp_ok $res->{tuples}[0][1], '~~', 'abc', 'f1';
@@ -98,12 +98,12 @@ SKIP: {
         $client->insert(
             0,
             [ pack('L<', 2), 'cde', pack 'L<', 4567 ],
-            1,
+            TNT_FLAG_RETURN,
             sub {
                 my ($res) = @_;
                 cmp_ok $res->{code}, '~~', 0, 'insert reply code';
                 cmp_ok $res->{status}, '~~', 'ok', 'status';
-                cmp_ok $res->{type}, '~~', 13, 'type';
+                cmp_ok $res->{type}, '~~', TNT_INSERT, 'type';
 
                 cmp_ok $res->{tuples}[0][0], '~~', pack('L<', 2), 'key';
                 cmp_ok $res->{tuples}[0][1], '~~', 'cde', 'f1';
@@ -115,13 +115,13 @@ SKIP: {
         $client->insert(
             0,
             [ pack('L<', 1), 'aaa', pack 'L<', 1234 ],
-            3,
+            TNT_FLAG_RETURN | TNT_FLAG_ADD,
             sub {
                 my ($res) = @_;
                 cmp_ok $res->{code} & 0x00002002, '~~', 0x00002002,
                     'insert reply code (already exists)';
                 cmp_ok $res->{status}, '~~', 'error', 'status';
-                cmp_ok $res->{type}, '~~', 13, 'type';
+                cmp_ok $res->{type}, '~~', TNT_INSERT, 'type';
                 like $res->{errstr}, qr{already exists}, 'errstr';
                 $cv->send if --$cnt == 0;
             }
@@ -143,7 +143,7 @@ SKIP: {
                 my ($res) = @_;
                 cmp_ok $res->{code}, '~~', 0, '* select reply code';
                 cmp_ok $res->{status}, '~~', 'ok', 'status';
-                cmp_ok $res->{type}, '~~', 17, 'type';
+                cmp_ok $res->{type}, '~~', TNT_SELECT, 'type';
 
                 cmp_ok
                     scalar(grep { $_->[1] ~~ 'abc' } @{ $res->{tuples} }),
@@ -169,7 +169,7 @@ SKIP: {
                 my ($res) = @_;
                 cmp_ok $res->{code}, '~~', 0, 'select reply code';
                 cmp_ok $res->{status}, '~~', 'ok', 'status';
-                cmp_ok $res->{type}, '~~', 17, 'type';
+                cmp_ok $res->{type}, '~~', TNT_SELECT, 'type';
 
                 ok !@{ $res->{tuples} }, 'empty response';
                 $cv->send if --$cnt == 0;
@@ -193,12 +193,12 @@ SKIP: {
                 [ 3 => insert   => 'third' ],
                 [ 4 => insert   => 'fourth' ],
             ],
-            1, # flags
+            TNT_FLAG_RETURN, # flags
             sub {
                 my ($res) = @_;
                 cmp_ok $res->{code}, '~~', 0, '* update reply code';
                 cmp_ok $res->{status}, '~~', 'ok', 'status';
-                cmp_ok $res->{type}, '~~', 19, 'type';
+                cmp_ok $res->{type}, '~~', TNT_UPDATE, 'type';
 
                 cmp_ok $res->{tuples}[0][1], '~~', 'abeftail',
                     'updated tuple 1';
@@ -219,12 +219,12 @@ SKIP: {
                 [ 2 => and      => 345 ],
                 [ 2 => xor      => 744 ],
             ],
-            1, # flags
+            TNT_FLAG_RETURN, # flags
             sub {
                 my ($res) = @_;
                 cmp_ok $res->{code}, '~~', 0, '* update reply code';
                 cmp_ok $res->{status}, '~~', 'ok', 'status';
-                cmp_ok $res->{type}, '~~', 19, 'type';
+                cmp_ok $res->{type}, '~~', TNT_UPDATE, 'type';
 
                 cmp_ok $res->{tuples}[0][1], '~~', 'abcdef',
                     'updated tuple 1';
@@ -250,12 +250,12 @@ SKIP: {
         $client->delete(
             0, # ns
             [ pack 'L<', 1 ], # keys
-            1, # flags
+            TNT_FLAG_RETURN, # flags
             sub {
                 my ($res) = @_;
                 cmp_ok $res->{code}, '~~', 0, '* delete reply code';
                 cmp_ok $res->{status}, '~~', 'ok', 'status';
-                cmp_ok $res->{type}, '~~', 20, 'type';
+                cmp_ok $res->{type}, '~~', TNT_DELETE, 'type';
 
 #                 cmp_ok $res->{tuples}[0][1], '~~', 'abeftail',
 #                     'deleted tuple 1';
@@ -275,7 +275,7 @@ SKIP: {
                 my ($res) = @_;
                 cmp_ok $res->{code}, '~~', 0, '* select reply code';
                 cmp_ok $res->{status}, '~~', 'ok', 'status';
-                cmp_ok $res->{type}, '~~', 17, 'type';
+                cmp_ok $res->{type}, '~~', TNT_SELECT, 'type';
 
                 ok !@{ $res->{tuples} }, 'really removed';
                 $cv->send if --$cnt == 0;
@@ -296,7 +296,7 @@ SKIP: {
 
                 cmp_ok $res->{code}, '~~', 0, '* call reply code';
                 cmp_ok $res->{status}, '~~', 'ok', 'status';
-                cmp_ok $res->{type}, '~~', 22, 'type';
+                cmp_ok $res->{type}, '~~', TNT_CALL, 'type';
                 cmp_ok $res->{tuples}[0][1], '~~', 'abcdef',
                     'updated tuple 1';
                 cmp_ok
@@ -367,7 +367,7 @@ SKIP: {
 
                 cmp_ok $res->{code}, '~~', 0, '* call after reconnect code';
                 cmp_ok $res->{status}, '~~', 'ok', 'status';
-                cmp_ok $res->{type}, '~~', 22, 'type';
+                cmp_ok $res->{type}, '~~', TNT_CALL, 'type';
                 cmp_ok $res->{tuples}[0][1], '~~', 'abcdef', 'tuple 1';
                 $cv->send if --$cnt == 0;
             }

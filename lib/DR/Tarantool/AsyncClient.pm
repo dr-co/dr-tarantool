@@ -4,6 +4,7 @@ use warnings;
 
 package DR::Tarantool::AsyncClient;
 use DR::Tarantool::LLClient;
+use DR::Tarantool::Spaces;
 use Carp;
 use base qw(Exporter);
 
