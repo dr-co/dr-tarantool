@@ -352,3 +352,70 @@ HV * _pkt_parse_response( response )
 	OUTPUT:
 		RETVAL
 
+
+unsigned _op_insert()
+	CODE:
+		RETVAL = TNT_OP_INSERT;
+	OUTPUT:
+		RETVAL
+
+unsigned _op_select()
+	CODE:
+		RETVAL = TNT_OP_SELECT;
+	OUTPUT:
+		RETVAL
+
+unsigned _op_update()
+	CODE:
+		RETVAL = TNT_OP_UPDATE;
+	OUTPUT:
+		RETVAL
+
+unsigned _op_delete()
+	CODE:
+		RETVAL = TNT_OP_DELETE;
+	OUTPUT:
+		RETVAL
+
+unsigned _op_call()
+	CODE:
+		RETVAL = TNT_OP_CALL;
+	OUTPUT:
+		RETVAL
+
+unsigned _op_ping()
+	CODE:
+		RETVAL = TNT_OP_PING;
+	OUTPUT:
+		RETVAL
+
+
+unsigned _flag_return()
+	CODE:
+		RETVAL = TNT_FLAG_RETURN;
+	OUTPUT:
+		RETVAL
+
+unsigned _flag_add()
+	CODE:
+		RETVAL = TNT_FLAG_ADD;
+	OUTPUT:
+		RETVAL
+
+unsigned _flag_replace()
+	CODE:
+		RETVAL = TNT_FLAG_REPLACE;
+	OUTPUT:
+		RETVAL
+
+unsigned _flag_box_quiet()
+	CODE:
+		RETVAL = TNT_FLAG_BOX_QUIET;
+	OUTPUT:
+		RETVAL
+
+unsigned _flag_not_store()
+	CODE:
+		RETVAL = TNT_FLAG_NOT_STORE;
+	OUTPUT:
+		RETVAL

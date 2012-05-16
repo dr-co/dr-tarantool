@@ -7,7 +7,7 @@ use open qw(:std :utf8);
 use lib qw(lib ../lib);
 use lib qw(blib/lib blib/arch ../blib/lib ../blib/arch);
 
-use Test::More tests    => 126;
+use Test::More tests    => 137;
 use Encode qw(decode encode);
 
 
@@ -17,18 +17,30 @@ BEGIN {
     binmode $builder->failure_output, ":utf8";
     binmode $builder->todo_output,    ":utf8";
 
-    use_ok 'DR::Tarantool';
+    use_ok 'DR::Tarantool', ':constant';
     use_ok 'File::Spec::Functions', 'catfile';
     use_ok 'File::Basename', 'dirname';
 }
 
+like TNT_INSERT,            qr{^\d+$}, 'TNT_INSERT';
+like TNT_SELECT,            qr{^\d+$}, 'TNT_SELECT';
+like TNT_UPDATE,            qr{^\d+$}, 'TNT_UPDATE';
+like TNT_DELETE,            qr{^\d+$}, 'TNT_DELETE';
+like TNT_CALL,              qr{^\d+$}, 'TNT_CALL';
+like TNT_PING,              qr{^\d+$}, 'TNT_PING';
+
+like TNT_FLAG_RETURN,       qr{^\d+$}, 'TNT_FLAG_RETURN';
+like TNT_FLAG_ADD,          qr{^\d+$}, 'TNT_FLAG_ADD';
+like TNT_FLAG_REPLACE,      qr{^\d+$}, 'TNT_FLAG_REPLACE';
+like TNT_FLAG_BOX_QUIET,    qr{^\d+$}, 'TNT_FLAG_BOX_QUIET';
+like TNT_FLAG_NOT_STORE,    qr{^\d+$}, 'TNT_FLAG_NOT_STORE';
 
 # SELECT
 my $sbody = DR::Tarantool::_pkt_select( 9, 8, 7, 6, 5, [ [4], [3] ] );
 ok defined $sbody, '* select body';
 
 my @a = unpack '( L< )*', $sbody;
-cmp_ok $a[0], '~~', 17, 'select type';
+cmp_ok $a[0], '~~', TNT_SELECT, 'select type';
 cmp_ok $a[1], '~~', length($sbody) - 3 * 4, 'body length';
 cmp_ok $a[2], '~~', 9, 'request id';
 cmp_ok $a[3], '~~', 8, 'space no';
@@ -43,7 +55,7 @@ like $@ => qr{ARRAYREF of ARRAYREF}, 'error string';
 $sbody = DR::Tarantool::_pkt_ping( 11 );
 ok defined $sbody, '* ping body';
 @a = unpack '( L< )*', $sbody;
-cmp_ok $a[0], '~~', 65280, 'ping type';
+cmp_ok $a[0], '~~', TNT_PING, 'ping type';
 cmp_ok $a[1], '~~', length($sbody) - 3 * 4, 'body length';
 cmp_ok $a[2], '~~', 11, 'request id';
 
@@ -52,7 +64,7 @@ cmp_ok $a[2], '~~', 11, 'request id';
 $sbody = DR::Tarantool::_pkt_insert( 12, 13, 14, [ 'a', 'b', 'c', 'd' ]);
 ok defined $sbody, '* insert body';
 @a = unpack '( L< )*', $sbody;
-cmp_ok $a[0], '~~', 13, 'insert type';
+cmp_ok $a[0], '~~', TNT_INSERT, 'insert type';
 cmp_ok $a[1], '~~', length($sbody) - 3 * 4, 'body length';
 cmp_ok $a[2], '~~', 12, 'request id';
 cmp_ok $a[3], '~~', 13, 'space no';
@@ -63,7 +75,7 @@ cmp_ok $a[5], '~~', 4,  'tuple size';
 $sbody = DR::Tarantool::_pkt_delete( 119, 120, 121, [ 122, 123 ] );
 ok defined $sbody, '* delete body';
 @a = unpack '( L< )*', $sbody;
-cmp_ok $a[0], '~~', 20, 'delete type';
+cmp_ok $a[0], '~~', TNT_DELETE, 'delete type';
 cmp_ok $a[1], '~~', length($sbody) - 3 * 4, 'body length';
 cmp_ok $a[2], '~~', 119, 'request id';
 
@@ -75,7 +87,7 @@ cmp_ok $a[4], '~~', 2,  'tuple size';
 $sbody = DR::Tarantool::_pkt_call_lua( 124, 125, 'tproc', [ 126, 127 ]);
 ok defined $sbody, '* call body';
 @a = unpack 'L< L< L< L< w/Z* L< L<', $sbody;
-cmp_ok $a[0], '~~', 22, 'call type';
+cmp_ok $a[0], '~~', TNT_CALL, 'call type';
 cmp_ok $a[1], '~~', length($sbody) - 3 * 4, 'body length';
 cmp_ok $a[2], '~~', 124, 'request id';
 cmp_ok $a[3], '~~', 125, 'flags';
@@ -88,7 +100,7 @@ my @ops = map { [ int rand 100, $_, int rand 100 ] }
 $sbody = DR::Tarantool::_pkt_update( 15, 16, 17, [ 18 ], \@ops);
 ok defined $sbody, '* update body';
 @a = unpack '( L< )*', $sbody;
-cmp_ok $a[0], '~~', 19, 'update type';
+cmp_ok $a[0], '~~', TNT_UPDATE, 'update type';
 cmp_ok $a[1], '~~', length($sbody) - 3 * 4, 'body length';
 cmp_ok $a[2], '~~', 15, 'request id';
 cmp_ok $a[3], '~~', 16, 'space no';
@@ -105,7 +117,7 @@ isa_ok $res => 'HASH', 'empty input';
 like $res->{errstr}, qr{too short}, 'error message';
 cmp_ok $res->{status}, '~~', 'buffer', 'status';
 
-for (13, 17, 19, 20, 22, 65280) {
+for (TNT_INSERT, TNT_UPDATE, TNT_SELECT, TNT_DELETE, TNT_CALL, TNT_PING) {
     my $msg = "test message";
     my $data = pack 'L< L< L< L< Z*',
         $_, 5 + length $msg, $_ + 100, 0x0101, $msg;
@@ -113,10 +125,12 @@ for (13, 17, 19, 20, 22, 65280) {
     isa_ok $res => 'HASH', 'well input ' . $_;
     cmp_ok $res->{req_id}, '~~', $_ + 100, 'request id';
     cmp_ok $res->{type}, '~~', $_, 'request type';
-    cmp_ok $res->{status}, '~~', 'error', "status $_"
-        unless $res->{type} == 65280;
-    ok $res->{code} ~~ 0x101, 'code' unless $res->{type} == 65280;;
-    cmp_ok $res->{errstr}, '~~', $msg, 'errstr' unless $res->{type} == 65280;
+
+    unless($res->{type} == TNT_PING) {
+        cmp_ok $res->{status}, '~~', 'error', "status $_";
+        ok $res->{code} ~~ 0x101, 'code';
+        cmp_ok $res->{errstr}, '~~', $msg, 'errstr';
+    }
 }
 
 
@@ -141,6 +155,5 @@ for my $bin (@bins) {
     cmp_ok $res->{type}, '~~', $type, 'status';
     cmp_ok $res->{code}, '~~', $err, 'error code';
     ok $res->{errstr}, 'errstr' if $res->{code};
-
 }
 

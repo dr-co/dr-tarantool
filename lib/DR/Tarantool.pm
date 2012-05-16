@@ -5,19 +5,39 @@ use strict;
 use warnings;
 use Carp;
 
-require Exporter;
-use AutoLoader;
+use base qw(Exporter);
 
-our @ISA = qw(Exporter);
 
-our %EXPORT_TAGS = ( 'all' => [ qw( ) ] );
-our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
-our @EXPORT = qw();
+our %EXPORT_TAGS = (
+    all         => [ qw(  ) ],
+    constant    => [
+        qw(
+            TNT_INSERT TNT_SELECT TNT_UPDATE TNT_DELETE TNT_CALL TNT_PING
+            TNT_FLAG_RETURN TNT_FLAG_ADD TNT_FLAG_REPLACE TNT_FLAG_BOX_QUIET
+            TNT_FLAG_NOT_STORE
+        )
+    ],
+);
+our @EXPORT_OK = ( map { @$_ } values %EXPORT_TAGS );
+our @EXPORT = qw(insert);
 our $VERSION = '0.01';
 
 require XSLoader;
 XSLoader::load('DR::Tarantool', $VERSION);
 
+
+*TNT_PING           = \&DR::Tarantool::_op_ping;
+*TNT_CALL           = \&DR::Tarantool::_op_call;
+*TNT_INSERT         = \&DR::Tarantool::_op_insert;
+*TNT_UPDATE         = \&DR::Tarantool::_op_update;
+*TNT_DELETE         = \&DR::Tarantool::_op_delete;
+*TNT_SELECT         = \&DR::Tarantool::_op_select;
+
+*TNT_FLAG_RETURN    = \&DR::Tarantool::_flag_return;
+*TNT_FLAG_ADD       = \&DR::Tarantool::_flag_add;
+*TNT_FLAG_REPLACE   = \&DR::Tarantool::_flag_replace;
+*TNT_FLAG_BOX_QUIET = \&DR::Tarantool::_flag_box_quiet;
+*TNT_FLAG_NOT_STORE = \&DR::Tarantool::_flag_not_store;
 
 1;
 

@@ -7,7 +7,7 @@ use open qw(:std :utf8);
 use lib qw(lib ../lib);
 use lib qw(blib/lib blib/arch ../blib/lib ../blib/arch);
 
-use constant PLAN       => 71;
+use constant PLAN       => 72;
 use Test::More tests    => PLAN;
 use Encode qw(decode encode);
 
@@ -21,6 +21,7 @@ BEGIN {
 
     use_ok 'DR::Tarantool::LLClient', 'tnt_connect';
     use_ok 'DR::Tarantool::StartTest';
+    use_ok 'DR::Tarantool', ':constant';
     use_ok 'File::Spec::Functions', 'catfile';
     use_ok 'File::Basename', 'dirname', 'basename';
     use_ok 'AnyEvent';
@@ -36,7 +37,7 @@ my $tnt = run DR::Tarantool::StartTest( cfg => $tcfg );
 SKIP: {
     unless ($tnt->started and !$ENV{SKIP_TNT}) {
         diag $tnt->log unless $ENV{SKIP_TNT};
-        skip "tarantool isn't started", PLAN - 7;
+        skip "tarantool isn't started", PLAN - 8;
     }
 
     my $client;
