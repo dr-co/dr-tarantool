@@ -35,11 +35,10 @@ my $s = MODEL->new({
     0 => {
         name    => 'test',
         default_type    => 'NUM',
-        default_utf8    => 1,
         fields  => [
             qw(a b c),
             {
-                type    => 'STR',
+                type    => 'UTF8STR',
                 name    => 'd'
             },
             {
@@ -49,7 +48,6 @@ my $s = MODEL->new({
             {
                 type    => 'STR',
                 name    => 'abcd',
-                utf8    => 0,
             }
         ],
         indexes => {

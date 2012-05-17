@@ -4,6 +4,7 @@ use warnings;
 
 package DR::Tarantool::Spaces;
 use Carp;
+# $Carp::Internal{ (__PACKAGE__) }++;
 
 =head1 NAME
 
@@ -13,12 +14,17 @@ DR::Tarantool::Spaces - spaces container
 
     my $s = new DR::Tarantool::Spaces({
             1   => {
-                name    => 'users',
+                name            => 'users',         # space name
+                default_type    => 'STR',           # undescribed fields
                 fields  => [
                     qw(login password role),
                     {
                         name    => 'counter',
                         type    => 'NUM'
+                    },
+                    {
+                        name    => 'something',
+                        type    => 'UTF8STR',
                     }
                 ],
                 indexes => {
@@ -126,10 +132,10 @@ sub new {
         unless $name and $name =~ /^[a-z_]\w*$/i;
 
 
-    my (@fields, %fast, $default_type, $default_utf8);
-    $default_utf8 = $space->{default_utf8} ? 1 : 0;
+    my (@fields, %fast, $default_type);
     $default_type = $space->{default_type} || 'STR';
-    croak "wrong 'default_type'" unless $default_type =~ /^(?:STR|NUM|NUM64)$/;
+    croak "wrong 'default_type'"
+        unless $default_type =~ /^(?:STR|NUM|NUM64|UTF8STR)$/;
 
     for (my $no = 0; $no < @{ $space->{fields} }; $no++) {
         my $f = $space->{ fields }[ $no ];
@@ -138,10 +144,7 @@ sub new {
             push @fields => {
                 name    => $f->{name},
                 idx     => $no,
-                type    => $f->{type},
-                exists($f->{utf8}) ?
-                    ( utf8  => $f->{utf8} ? 1 : 0 ) :
-                    ( utf8  => $default_utf8 ),
+                type    => $f->{type}
             };
         } elsif(ref $f) {
             croak 'wrong field name or description';
@@ -150,14 +153,12 @@ sub new {
                 name    => $f,
                 idx     => $no,
                 type    => $default_type,
-                utf8    => $default_utf8,
             }
         }
 
         my $s = $fields[ -1 ];
         croak 'unknown field type: ' . ($s->{type} // 'undef')
-            unless $s->{type} and $s->{type} =~ /^(?:STR|NUM|NUM64)$/;
-        delete $s->{utf8} unless $s->{type} ~~ 'STR';
+            unless $s->{type} and $s->{type} =~ /^(?:STR|NUM|NUM64|UTF8STR)$/;
 
         croak 'wrong field name: ' . ($s->{name} // 'undef')
             unless $s->{name} and $s->{name} =~ /^[a-z_]\w*$/i;
@@ -170,7 +171,6 @@ sub new {
         fast            => \%fast,
         name            => $name,
         default_type    => $default_type,
-        default_utf8    => $default_utf8,
     } => ref($class) || $class;
 
 }
@@ -197,17 +197,14 @@ sub pack_field {
 
     my $f = $self->_field($field);
 
-    my ($type, $utf8) = $f ?
-        ($f->{type}, $f->{utf8}) :
-        ($self->{default_type}, $self->{default_utf8})
-    ;
+    my $type = $f ? $f->{type} : $self->{default_type};
 
     my $v = $value;
     utf8::encode( $v ) if utf8::is_utf8( $v );
-    return $v if $type eq 'STR';
+    return $v if $type eq 'STR' or $type eq 'UTF8STR';
     return pack 'L<' => $v if $type eq 'NUM';
     return pack 'Q<' => $v if $type eq 'NUM64';
-    croak 'Unknown field type';
+    croak 'Unknown field type:' . $type;
 }
 
 sub unpack_field {
@@ -217,16 +214,13 @@ sub unpack_field {
 
     my $f = $self->_field($field);
 
-    my ($type, $utf8) = $f ?
-        ($f->{type}, $f->{utf8}) :
-        ($self->{default_type}, $self->{default_utf8})
-    ;
+    my $type = $f ? $f->{type} : $self->{default_type};
 
     my $v = $value;
     utf8::encode( $v ) if utf8::is_utf8( $v );
-    $v = unpack 'L<' => $v if $type eq 'NUM';
-    $v = unpack 'Q<' => $v if $type eq 'NUM64';
-    utf8::decode( $v ) if $utf8;
+    $v = unpack 'L<' => $v  if $type eq 'NUM';
+    $v = unpack 'Q<' => $v  if $type eq 'NUM64';
+    utf8::decode( $v )      if $type eq 'UTF8STR';
     return $v;
 }
 
