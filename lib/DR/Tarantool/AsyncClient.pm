@@ -5,6 +5,7 @@ use warnings;
 package DR::Tarantool::AsyncClient;
 use DR::Tarantool::LLClient;
 use DR::Tarantool::Spaces;
+use DR::Tarantool::Tuple;
 use Carp;
 use base qw(Exporter);
 
@@ -77,7 +78,8 @@ sub connect {
         %opts = @_;
         $cb = delete $opts{cb};
     }
-    croak 'callback is not defined' unless 'CODE' eq ref $cb;
+
+    $class->_llc->_check_cb( $cb );
 
     my $host = $opts{host} || 'localhost';
     my $port = $opts{port} or croak "port isn't defined";
@@ -112,7 +114,7 @@ sub connect {
 
 }
 
-sub _llc { return $_[0]{llc} }
+sub _llc { return $_[0]{llc} if ref $_[0]; return 'DR::Tarantool::LLClient' }
 
 
 =head2 ping
@@ -138,5 +140,47 @@ sub ping {
         $cb->($_[0]{status} ~~ 'ok' ? 1 : 0);
     });
 }
+
+
+=head2 insert
+
+Inserts tuple into database.
+
+    $client->insert('space', [ 'user', 10, 'password' ], sub { ... });
+    $client->insert('space', [ 'user', 10, 'password' ], $flags, sub { ... });
+
+=cut
+
+sub insert {
+    my $self = shift;
+    $self->_llc->_check_cb( my $cb = pop );
+    my $space = shift;
+    $self->_llc->_check_tuple( my $tuple = shift );
+    my $flags = pop || 0;
+
+    my $s = $self->{spaces}->space($space);
+
+    $self->_llc->insert(
+        $s->number,
+        $s->pack_tuple( $tuple ),
+        $flags,
+        sub {
+            my ($res) = @_;
+
+            if ($res->{status} eq 'ok') {
+                $cb->(
+                    ok => DR::Tarantool::Tuple->unpack( $res->{tuples}, $s )
+                );
+
+                return;
+            }
+
+            $cb->(error => $res->{code}, $res->{errstr});
+        }
+    );
+    return;
+}
+
+
 
 1;

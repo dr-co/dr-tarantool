@@ -105,19 +105,6 @@ sub unpack_tuple {
 
 package DR::Tarantool::Space;
 use Carp;
-#                 name    => 'users',
-#                 fields  => [
-#                     qw(login password role),
-#                     {
-#                         name    => 'counter',
-#                         type    => 'NUM'
-#                     }
-#                 ],
-#                 indexes => {
-#                     0   => 'login',
-#                     1   => [ qw(login password) ],
-#                 }
-#             },
 
 sub new {
     my ($class, $no, $space) = @_;
@@ -170,12 +157,14 @@ sub new {
         fields          => \@fields,
         fast            => \%fast,
         name            => $name,
+        number          => $no,
         default_type    => $default_type,
     } => ref($class) || $class;
 
 }
 
 sub name { $_[0]{name} }
+sub number { $_[0]{number} }
 
 sub _field {
     my ($self, $field) = @_;
@@ -223,7 +212,6 @@ sub unpack_field {
     utf8::decode( $v )      if $type eq 'UTF8STR';
     return $v;
 }
-
 
 sub pack_tuple {
     my ($self, $tuple) = @_;

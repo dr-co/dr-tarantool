@@ -7,7 +7,7 @@ use open qw(:std :utf8);
 use lib qw(lib ../lib);
 use lib qw(blib/lib blib/arch ../blib/lib ../blib/arch);
 
-use constant PLAN       => 11;
+use constant PLAN       => 14;
 use Test::More tests    => PLAN;
 use Encode qw(decode encode);
 
@@ -37,11 +37,16 @@ my $tnt = run DR::Tarantool::StartTest( cfg => $tcfg );
 
 my $spaces = {
     0   => {
-        name            => 'first',
-        default_utf8    => 1,
+        name            => 'first_space',
         fields  => [
-            'id',
-            'name',
+            {
+                name    => 'id',
+                type    => 'NUM',
+            },
+            {
+                name    => 'name',
+                type    => 'UTF8STR',
+            },
             {
                 name    => 'key',
                 type    => 'NUM',
@@ -100,7 +105,44 @@ SKIP: {
         $cv->recv;
     }
 
+    # insert
+    for my $cv (condvar AnyEvent) {
+        $cv->begin;
+        $client->insert(
+            'first_space',
+            [
+                10,
+                'user',
+                11,
+                'password'
+            ],
+            TNT_FLAG_RETURN,
+            sub {
+                my ($status, $res) = @_;
+                $cv->end;
+            }
+        );
 
+        $cv->begin;
+        $client->insert(
+            'first_space',
+            [
+                10,
+                'user',
+                11,
+                'password'
+            ],
+            TNT_FLAG_RETURN | TNT_FLAG_ADD,
+            sub {
+                my ($status, $code, $error) = @_;
+                cmp_ok $status, '~~', 'error', 'status';
+                ok $code, 'code';
+                like $error, qr{exists}, 'tuple already exists';
+                $cv->end;
+            }
+        );
+        $cv->recv;
+    }
 }
 
 
