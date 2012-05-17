@@ -2,6 +2,101 @@ use utf8;
 use strict;
 use warnings;
 
+package DR::Tarantool::Spaces;
+use Carp;
+
+=head1 NAME
+
+DR::Tarantool::Spaces - spaces container
+
+=head1 SYNOPSIS
+
+    my $s = new DR::Tarantool::Spaces({
+            1   => {
+                name    => 'users',
+                fields  => [
+                    qw(login password role),
+                    {
+                        name    => 'counter',
+                        type    => 'NUM'
+                    }
+                ],
+                indexes => {
+                    0   => 'login',
+                    1   => [ qw(login password) ],
+                }
+            },
+
+            0 => {
+                ...
+            }
+    });
+
+    my $f = $s->pack_field('users', 'counter', 10);
+    my $f = $s->pack_field('users', 1, 10);             # the same
+    my $f = $s->pack_field(1, 1, 10);                   # the same
+
+
+=cut
+
+sub new {
+    my ($class, $spaces) = @_;
+    croak 'spaces must be a HASHREF' unless 'HASH' eq ref $spaces;
+    croak "'spaces' is empty" unless %$spaces;
+
+    my (%spaces, %fast);
+    for (keys %$spaces) {
+        my $s = new DR::Tarantool::Space($_ => $spaces->{ $_ });
+        $spaces{ $s->name } = $s;
+        $fast{ $_ } = $s->name;
+    }
+
+    return bless {
+        spaces  => \%spaces,
+        fast    => \%fast,
+    } => ref($class) || $class;
+}
+
+sub space {
+    my ($self, $space) = @_;
+    croak 'space name or number is not defined' unless defined $space;
+    if ($space =~ /^\d+$/) {
+        croak "space '$space' is not defined"
+            unless exists $self->{fast}{$space};
+        return $self->{spaces}{ $self->{fast}{$space} };
+    }
+    croak "space '$space' is not defined"
+        unless exists $self->{spaces}{$space};
+    return $self->{spaces}{$space};
+}
+
+sub pack_field {
+    my ($self, $space, $field, $value) = @_;
+    croak q{Usage: $spaces->pack_field('space', 'field', $value)}
+        unless @_ == 4;
+    return $self->space($space)->pack_field($field => $value);
+}
+
+sub unpack_field {
+    my ($self, $space, $field, $value) = @_;
+    croak q{Usage: $spaces->unpack_field('space', 'field', $value)}
+        unless @_ == 4;
+
+    return $self->space($space)->unpack_field($field => $value);
+}
+
+sub pack_tuple {
+    my ($self, $space, $tuple) = @_;
+    croak q{Usage: $spaces->pack_tuple('space', $tuple)} unless @_ == 3;
+    return $self->space($space)->pack_tuple( $tuple );
+}
+
+sub unpack_tuple {
+    my ($self, $space, $tuple) = @_;
+    croak q{Usage: $spaces->unpack_tuple('space', $tuple)} unless @_ == 3;
+    return $self->space($space)->unpack_tuple( $tuple );
+}
+
 package DR::Tarantool::Space;
 use Carp;
 #                 name    => 'users',
@@ -82,20 +177,25 @@ sub new {
 
 sub name { $_[0]{name} }
 
+sub _field {
+    my ($self, $field) = @_;
+
+    croak 'field name or number is not defined' unless defined $field;
+    if ($field =~ /^\d+$/) {
+        return $self->{fields}[ $field ] if $field < @{ $self->{fields} };
+        return undef;
+    }
+    croak "field with name '$field' is not defined in this space"
+        unless exists $self->{fast}{$field};
+    return $self->{fields}[ $self->{fast}{$field} ];
+}
+
 sub pack_field {
     my ($self, $field, $value) = @_;
     croak q{Usage: $space->pack_field('field', $value)}
         unless @_ == 3;
-    croak 'field name or number is not defined' unless defined $field;
 
-    my $f;
-    if ($field =~ /^\d+$/) {
-        $f = $self->{fields}[ $field ] if $field < @{ $self->{fields} };
-    } else {
-        croak "field with name '$field' is not defined in this space"
-            unless exists $self->{fast}{$field};
-        $f = $self->{fields}[ $self->{fast}{$field} ];
-    }
+    my $f = $self->_field($field);
 
     my ($type, $utf8) = $f ?
         ($f->{type}, $f->{utf8}) :
@@ -114,16 +214,8 @@ sub unpack_field {
     my ($self, $field, $value) = @_;
     croak q{Usage: $space->pack_field('field', $value)}
         unless @_ == 3;
-    croak 'field name or number is not defined' unless defined $field;
 
-    my $f;
-    if ($field =~ /^\d+$/) {
-        $f = $self->{fields}[ $field ] if $field < @{ $self->{fields} };
-    } else {
-        croak "field with name '$field' is not defined in this space"
-            unless exists $self->{fast}{$field};
-        $f = $self->{fields}[ $self->{fast}{$field} ];
-    }
+    my $f = $self->_field($field);
 
     my ($type, $utf8) = $f ?
         ($f->{type}, $f->{utf8}) :
@@ -157,103 +249,6 @@ sub unpack_tuple {
         push @res => $self->unpack_field($i, $tuple->[ $i ]);
     }
     return \@res;
-}
-
-package DR::Tarantool::Spaces;
-use Carp;
-
-
-sub new {
-    my ($class, $spaces) = @_;
-    croak 'spaces must be a HASHREF' unless 'HASH' eq ref $spaces;
-    croak "'spaces' is empty" unless %$spaces;
-
-    my (%spaces, %fast);
-    for (keys %$spaces) {
-        my $s = new DR::Tarantool::Space($_ => $spaces->{ $_ });
-        $spaces{ $s->name } = $s;
-        $fast{ $_ } = $s->name;
-    }
-
-    return bless {
-        spaces  => \%spaces,
-        fast    => \%fast,
-    } => ref($class) || $class;
-}
-
-sub pack_field {
-    my ($self, $space, $field, $value) = @_;
-    croak q{Usage: $spaces->pack_field('space', 'field', $value)}
-        unless @_ == 4;
-
-    croak 'space name or number is not defined' unless defined $space;
-
-    my $s;
-    if ($space =~ /^\d+$/) {
-        croak "space '$space' is not defined"
-            unless exists $self->{fast}{$space};
-        $s = $self->{spaces}{ $self->{fast}{$space} };
-    } else {
-        croak "space '$space' is not defined"
-            unless exists $self->{spaces}{$space};
-        $s = $self->{spaces}{$space};
-    }
-    return $s->pack_field($field => $value);
-}
-
-sub unpack_field {
-    my ($self, $space, $field, $value) = @_;
-    croak q{Usage: $spaces->unpack_field('space', 'field', $value)}
-        unless @_ == 4;
-
-    croak 'space name or number is not defined' unless defined $space;
-
-    my $s;
-    if ($space =~ /^\d+$/) {
-        croak "space '$space' is not defined"
-            unless exists $self->{fast}{$space};
-        $s = $self->{spaces}{ $self->{fast}{$space} };
-    } else {
-        croak "space '$space' is not defined"
-            unless exists $self->{spaces}{$space};
-        $s = $self->{spaces}{$space};
-    }
-    return $s->unpack_field($field => $value);
-}
-
-sub pack_tuple {
-    my ($self, $space, $tuple) = @_;
-    croak q{Usage: $spaces->pack_tuple('space', $tuple)} unless @_ == 3;
-    croak 'space name or number is not defined' unless defined $space;
-
-    my $s;
-    if ($space =~ /^\d+$/) {
-        croak "space '$space' is not defined"
-            unless exists $self->{fast}{$space};
-        $s = $self->{spaces}{ $self->{fast}{$space} };
-    } else {
-        croak "space '$space' is not defined"
-            unless exists $self->{spaces}{$space};
-        $s = $self->{spaces}{$space};
-    }
-    return $s->pack_tuple( $tuple );
-}
-
-sub unpack_tuple {
-    my ($self, $space, $tuple) = @_;
-    croak q{Usage: $spaces->unpack_tuple('space', $tuple)} unless @_ == 3;
-
-    my $s;
-    if ($space =~ /^\d+$/) {
-        croak "space '$space' is not defined"
-            unless exists $self->{fast}{$space};
-        $s = $self->{spaces}{ $self->{fast}{$space} };
-    } else {
-        croak "space '$space' is not defined"
-            unless exists $self->{spaces}{$space};
-        $s = $self->{spaces}{$space};
-    }
-    return $s->unpack_tuple( $tuple );
 }
 
 1;
