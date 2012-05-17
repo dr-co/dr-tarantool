@@ -1,5 +1,6 @@
 README
 Makefile.PL
+t/060-sync-client.t
 t/030-spaces.t
 t/050-async-client.t
 t/020-low_level_client.t
@@ -22,4 +23,5 @@ lib/DR/Tarantool/AsyncClient.pm
 lib/DR/Tarantool/StartTest.pm
 lib/DR/Tarantool/Spaces.pm
 lib/DR/Tarantool/LLClient.pm
+lib/DR/Tarantool/SyncClient.pm
 lib/DR/Tarantool/Tuple.pm

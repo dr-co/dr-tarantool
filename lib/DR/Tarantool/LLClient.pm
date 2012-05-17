@@ -192,6 +192,30 @@ sub connect {
     return $self;
 }
 
+sub disconnect {
+    my ($self, $cb) = @_;
+    $self->_check_cb( $cb || sub {  });
+
+    delete $self->{reconnect_timer};
+    delete $self->{connecting};
+    if ($self->is_connected) {
+        $self->{handle}->on_error( sub {  } );
+        $self->{handle}->on_error( sub {  } );
+        $self->{handle}->destroy;
+        delete $self->{handle};
+    }
+    $cb->( 'ok' );
+}
+
+sub DESTROY {
+    my ($self) = @_;
+    if ($self->is_connected) {
+        $self->{handle}->destroy;
+        $self->{handle}->on_error( sub {  });
+        $self->{handle}->on_eof( sub {  });
+        delete $self->{handle};
+    }
+}
 
 =head2 is_connected
 

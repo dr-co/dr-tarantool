@@ -95,13 +95,12 @@ sub connect {
         reconnect_always    => $reconnect_always,
         sub {
             my ($client) = @_;
-
             my $self;
             if (ref $client) {
                 $self = bless {
                     llc     => $client,
                     spaces  => $spaces,
-                } => __PACKAGE__;
+                } => ref($class) || $class;
             } else {
                 $self = $client;
             }
@@ -113,6 +112,13 @@ sub connect {
     return;
 
 }
+
+
+sub disconnect {
+    my ($self, $cb) = @_;
+    $self->_llc->disconnect( $cb );
+}
+
 
 sub _llc { return $_[0]{llc} if ref $_[0]; return 'DR::Tarantool::LLClient' }
 
