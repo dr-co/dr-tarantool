@@ -12,6 +12,7 @@ DR::Tarantool::Spaces - spaces container
 
 =head1 SYNOPSIS
 
+    use DR::Tarantool::Spaces;
     my $s = new DR::Tarantool::Spaces({
             1   => {
                 name            => 'users',         # space name
@@ -43,6 +44,12 @@ DR::Tarantool::Spaces - spaces container
     my $f = $s->pack_field(1, 1, 10);                   # the same
 
 
+=head1 METHODS
+
+=head2 new
+
+    my $spaces = DR::Tarantool::Spaces->new( $spaces );
+
 =cut
 
 sub new {
@@ -63,6 +70,16 @@ sub new {
     } => ref($class) || $class;
 }
 
+
+=head2 space
+
+Returns space object by number or name.
+
+    my $space = $spaces->space('name');
+    my $space = $spaces->space(0);
+
+=cut
+
 sub space {
     my ($self, $space) = @_;
     croak 'space name or number is not defined' unless defined $space;
@@ -76,12 +93,30 @@ sub space {
     return $self->{spaces}{$space};
 }
 
+
+=head2 pack_field
+
+packs one field before making database request
+
+    my $field = $spaces->pack_field('space', 'field', $data);
+
+=cut
+
 sub pack_field {
     my ($self, $space, $field, $value) = @_;
     croak q{Usage: $spaces->pack_field('space', 'field', $value)}
         unless @_ == 4;
     return $self->space($space)->pack_field($field => $value);
 }
+
+
+=head2 unpack_field
+
+unpacks one field after extracting data from database
+
+    my $field = $spaces->unpack_field('space', 'field', $data);
+
+=cut
 
 sub unpack_field {
     my ($self, $space, $field, $value) = @_;
@@ -91,11 +126,29 @@ sub unpack_field {
     return $self->space($space)->unpack_field($field => $value);
 }
 
+
+=head2 pack_tuple
+
+packs tuple before making database request
+
+    my $t = $spaces->pack_tuple('space', [ 1, 2, 3 ]);
+
+=cut
+
 sub pack_tuple {
     my ($self, $space, $tuple) = @_;
     croak q{Usage: $spaces->pack_tuple('space', $tuple)} unless @_ == 3;
     return $self->space($space)->pack_tuple( $tuple );
 }
+
+
+=head2 unpack_tuple
+
+unpacks tuple after extracting data from database
+
+    my $t = $spaces->unpack_tuple('space', \@fields);
+
+=cut
 
 sub unpack_tuple {
     my ($self, $space, $tuple) = @_;
@@ -105,6 +158,17 @@ sub unpack_tuple {
 
 package DR::Tarantool::Space;
 use Carp;
+
+=head1 SPACES methods
+
+=head2 new
+
+constructor
+
+    use DR::Tarantool::Spaces;
+    my $space = DR::Tarantool::Space->new($no, $space);
+
+=cut
 
 sub new {
     my ($class, $no, $space) = @_;
@@ -163,7 +227,22 @@ sub new {
 
 }
 
+
+=head2 name
+
+returns space name
+
+=cut
+
 sub name { $_[0]{name} }
+
+
+=head2 number
+
+returns space number
+
+=cut
+
 sub number { $_[0]{number} }
 
 sub _field {
@@ -178,6 +257,13 @@ sub _field {
         unless exists $self->{fast}{$field};
     return $self->{fields}[ $self->{fast}{$field} ];
 }
+
+
+=head2 pack_field
+
+packs field before making database request
+
+=cut
 
 sub pack_field {
     my ($self, $field, $value) = @_;
@@ -196,6 +282,13 @@ sub pack_field {
     croak 'Unknown field type:' . $type;
 }
 
+
+=head2 unpack_field
+
+unpacks field after extracting data from database
+
+=cut
+
 sub unpack_field {
     my ($self, $field, $value) = @_;
     croak q{Usage: $space->pack_field('field', $value)}
@@ -213,6 +306,13 @@ sub unpack_field {
     return $v;
 }
 
+
+=head2 pack_tuple
+
+packs tuple before making database request
+
+=cut
+
 sub pack_tuple {
     my ($self, $tuple) = @_;
     croak 'tuple must be ARRAYREF' unless 'ARRAY' eq ref $tuple;
@@ -223,6 +323,13 @@ sub pack_tuple {
     return \@res;
 }
 
+
+=head2 unpack_tuple
+
+unpacks tuple after extracting data from database
+
+=cut
+
 sub unpack_tuple {
     my ($self, $tuple) = @_;
     croak 'tuple must be ARRAYREF' unless 'ARRAY' eq ref $tuple;
@@ -232,8 +339,5 @@ sub unpack_tuple {
     }
     return \@res;
 }
-
-
-
 
 1;

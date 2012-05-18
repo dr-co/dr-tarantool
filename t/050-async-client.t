@@ -7,7 +7,7 @@ use open qw(:std :utf8);
 use lib qw(lib ../lib);
 use lib qw(blib/lib blib/arch ../blib/lib ../blib/arch);
 
-use constant PLAN       => 38;
+use constant PLAN       => 41;
 use Test::More tests    => PLAN;
 use Encode qw(decode encode);
 
@@ -210,6 +210,18 @@ SKIP: {
                 my ($status, $tuple) = @_;
                 cmp_ok $status, '~~', 'ok', 'status';
                 cmp_ok $tuple, '~~', undef, 'there is no tuple';
+                $cv->end;
+            }
+        );
+        $cv->begin;
+        $client->call_lua(
+            'box.select' => [ ],
+            'first_space',
+            sub {
+                my ($status, $code, $errstr) = @_;
+                cmp_ok $status, '~~', 'error', 'status';
+                cmp_ok $code, '>', 0, 'code';
+                like $errstr, qr{Partial key in}, 'errstr';
                 $cv->end;
             }
         );

@@ -53,6 +53,12 @@ DR::Tarantool::AsyncClient - async client for L<tarantool|http://tarantool.org>
         }
     );
 
+    $client->ping(sub { ... });
+
+    $client->insert('space', [ 'user', 10, 'password' ], sub { ... });
+
+    $client->call_lua(foo => ['arg1', 'arg2'], sub {  });
+
 =cut
 
 
@@ -263,6 +269,21 @@ Inserts tuple into database.
 
     $client->insert('space', [ 'user', 10, 'password' ], sub { ... });
     $client->insert('space', \@tuple, $flags, sub { ... });
+
+
+=head3 Arguments
+
+=over
+
+=item space_name
+
+=item tuple
+
+=item flags (optional)
+
+=item callback
+
+=back
 
 =cut
 
