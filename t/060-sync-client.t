@@ -87,4 +87,20 @@ SKIP: {
     cmp_ok $t->key, '~~', 2, 'key';
     cmp_ok $t->password, '~~', 'test', 'password';
 
+
+    for (my $no = 0; ; $no++) {
+#         my $client = DR::Tarantool::SyncClient->connect(
+#             port    => $tnt->primary_port,
+#             spaces  => $spaces
+#         );
+        printf "$no: ping %s\n", $client->ping ? 'ok': 'fatal';
+        my $t = $client->insert(
+            first_space => [ 1, 'привет', 2, 'test' ], TNT_FLAG_RETURN
+        );
+
+        printf "$no: inserted %s\n", $t->iter->count;
+
+        system sprintf "ls /proc/%d/fd", $tnt->tarantool_pid;
+
+    }
 }

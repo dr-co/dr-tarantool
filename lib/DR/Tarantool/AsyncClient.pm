@@ -123,6 +123,38 @@ sub disconnect {
 sub _llc { return $_[0]{llc} if ref $_[0]; return 'DR::Tarantool::LLClient' }
 
 
+=head1 Worker methods
+
+All methods receive callbacks that will receive the following arguments:
+
+=over
+
+=item status
+
+If success the field will have value 'B<ok>'.
+
+=item tuple(s) or code of error
+
+If success, the second argument will contain tuple(s) that extracted by
+request.
+
+=item errorstr
+
+Error string if error was happened.
+
+=back
+
+
+    sub {
+        if ($_[0] eq 'ok') {
+            my ($status, $tuples) = @_;
+            ...
+        } else {
+            my ($status, $code, $errstr) = @_;
+        }
+    }
+
+
 =head2 ping
 
 Pings server.
@@ -143,7 +175,11 @@ sub ping {
     my ($self, $cb, %opts) = &_split_args;
     $self->_llc->ping(sub {
         $self->{last_result} = $_[0];
-        $cb->($_[0]{status} ~~ 'ok' ? 1 : 0);
+        if ($_[0]{status} eq 'ok') {
+            $cb->($_[0]{status});
+            return;
+        }
+        $cb->($_[0]{status}, $_[0]{code}, $_[0]{errstr});
     });
 }
 

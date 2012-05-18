@@ -105,7 +105,9 @@ sub _start_tarantool {
     chdir $self->{cwd};
 }
 
-sub primary_port { return $_[0]->{primary_port} };
+sub primary_port { return $_[0]->{primary_port} }
+
+sub tarantool_pid { return $_[0]->{child} }
 
 sub kill :method {
     my ($self) = @_;

@@ -35,8 +35,9 @@ for my $method (qw(ping insert update delete call)) {
         eval "\$self->SUPER::$method(\@args, sub { \@res = \@_; \$cv->send })";
         $cv->recv;
 
-        return $res[0] if $method eq 'ping';
-        return $res[1] if $res[0] ~~ 'ok';
+        if ($res[0] ~~ 'ok') {
+            return $res[1] // $res[0];
+        }
         croak  "$res[1]: $res[2]";
     };
 }

@@ -98,7 +98,7 @@ SKIP: {
         $client->ping(
             sub {
                 my ($status) = @_;
-                cmp_ok $status, '~~', 1, '* ping';
+                cmp_ok $status, '~~', 'ok', '* ping';
                 $cv->send;
             }
         );
