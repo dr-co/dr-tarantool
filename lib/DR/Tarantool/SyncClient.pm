@@ -26,13 +26,14 @@ sub connect {
 }
 
 
-for my $method (qw(ping insert update delete call)) {
+for my $method (qw(ping insert update delete call_lua)) {
     no strict 'refs';
     *{ __PACKAGE__ . "::$method" } = sub {
         my ($self, @args) = @_;
         my @res;
         my $cv = condvar AnyEvent;
-        eval "\$self->SUPER::$method(\@args, sub { \@res = \@_; \$cv->send })";
+        my $m = "SUPER::$method";
+        $self->$m(@args, sub { @res = @_; $cv->send });
         $cv->recv;
 
         if ($res[0] ~~ 'ok') {

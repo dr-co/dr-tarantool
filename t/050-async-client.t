@@ -7,7 +7,7 @@ use open qw(:std :utf8);
 use lib qw(lib ../lib);
 use lib qw(blib/lib blib/arch ../blib/lib ../blib/arch);
 
-use constant PLAN       => 14;
+use constant PLAN       => 38;
 use Test::More tests    => PLAN;
 use Encode qw(decode encode);
 
@@ -119,6 +119,11 @@ SKIP: {
             TNT_FLAG_RETURN,
             sub {
                 my ($status, $res) = @_;
+                cmp_ok $status, '~~', 'ok', '* insert status';
+                cmp_ok $res->id, '~~', 10, 'id';
+                cmp_ok $res->name, '~~', 'user', 'name';
+                cmp_ok $res->key, '~~', 11, 'key';
+                cmp_ok $res->password, '~~', 'password', 'password';
                 $cv->end;
             }
         );
@@ -141,6 +146,74 @@ SKIP: {
                 $cv->end;
             }
         );
+        $cv->recv;
+    }
+
+    # call lua
+    for my $cv (condvar AnyEvent) {
+        $cv->begin;
+        $client->call_lua(
+            'box.select' => [ 0, 0, 10 ],
+            fields  => [
+                { type => 'NUM', name => 'a' },
+                'b',
+                { type => 'NUM', name => 'c'},
+                'd'
+            ],
+            args    => [ 's', 'i', { type => 'NUM' } ],
+            sub {
+                my ($status, $tuple) = @_;
+                cmp_ok $status, '~~', 'ok', '* call status';
+                isa_ok $tuple => 'DR::Tarantool::Tuple', 'tuple packed';
+                cmp_ok $tuple->a, '~~', 10, 'id';
+                cmp_ok $tuple->b, '~~', 'user', 'name';
+                cmp_ok $tuple->c, '~~', 11, 'key';
+                $cv->end;
+            }
+        );
+        $cv->begin;
+        $client->call_lua(
+            'box.select' => [ 0, 0, 10 ],
+            space => 'first_space',
+            args    => [ 's', 'i', { type => 'NUM' } ],
+            sub {
+                my ($status, $tuple) = @_;
+                cmp_ok $status, '~~', 'ok', 'status';
+                isa_ok $tuple => 'DR::Tarantool::Tuple', 'tuple packed';
+                cmp_ok $tuple->id, '~~', 10, 'id';
+                cmp_ok $tuple->name, '~~', 'user', 'name';
+                cmp_ok $tuple->key, '~~', 11, 'key';
+                cmp_ok $tuple->password, '~~', 'password', 'password';
+                $cv->end;
+            }
+        );
+        $cv->begin;
+        $client->call_lua(
+            'box.select' => [ 0, 0, pack 'L<' => 10 ],
+            'first_space',
+            sub {
+                my ($status, $tuple) = @_;
+                cmp_ok $status, '~~', 'ok', 'status';
+                isa_ok $tuple => 'DR::Tarantool::Tuple', 'tuple packed';
+                cmp_ok $tuple->id, '~~', 10, 'id';
+                cmp_ok $tuple->name, '~~', 'user', 'name';
+                cmp_ok $tuple->key, '~~', 11, 'key';
+                cmp_ok $tuple->password, '~~', 'password', 'password';
+                $cv->end;
+            }
+        );
+        $cv->begin;
+        $client->call_lua(
+            'box.select' => [ 0, 0, pack 'L<' => 11 ],
+            'first_space',
+            sub {
+                my ($status, $tuple) = @_;
+                cmp_ok $status, '~~', 'ok', 'status';
+                cmp_ok $tuple, '~~', undef, 'there is no tuple';
+                $cv->end;
+            }
+        );
+
         $cv->recv;
     }
 }

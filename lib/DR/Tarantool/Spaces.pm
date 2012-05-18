@@ -129,7 +129,7 @@ sub new {
 
         if (ref $f eq 'HASH') {
             push @fields => {
-                name    => $f->{name},
+                name    => $f->{name} || "f$no",
                 idx     => $no,
                 type    => $f->{type}
             };
@@ -232,5 +232,8 @@ sub unpack_tuple {
     }
     return \@res;
 }
+
+
+
 
 1;

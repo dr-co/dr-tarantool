@@ -44,7 +44,7 @@ sub new :method {
         tuple   => [ @$tuple ],
         space   => $space,
     } => ref($class) || $class;
-    weaken $self->{space} if defined $self->{space};
+#     weaken $self->{space} if defined $self->{space};
     return $self;
 }
 

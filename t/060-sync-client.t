@@ -7,7 +7,7 @@ use open qw(:std :utf8);
 use lib qw(lib ../lib);
 use lib qw(blib/lib blib/arch ../blib/lib ../blib/arch);
 
-use constant PLAN       => 15;
+use constant PLAN       => 21;
 use Test::More tests    => PLAN;
 use Encode qw(decode encode);
 
@@ -76,31 +76,25 @@ SKIP: {
     );
 
     isa_ok $client => 'DR::Tarantool::SyncClient';
-    ok $client->ping, 'ping';
+    ok $client->ping, '* ping';
 
     my $t = $client->insert(
         first_space => [ 1, 'привет', 2, 'test' ], TNT_FLAG_RETURN
     );
 
+    isa_ok $t => 'DR::Tarantool::Tuple', '* insert tuple packed';
     cmp_ok $t->id, '~~', 1, 'id';
     cmp_ok $t->name, '~~', 'привет', 'name';
     cmp_ok $t->key, '~~', 2, 'key';
     cmp_ok $t->password, '~~', 'test', 'password';
 
 
-    for (my $no = 0; ; $no++) {
-#         my $client = DR::Tarantool::SyncClient->connect(
-#             port    => $tnt->primary_port,
-#             spaces  => $spaces
-#         );
-        printf "$no: ping %s\n", $client->ping ? 'ok': 'fatal';
-        my $t = $client->insert(
-            first_space => [ 1, 'привет', 2, 'test' ], TNT_FLAG_RETURN
-        );
 
-        printf "$no: inserted %s\n", $t->iter->count;
-
-        system sprintf "ls /proc/%d/fd", $tnt->tarantool_pid;
-
-    }
+    $t = $client->call_lua('box.select' =>
+        [ 0, 0, pack 'L<' => 1 ], 'first_space');
+    isa_ok $t => 'DR::Tarantool::Tuple', '* call tuple packed';
+    cmp_ok $t->id, '~~', 1, 'id';
+    cmp_ok $t->name, '~~', 'привет', 'name';
+    cmp_ok $t->key, '~~', 2, 'key';
+    cmp_ok $t->password, '~~', 'test', 'password';
 }
