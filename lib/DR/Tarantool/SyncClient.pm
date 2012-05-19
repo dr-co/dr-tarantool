@@ -7,7 +7,36 @@ use base 'DR::Tarantool::AsyncClient';
 use AnyEvent;
 use Devel::GlobalDestruction;
 use Carp;
+$Carp::Internal{ (__PACKAGE__) }++;
 
+=head1 NAME
+
+DR::Tarantool::SyncClient - sync driver for tarantool
+
+=head1 SYNOPSIS
+
+    my $client = DR::Tarantool::SyncClient->connect(
+        port    => $tnt->primary_port,
+        spaces  => $spaces
+    );
+
+    if ($client->ping) { .. };
+
+    my $t = $client->insert(
+        first_space => [ 1, 'val', 2, 'test' ], TNT_FLAG_RETURN
+    );
+
+    $t = $client->call_lua('luafunc' =>  [ 0, 0, 1 ], 'space_name');
+
+
+    $t = $client->select(space_name => $key);
+
+    $t = $client->update(space_name => 2 => [ name => set => 'new' ]);
+
+    $client->delete(space_name => $key);
+
+
+=cut
 
 sub connect {
     my ($class, %opts) = @_;

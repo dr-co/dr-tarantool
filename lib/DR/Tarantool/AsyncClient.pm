@@ -7,6 +7,7 @@ use DR::Tarantool::LLClient;
 use DR::Tarantool::Spaces;
 use DR::Tarantool::Tuple;
 use Carp;
+$Carp::Internal{ (__PACKAGE__) }++;
 use Data::Dumper;
 use Scalar::Util 'blessed';
 use base qw(Exporter);

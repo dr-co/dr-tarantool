@@ -27,6 +27,7 @@ DR::Tarantool::Tuple - tuple container for L<DR::Tarantool>
 package DR::Tarantool::Tuple;
 use Scalar::Util 'weaken', 'blessed';
 use Carp;
+$Carp::Internal{ (__PACKAGE__) }++;
 
 
 =head2 new
@@ -162,6 +163,7 @@ sub AUTOLOAD :method {
 
 package DR::Tarantool::Tuple::Iterator;
 use Carp;
+$Carp::Internal{ (__PACKAGE__) }++;
 use Scalar::Util 'weaken', 'blessed';
 
 =head1 tuple iterators

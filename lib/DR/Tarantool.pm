@@ -4,12 +4,13 @@ use 5.010001;
 use strict;
 use warnings;
 use Carp;
+$Carp::Internal{ (__PACKAGE__) }++;
 
 use base qw(Exporter);
 
 
 our %EXPORT_TAGS = (
-    all         => [ qw(  ) ],
+    client      => [ qw( tarantool async_tarantool ) ],
     constant    => [
         qw(
             TNT_INSERT TNT_SELECT TNT_UPDATE TNT_DELETE TNT_CALL TNT_PING
@@ -19,7 +20,8 @@ our %EXPORT_TAGS = (
     ],
 );
 our @EXPORT_OK = ( map { @$_ } values %EXPORT_TAGS );
-our @EXPORT = qw(insert);
+$EXPORT_TAGS{all} = \@EXPORT_OK;
+our @EXPORT = qw( @{ $EXPORT_TAGS{client} } );
 our $VERSION = '0.01';
 
 require XSLoader;
@@ -39,9 +41,27 @@ XSLoader::load('DR::Tarantool', $VERSION);
 *TNT_FLAG_BOX_QUIET = \&DR::Tarantool::_flag_box_quiet;
 *TNT_FLAG_NOT_STORE = \&DR::Tarantool::_flag_not_store;
 
+
+sub tarantool       {
+    require DR::Tarantool::SyncClient;
+    no warnings 'redefine';
+    *tarantool = sub {
+        DR::Tarantool::SyncClient->connect(@_);
+    };
+    &tarantool;
+}
+
+sub async_tarantool {
+    require DR::Tarantool::AsyncClient;
+    no warnings 'redefine';
+    *async_tarantool = sub {
+        DR::Tarantool::AsyncClient->connect(@_);
+    };
+    &async_tarantool;
+}
+
 1;
 
-__END__
 
 =head1 NAME
 
@@ -49,37 +69,67 @@ DR::Tarantool - Perl extension for blah blah blah
 
 =head1 SYNOPSIS
 
-  use DR::Tarantool;
-  blah blah blah
+    use DR::Tarantool ':constant', 'tarantool';
+
+    my $tnt = tarantool
+        host    => '127.0.0.1',
+        port    => 123
+    ;
+
+    $tnt->update( ... );
+
+    use DR::Tarantool ':constant', 'async_tarantool';
+
+    async_tarantool
+        host    => '127.0.0.1',
+        port    => 123,
+        sub {
+            ...
+        }
+    ;
+
+    $tnt->update(...);
 
 =head1 DESCRIPTION
 
-Stub documentation for DR::Tarantool, created by h2xs. It looks like the
-author of the extension was negligent enough to leave the stub
-unedited.
+The module provides sync and async drivers for
+L<tarantool|http://tarantool.org>.
 
-Blah blah blah.
+=head1 EXPORT
 
-=head2 EXPORT
+=head2 tarantool
 
-None by default.
+connects to L<tarantool|http://tarantool.org> in sync mode using
+L<DR::Tarantool::SyncClient>.
 
 
+=head2 async_tarantool
 
-=head1 SEE ALSO
+connects to L<tarantool|http://tarantool.org> in sync mode using
+L<DR::Tarantool::SyncClient>.
 
-Mention other useful documentation such as the documentation of
-related modules or operating system documentation (such as man pages
-in UNIX), or any relevant external documentation such as RFCs or
-standards.
 
-If you have a mailing list set up for your module, mention it here.
+=head2 :constant
 
-If you have a web site set up for your module, mention it here.
+Exports constants to use in request as flags:
 
-=head1 AUTHOR
+=over
 
-Dmitry E. Oboukhov, E<lt>dimka@E<gt>
+=item TNT_FLAG_RETURN
+
+If You use the flag, driver will return tuple that were
+inserted/deleted/updated.
+
+=item TNT_FLAG_ADD
+
+Try to add tuple. Return error if tuple is already exists.
+
+=item TNT_FLAG_REPLACE
+
+Try to replace tuple. Return error if tuple isn't exists.
+
+=back
+
 
 =head1 COPYRIGHT AND LICENSE
 

@@ -11,8 +11,12 @@ Priority: extra
 VCS-Browser: https://github.com/unera/dbix-dr
 
 Package: libdr-tarantool-perl
-Depends: ${perl:Depends}, ${misc:Depends},
+Depends: ${perl:Depends}, ${misc:Depends}, ${shlibs:Depends},
  libanyevent-perl
 Architecture: any
+Suggests: tarantool
 Description: perl driver for Tarantool
  The package contains sync and async drivers for tarantool database.
+ .
+ The driver uses libtarantool* libraries for making requests and
+ parsing responses.

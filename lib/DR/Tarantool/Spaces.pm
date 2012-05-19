@@ -4,7 +4,7 @@ use warnings;
 
 package DR::Tarantool::Spaces;
 use Carp;
-# $Carp::Internal{ (__PACKAGE__) }++;
+$Carp::Internal{ (__PACKAGE__) }++;
 
 =head1 NAME
 
@@ -166,6 +166,7 @@ sub unpack_tuple {
 
 package DR::Tarantool::Space;
 use Carp;
+$Carp::Internal{ (__PACKAGE__) }++;
 
 =head1 SPACES methods
 
