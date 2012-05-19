@@ -6,7 +6,7 @@ use utf8;
 use open qw(:std :utf8);
 use lib qw(lib ../lib);
 
-use Test::More tests    => 30;
+use Test::More tests    => 45;
 use Encode qw(decode encode);
 
 
@@ -51,13 +51,18 @@ my $s = MODEL->new({
             }
         ],
         indexes => {
-            0 => [ qw(a b) ],
-            1 => 'd'
+            0   => [ qw(a b) ],
+            1   => 'd',
+            2   => 'c',
+            3   => {
+                name    => 'abc',
+                fields  => [ qw(a b c) ]
+            }
         }
     }
 });
 
-# note explain $s;
+
 
 my $v = unpack 'L<', $s->pack_field( test => a => '10' );
 cmp_ok $v, '~~', 10, 'pack_field NUM';
@@ -102,3 +107,34 @@ cmp_ok unpack('L<', $t->[2]), '~~', 2, 'tuple[2]';
 cmp_ok $t->[3], '~~', encode(utf8 => 'медвед'), 'tuple[3]';
 cmp_ok unpack('Q<', $t->[4]), '~~', 10, 'tuple[4]';
 cmp_ok $t->[5], '~~', 'test', 'tuple[5]';
+
+# indexes
+$t = $s->space('test')->pack_keys([1, 2], 'i0');
+ok @{ $t->[0] } ~~ @{[ pack('L<', 1), pack 'L<', 2 ]}, 'pack_keys';
+$t = $s->space('test')->pack_keys([[2, 3]], 'i0');
+ok @{ $t->[0] } ~~ @{[ pack('L<', 2), pack 'L<', 3 ]}, 'pack_keys';
+$t = eval { $s->space('test')->pack_keys(1, 'i0'); };
+like $@, qr{must have 2}, 'error message';
+cmp_ok $t, '~~', undef, 'wrong elements count';
+
+$t = $s->space('test')->pack_keys([1, 2], 0);
+ok @{ $t->[0] } ~~ @{[ pack('L<', 1), pack 'L<', 2 ]}, 'pack_keys';
+$t = $s->space('test')->pack_keys([[2, 3]], 0);
+ok @{ $t->[0] } ~~ @{[ pack('L<', 2), pack 'L<', 3 ]}, 'pack_keys';
+$t = eval { $s->space('test')->pack_keys(1, 0); };
+like $@, qr{must have 2}, 'error message';
+cmp_ok $t, '~~', undef, 'wrong elements count';
+
+$t = $s->space('test')->pack_keys(4, 'i2');
+cmp_ok unpack('L<', $t->[0][0]), '~~', 4, 'pack_keys';
+$t = $s->space('test')->pack_keys([5], 'i2');
+cmp_ok unpack('L<', $t->[0][0]), '~~', 5, 'pack_keys';
+$t = $s->space('test')->pack_keys([[6]], 'i2');
+cmp_ok unpack('L<', $t->[0][0]), '~~', 6, 'pack_keys';
+$t = $s->space('test')->pack_keys([7,8,9], 'i2');
+cmp_ok unpack('L<', $t->[0][0]), '~~', 7, 'pack_keys';
+cmp_ok unpack('L<', $t->[1][0]), '~~', 8, 'pack_keys';
+cmp_ok unpack('L<', $t->[2][0]), '~~', 9, 'pack_keys';
+$t = eval { $s->space('test')->pack_keys([[7,8,9]], 'i2') };
+like $@, qr{must have 1}, 'error message';
+

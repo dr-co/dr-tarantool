@@ -7,7 +7,7 @@ use open qw(:std :utf8);
 use lib qw(lib ../lib);
 use lib qw(blib/lib blib/arch ../blib/lib ../blib/arch);
 
-use constant PLAN       => 41;
+use constant PLAN       => 60;
 use Test::More tests    => PLAN;
 use Encode qw(decode encode);
 
@@ -132,6 +132,27 @@ SKIP: {
         $client->insert(
             'first_space',
             [
+                111,
+                'user2',
+                13,
+                'password2'
+            ],
+            TNT_FLAG_RETURN,
+            sub {
+                my ($status, $res) = @_;
+                cmp_ok $status, '~~', 'ok', '* insert status';
+                cmp_ok $res->id, '~~', 111, 'id';
+                cmp_ok $res->name, '~~', 'user2', 'name';
+                cmp_ok $res->key, '~~', 13, 'key';
+                cmp_ok $res->password, '~~', 'password2', 'password';
+                $cv->end;
+            }
+        );
+
+        $cv->begin;
+        $client->insert(
+            'first_space',
+            [
                 10,
                 'user',
                 11,
@@ -228,6 +249,61 @@ SKIP: {
 
         $cv->recv;
     }
+
+    # select
+    for my $cv (condvar AnyEvent) {
+        $cv->begin;
+        $client->select(first_space => [[10], [11], [111]], 'i0', sub {
+            my ($status, $tuple) = @_;
+            cmp_ok $status, '~~', 'ok', '* select status';
+            my $iter = $tuple->iter;
+            cmp_ok $iter->count, '~~', 2, 'count of elements';
+            cmp_ok $tuple->id, '~~', 10, 'tuple(0)->id';
+            cmp_ok $iter->next->id, '~~', 10, 'tuple(0)->id';
+            cmp_ok $tuple->next->id, '~~', 111, 'tuple(1}->id';
+            cmp_ok $iter->next->id, '~~', 111, 'tuple(1)->id';
+
+            $cv->end;
+        });
+
+        $cv->begin;
+        $client->select(
+            first_space => [[10], [11], [111]],
+            limit   => 1,
+            index   => 'i0',
+            sub {
+                my ($status, $tuple) = @_;
+                cmp_ok $status, '~~', 'ok', 'select (limit) status';
+                my $iter = $tuple->iter;
+                cmp_ok $iter->count, '~~', 1, 'count of elements';
+                cmp_ok $tuple->id, '~~', 10, 'tuple(0)->id';
+                cmp_ok $iter->next->id, '~~', 10, 'tuple(0)->id';
+
+                $cv->end;
+            }
+        );
+
+        $cv->begin;
+        $client->select(
+            first_space => [[10], [11], [111]],
+            limit   => 1,
+            offset  => 1,
+            index   => 'i0',
+            sub {
+                my ($status, $tuple) = @_;
+                cmp_ok $status, '~~', 'ok', 'select (limit) status';
+                my $iter = $tuple->iter;
+                cmp_ok $iter->count, '~~', 1, 'count of elements';
+                cmp_ok $tuple->id, '~~', 111, 'tuple(0)->id';
+                cmp_ok $iter->next->id, '~~', 111, 'tuple(0)->id';
+
+                $cv->end;
+            }
+        );
+
+        $cv->recv;
+    }
+
 }
 
 

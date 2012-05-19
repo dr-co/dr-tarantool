@@ -196,6 +196,7 @@ sub _cb_default {
         $cb->($res->{status} => $res->{code}, $res->{errstr});
         return;
     }
+
     if ($s) {
         $cb->( ok => DR::Tarantool::Tuple->unpack( $res->{tuples}, $s ) );
     } else {
@@ -414,12 +415,94 @@ sub call_lua {
 
     $self->_llc->call_lua($lua_name => $args, $flags, sub {
         my ($res) = @_;
-        if ($res->{status} ne 'ok') {
-            $cb->($res->{status} => $res->{code}, $res->{errstr});
-            return;
-        }
-        $cb->( ok => DR::Tarantool::Tuple->unpack( $res->{tuples}, $s ) );
+        _cb_default($res, $s, $cb);
     });
 }
+
+
+=head2 select
+
+Selects tuple(s) from database.
+
+    $tuples = $client->select('space', 1, sub { ... });
+    $tuples = $client->select('space', [1, 2], sub { ... });
+
+    $tuples = $client->select('space_name',
+            [1,2,3] => 'index_name', sub { ... });
+
+=head3 Arguments
+
+=over
+
+=item space name
+
+=item key(s)
+
+=item optional arguments
+
+=item callback
+
+=back
+
+=head3 optional arguments
+
+The section can contain only one element: index name, or hash with the
+following fields:
+
+=over
+
+=item index
+
+index name or number
+
+=item limit
+
+=item offset
+
+=back
+
+=cut
+
+sub select {
+    my $self = shift;
+    my $space = shift;
+    my $keys = shift;
+
+    my $cb = pop;
+
+    my ($index, $limit, $offset);
+
+    if (@_ == 1) {
+        $index = shift;
+    } elsif (@_ == 3) {
+        ($index, $limit, $offset) = @_;
+    } elsif (@_) {
+        my %opts = @_;
+        $index = $opts{index};
+        $limit = $opts{limit};
+        $offset = $opts{offset};
+    }
+
+    $index ||= 0;
+
+    my $s = $self->space($space);
+
+    $self->_llc->select(
+        $s->number,
+        $s->_index( $index )->{no},
+        $s->pack_keys( $keys, $index ),
+        $limit,
+        $offset,
+
+        sub {
+            my ($res) = @_;
+            _cb_default($res, $s, $cb);
+        }
+    );
+
+
+
+}
+
 
 1;

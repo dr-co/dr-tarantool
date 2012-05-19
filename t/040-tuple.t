@@ -62,7 +62,7 @@ cmp_ok $tp->raw(3), '~~', undef, 'raw(3)';
 cmp_ok $tp->d, '~~', undef, 'raw(3)';
 ok !eval { $tp->unknown; 1 }, 'unknown';
 
-my $tp2 = $tp->append(['dd', 'ee']);
+my $tp2 = $tp->next(['dd', 'ee']);
 isa_ok $tp2 => 'DR::Tarantool::Tuple';
 
 my $it = $tp->iter;

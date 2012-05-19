@@ -31,6 +31,14 @@ DR::Tarantool::Spaces - spaces container
                 indexes => {
                     0   => 'login',
                     1   => [ qw(login password) ],
+                    2   => {
+                        name    => 'my_idx',
+                        fields  => 'login',
+                    },
+                    3   => {
+                        name    => 'my_idx2',
+                        fields  => [ 'counter', 'something' ]
+                    }
                 }
             },
 
@@ -175,8 +183,8 @@ sub new {
     croak 'space number must conform the regexp qr{^\d+}' unless $no ~~ /^\d+$/;
     croak "'fields' not defined in space hash"
         unless 'ARRAY' eq ref $space->{fields};
-    croak "'indexes' not defined in space hash"
-        unless  'HASH' eq ref $space->{indexes};
+    croak "wrong 'indexes' hash"
+        if !$space->{indexes} or 'HASH' ne ref $space->{indexes};
 
     my $name = $space->{name};
     croak 'wrong space name: ' . ($name // 'undef')
@@ -214,7 +222,44 @@ sub new {
         croak 'wrong field name: ' . ($s->{name} // 'undef')
             unless $s->{name} and $s->{name} =~ /^[a-z_]\w*$/i;
 
+        croak "Duplicate field name: $s->{name}" if exists $fast{ $s->{name} };
         $fast{ $s->{name} } = $no;
+    }
+
+    my %indexes;
+    if ($space->{indexes}) {
+        for my $no (keys %{ $space->{indexes} }) {
+            my $l = $space->{indexes}{ $no };
+            croak "wrong index number: $no" unless $no =~ /^\d+$/;
+
+            my ($name, $fields);
+
+            if ('ARRAY' eq ref $l) {
+                $name = "i$no";
+                $fields = $l;
+            } elsif ('HASH' eq ref $l) {
+                $name = $l->{name} || "i$no";
+                $fields =
+                    [ ref($l->{fields}) ? @{ $l->{fields} } : $l->{fields} ];
+            } else {
+                $name = "i$no";
+                $fields = [ $l ];
+            }
+
+            croak "wrong index name: $name" unless $name =~ /^[a-z_]\w*$/i;
+
+            for (@$fields) {
+                croak "field '$_' is presend in index but isn't in fields"
+                    unless exists $fast{ $_ };
+            }
+
+            $indexes{ $name } = {
+                no      => $no,
+                name    => $name,
+                fields  => $fields
+            };
+
+        }
     }
 
     bless {
@@ -223,6 +268,7 @@ sub new {
         name            => $name,
         number          => $no,
         default_type    => $default_type,
+        indexes         => \%indexes,
     } => ref($class) || $class;
 
 }
@@ -336,6 +382,49 @@ sub unpack_tuple {
     my @res;
     for (my $i = 0; $i < @$tuple; $i++) {
         push @res => $self->unpack_field($i, $tuple->[ $i ]);
+    }
+    return \@res;
+}
+
+
+sub _index {
+    my ($self, $index) = @_;
+    if ($index =~ /^\d+$/) {
+        for (values %{ $self->{indexes} }) {
+            return $_ if $_->{no} == $index;
+        }
+        croak "index $index is not defined";
+    }
+
+    return $self->{indexes}{$index} if exists $self->{indexes}{$index};
+    croak "index `$index' is not defined";
+}
+
+sub pack_keys {
+    my ($self, $keys, $idx) = @_;
+
+    $idx = $self->_index($idx);
+    my $ksize = @{ $idx->{fields} };
+
+    if ($ksize == 1) {
+        $keys = [ $keys ] unless ref $keys;
+        unless('ARRAY' eq ref $keys->[ 0 ]) {
+            $_ = [ $_ ] for @$keys;
+        }
+    } else {
+        croak "key must have $ksize elements" unless 'ARRAY' eq ref $keys;
+        $keys = [ $keys ] unless 'ARRAY' eq ref $keys->[ 0 ];
+    }
+
+    my @res;
+    for my $k (@$keys) {
+        croak "key must have $ksize elements" unless $ksize == @$k;
+        my @packed;
+        for (my $i = 0; $i < @$k; $i++) {
+            my $f = $self->_field($idx->{fields}[$i]);
+            push @packed => $self->pack_field($f->{name}, $k->[$i])
+        }
+        push @res => \@packed;
     }
     return \@res;
 }

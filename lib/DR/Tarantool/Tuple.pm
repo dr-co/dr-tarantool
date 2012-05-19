@@ -13,7 +13,7 @@ DR::Tarantool::Tuple - tuple container for L<DR::Tarantool>
     my $tuple = unpack DR::Tarantool::Tuple([ 1, 2, 3], $space);
 
 
-    $tuple->append( $other_tuple );
+    $tuple->next( $other_tuple );
 
     $f = $tuple->raw(0);
 
@@ -51,7 +51,7 @@ sub new :method {
         my $self = $class->new( $tuple->[0], $space );
 
         for (my $i = 1; $i < @$tuple; $i++) {
-            $self->append( $tuple->[1] );
+            $self->next( $tuple->[1] );
         }
         return $self;
     }
@@ -111,20 +111,25 @@ sub raw :method {
 }
 
 
-=head2 append
+=head2 next
 
-Appends the other tuple to current iterator.
+Appends or returns the following tuple.
 
 =cut
 
-sub append :method {
+sub next :method {
+
     my ($self, $tuple) = @_;
+    return $self->{tail} if @_ == 1;
+
     $tuple = $self->new($tuple, $self->{space});
     my $o = $self;
     $o = $o->{tail} while defined $o->{tail};
     $o->{tail} = $tuple;
     $tuple;
 }
+
+
 
 
 =head2 iter
