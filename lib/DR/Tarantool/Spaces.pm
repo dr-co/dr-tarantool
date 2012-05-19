@@ -439,4 +439,32 @@ sub pack_key {
     return $t->[0];
 }
 
+sub pack_operation {
+    my ($self, $op) = @_;
+    croak 'wrong operation' unless 'ARRAY' eq ref $op and @$op > 1;
+
+    my $fno = $op->[0];
+    my $opname = $op->[1];
+
+    my $f = $self->_field($fno);
+
+    if ($opname eq 'delete') {
+        croak 'wrong operation' unless @$op == 2;
+        return [ $f->{idx} => $opname ];
+    }
+
+    if ($opname =~ /^(?:set|insert|add|and|or|xor)$/) {
+        croak 'wrong operation' unless @$op == 3;
+        return [ $f->{idx} => $opname, $self->pack_field($fno, $op->[2]) ];
+    }
+
+    if ($opname eq 'substr') {
+        croak 'wrong operation11' unless @$op >= 4;
+        croak 'wrong offset in substr operation' unless $op->[2] =~ /^\d+$/;
+        croak 'wrong length in substr operation' unless $op->[3] =~ /^\d+$/;
+        return [ $f->{idx}, $opname, $op->[2], $op->[3], $op->[4] ];
+    }
+    croak "unknown operation: $opname";
+}
+
 1;

@@ -6,7 +6,7 @@ use utf8;
 use open qw(:std :utf8);
 use lib qw(lib ../lib);
 
-use Test::More tests    => 45;
+use Test::More tests    => 75;
 use Encode qw(decode encode);
 
 
@@ -61,8 +61,6 @@ my $s = MODEL->new({
         }
     }
 });
-
-
 
 my $v = unpack 'L<', $s->pack_field( test => a => '10' );
 cmp_ok $v, '~~', 10, 'pack_field NUM';
@@ -138,3 +136,29 @@ cmp_ok unpack('L<', $t->[2][0]), '~~', 9, 'pack_keys';
 $t = eval { $s->space('test')->pack_keys([[7,8,9]], 'i2') };
 like $@, qr{must have 1}, 'error message';
 
+# pack_operation
+my $op = $s->space('test')->pack_operation([d => 'delete']);
+cmp_ok $op->[0], '~~', 3, '* operation field';
+cmp_ok $op->[1], '~~', 'delete', 'operation name';
+
+for (qw(insert add and or xor set)) {
+    my $n = int rand 100000;
+    $op = $s->space('test')->pack_operation([a123 => $_ => $n]);
+    cmp_ok $op->[0], '~~', 4, "operation field: $_";
+    cmp_ok $op->[1], '~~', $_, 'operation name';
+    cmp_ok unpack('Q<', $op->[2]), '~~', $n, 'operation argument';
+}
+
+$op = $s->space('test')->pack_operation([d => 'substr', 1, 2]);
+cmp_ok $op->[0], '~~', 3, 'operation field: substr';
+cmp_ok $op->[1], '~~', 'substr', 'operation name';
+cmp_ok $op->[2], '~~', 1, 'operation argument 1';
+cmp_ok $op->[3], '~~', 2, 'operation argument 2';
+cmp_ok $op->[4], '~~', undef, 'operation argument 3';
+
+$op = $s->space('test')->pack_operation([d => 'substr', 231, 232, 'привет']);
+cmp_ok $op->[0], '~~', 3, 'operation field: substr';
+cmp_ok $op->[1], '~~', 'substr', 'operation name';
+cmp_ok $op->[2], '~~', 231, 'operation argument 1';
+cmp_ok $op->[3], '~~', 232, 'operation argument 2';
+cmp_ok $op->[4], '~~', 'привет', 'operation argument 3';
