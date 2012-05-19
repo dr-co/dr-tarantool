@@ -7,7 +7,7 @@ use open qw(:std :utf8);
 use lib qw(lib ../lib);
 use lib qw(blib/lib blib/arch ../blib/lib ../blib/arch);
 
-use constant PLAN       => 63;
+use constant PLAN       => 66;
 use Test::More tests    => PLAN;
 use Encode qw(decode encode);
 
@@ -314,6 +314,26 @@ SKIP: {
         $cv->recv;
     }
 
+
+    # delete
+    for my $cv (condvar AnyEvent) {
+        $cv->begin;
+        $client->delete(first_space => 10, sub {
+            my ($status, $tuple) = @_;
+            cmp_ok $status, '~~', 'ok', '* delete status';
+            $cv->end;
+        });
+
+        $cv->begin;
+        $client->select(first_space => 10, sub {
+            my ($status, $tuple) = @_;
+            cmp_ok $status, '~~', 'ok', 'select deleted status';
+            cmp_ok $tuple, '~~', undef, 'there is no tuple';
+            $cv->end;
+        });
+
+        $cv->recv;
+    }
 }
 
 

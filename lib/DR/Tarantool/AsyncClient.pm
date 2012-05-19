@@ -256,10 +256,7 @@ Pings server.
 
 sub ping {
     my ($self, $cb, %opts) = &_split_args;
-    $self->_llc->ping(sub {
-        my ($res) = @_;
-        _cb_default($res, undef, $cb);
-    });
+    $self->_llc->ping(sub { _cb_default($_[0], undef, $cb) });
 }
 
 
@@ -413,10 +410,12 @@ sub call_lua {
         $args = $sa->pack_tuple( $args );
     }
 
-    $self->_llc->call_lua($lua_name => $args, $flags, sub {
-        my ($res) = @_;
-        _cb_default($res, $s, $cb);
-    });
+    $self->_llc->call_lua(
+        $lua_name,
+        $args,
+        $flags,
+        sub { _cb_default($_[0], $s, $cb) }
+    );
 }
 
 
@@ -494,12 +493,35 @@ sub select {
         $limit,
         $offset,
 
-        sub {
-            my ($res) = @_;
-            _cb_default($res, $s, $cb);
-        }
+        sub { _cb_default($_[0], $s, $cb) }
     );
 }
 
+
+=head2 delete
+
+Deletes tuple.
+
+    $client->delete('space', 1, sub { ... });
+    $client->delete('space', 2, $flags, sub { ... });
+
+=cut
+
+sub delete :method {
+    my $self = shift;
+    my $space = shift;
+    my $key = shift;
+    $self->_llc->_check_cb( my $cb = pop );
+    my $flags = shift || 0;
+
+    my $s = $self->space($space);
+
+    $self->_llc->delete(
+        $s->number,
+        $s->pack_key( $key ),
+        $flags,
+        sub { _cb_default($_[0], $s, $cb) }
+    );
+}
 
 1;

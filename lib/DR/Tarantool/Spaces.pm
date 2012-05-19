@@ -429,4 +429,14 @@ sub pack_keys {
     return \@res;
 }
 
+sub pack_key {
+    my ($self, $key) = @_;
+
+    croak 'wrong key format'
+        if 'ARRAY' eq ref $key and 'ARRAY' eq ref $key->[0];
+
+    my $t = $self->pack_keys($key, 0);
+    return $t->[0];
+}
+
 1;
