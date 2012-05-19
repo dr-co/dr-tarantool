@@ -301,6 +301,7 @@ SKIP: {
             }
         );
 
+        $cv->begin;
         $client->select(first_space => [11, 'password'], 'tidx', sub {
             my ($status, $tuple) = @_;
             cmp_ok $status, '~~', 'ok', 'select status (not primary index)';
