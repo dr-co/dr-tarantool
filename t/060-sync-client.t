@@ -7,7 +7,7 @@ use open qw(:std :utf8);
 use lib qw(lib ../lib);
 use lib qw(blib/lib blib/arch ../blib/lib ../blib/arch);
 
-use constant PLAN       => 21;
+use constant PLAN       => 41;
 use Test::More tests    => PLAN;
 use Encode qw(decode encode);
 
@@ -88,11 +88,42 @@ SKIP: {
     cmp_ok $t->key, '~~', 2, 'key';
     cmp_ok $t->password, '~~', 'test', 'password';
 
+    $t = $client->insert(
+        first_space => [ 2, 'медвед', 3, 'test2' ], TNT_FLAG_RETURN
+    );
+
+    isa_ok $t => 'DR::Tarantool::Tuple', 'insert tuple packed';
+    cmp_ok $t->id, '~~', 2, 'id';
+    cmp_ok $t->name, '~~', 'медвед', 'name';
+    cmp_ok $t->key, '~~', 3, 'key';
+    cmp_ok $t->password, '~~', 'test2', 'password';
 
 
     $t = $client->call_lua('box.select' =>
         [ 0, 0, pack 'L<' => 1 ], 'first_space');
     isa_ok $t => 'DR::Tarantool::Tuple', '* call tuple packed';
+    cmp_ok $t->id, '~~', 1, 'id';
+    cmp_ok $t->name, '~~', 'привет', 'name';
+    cmp_ok $t->key, '~~', 2, 'key';
+    cmp_ok $t->password, '~~', 'test', 'password';
+
+
+    $t = $client->select(first_space => 1);
+    isa_ok $t => 'DR::Tarantool::Tuple', '* select tuple packed';
+    cmp_ok $t->id, '~~', 1, 'id';
+    cmp_ok $t->name, '~~', 'привет', 'name';
+    cmp_ok $t->key, '~~', 2, 'key';
+    cmp_ok $t->password, '~~', 'test', 'password';
+
+    $t = $client->select(first_space => 'привет', 'i1');
+    isa_ok $t => 'DR::Tarantool::Tuple', 'select tuple packed (i1)';
+    cmp_ok $t->id, '~~', 1, 'id';
+    cmp_ok $t->name, '~~', 'привет', 'name';
+    cmp_ok $t->key, '~~', 2, 'key';
+    cmp_ok $t->password, '~~', 'test', 'password';
+
+    $t = $client->select(first_space => [2, 'test'], 'i2');
+    isa_ok $t => 'DR::Tarantool::Tuple', 'select tuple packed (i2)';
     cmp_ok $t->id, '~~', 1, 'id';
     cmp_ok $t->name, '~~', 'привет', 'name';
     cmp_ok $t->key, '~~', 2, 'key';

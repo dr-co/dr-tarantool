@@ -7,7 +7,7 @@ use open qw(:std :utf8);
 use lib qw(lib ../lib);
 use lib qw(blib/lib blib/arch ../blib/lib ../blib/arch);
 
-use constant PLAN       => 60;
+use constant PLAN       => 63;
 use Test::More tests    => PLAN;
 use Encode qw(decode encode);
 
@@ -59,7 +59,7 @@ my $spaces = {
         indexes => {
             0   => 'id',
             1   => 'name',
-            2   => [ 'key', 'password' ],
+            2   => { name => 'tidx', fields => [ 'key', 'password' ] },
         },
     }
 };
@@ -300,6 +300,15 @@ SKIP: {
                 $cv->end;
             }
         );
+
+        $client->select(first_space => [11, 'password'], 'tidx', sub {
+            my ($status, $tuple) = @_;
+            cmp_ok $status, '~~', 'ok', 'select status (not primary index)';
+            my $iter = $tuple->iter;
+            cmp_ok $iter->count, '~~', 1, 'count of elements';
+            cmp_ok $tuple->id, '~~', 10, 'tuple(0)->id';
+            $cv->end;
+        });
 
         $cv->recv;
     }

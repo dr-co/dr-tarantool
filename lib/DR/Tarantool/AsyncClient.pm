@@ -499,9 +499,6 @@ sub select {
             _cb_default($res, $s, $cb);
         }
     );
-
-
-
 }
 
 

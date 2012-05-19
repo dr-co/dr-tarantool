@@ -26,7 +26,7 @@ sub connect {
 }
 
 
-for my $method (qw(ping insert update delete call_lua)) {
+for my $method (qw(ping insert select update delete call_lua)) {
     no strict 'refs';
     *{ __PACKAGE__ . "::$method" } = sub {
         my ($self, @args) = @_;
