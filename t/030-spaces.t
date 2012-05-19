@@ -6,7 +6,7 @@ use utf8;
 use open qw(:std :utf8);
 use lib qw(lib ../lib);
 
-use Test::More tests    => 75;
+use Test::More tests    => 84;
 use Encode qw(decode encode);
 
 
@@ -162,3 +162,18 @@ cmp_ok $op->[1], '~~', 'substr', 'operation name';
 cmp_ok $op->[2], '~~', 231, 'operation argument 1';
 cmp_ok $op->[3], '~~', 232, 'operation argument 2';
 cmp_ok $op->[4], '~~', 'привет', 'operation argument 3';
+
+$op = $s->space('test')->pack_operations([ d => set => 'тест']);
+cmp_ok $op->[0][0], '~~', 3, "operation field: set";
+cmp_ok $op->[0][1], '~~', 'set', 'operation name';
+cmp_ok decode(utf8 => $op->[0][2]), '~~', 'тест', 'operation argument';
+$op = $s->space('test')->pack_operations([
+    [ d => set => 'тест'], [1 => insert => 500]
+]);
+cmp_ok $op->[0][0], '~~', 3, "operation field: set";
+cmp_ok $op->[0][1], '~~', 'set', 'operation name';
+cmp_ok decode(utf8 => $op->[0][2]), '~~', 'тест', 'operation argument';
+
+cmp_ok $op->[1][0], '~~', 1, "operation field: set";
+cmp_ok $op->[1][1], '~~', 'insert', 'operation name';
+cmp_ok unpack('L<', $op->[1][2]), '~~', 500, 'operation argument';

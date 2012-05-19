@@ -503,7 +503,21 @@ sub select {
 Deletes tuple.
 
     $client->delete('space', 1, sub { ... });
-    $client->delete('space', 2, $flags, sub { ... });
+    $client->delete('space', $key, $flags, sub { ... });
+
+=head3 Arguments
+
+=over
+
+=item space name
+
+=item key
+
+=item flags (optional)
+
+=item callback
+
+=back
 
 =cut
 
@@ -519,6 +533,56 @@ sub delete :method {
     $self->_llc->delete(
         $s->number,
         $s->pack_key( $key ),
+        $flags,
+        sub { _cb_default($_[0], $s, $cb) }
+    );
+}
+
+
+=head2 update
+
+Updates tuple.
+
+    $client->update('space', 1, [ passwd => set => 'abc' ], sub { .. });
+    $client->update(
+        'space',
+        1,
+        [ [ passwd => set => 'abc' ], [ login => 'delete' ] ],
+        sub { ... }
+    );
+
+=head3 Arguments
+
+=over
+
+=item space name
+
+=item key
+
+=item operations list
+
+=item flags (optional)
+
+=item callback
+
+=back
+
+=cut
+
+sub update {
+    my $self = shift;
+    my $space = shift;
+    my $key = shift;
+    my $op = shift;
+    $self->_llc->_check_cb( my $cb = pop );
+    my $flags = shift || 0;
+
+    my $s = $self->space($space);
+
+    $self->_llc->update(
+        $s->number,
+        $s->pack_key( $key ),
+        $s->pack_operations( $op ),
         $flags,
         sub { _cb_default($_[0], $s, $cb) }
     );

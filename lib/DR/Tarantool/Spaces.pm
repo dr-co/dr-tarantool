@@ -467,4 +467,15 @@ sub pack_operation {
     croak "unknown operation: $opname";
 }
 
+sub pack_operations {
+    my ($self, $ops) = @_;
+
+    croak 'wrong operation' unless 'ARRAY' eq ref $ops and @$ops >= 1;
+    $ops = [ $ops ] unless 'ARRAY' eq ref $ops->[ 0 ];
+
+    my @res;
+    push @res => $self->pack_operation( $_ ) for @$ops;
+    return \@res;
+}
+
 1;

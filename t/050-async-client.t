@@ -7,7 +7,7 @@ use open qw(:std :utf8);
 use lib qw(lib ../lib);
 use lib qw(blib/lib blib/arch ../blib/lib ../blib/arch);
 
-use constant PLAN       => 66;
+use constant PLAN       => 74;
 use Test::More tests    => PLAN;
 use Encode qw(decode encode);
 
@@ -336,7 +336,36 @@ SKIP: {
     }
 
     # update
+    for my $cv (condvar AnyEvent) {
+        $cv->begin;
+        $client->update(first_space => 111, [ name => set => 'привет1' ], sub {
+            my ($status, $tuple) = @_;
+            cmp_ok $status, '~~', 'ok', '* update status';
+            cmp_ok $tuple, '~~', undef, 'tuple';
+            $cv->end;
+        });
 
+        $cv->begin;
+        $client->update(first_space =>
+                        111, [ name => set => 'привет' ], TNT_FLAG_RETURN, sub {
+            my ($status, $tuple) = @_;
+            cmp_ok $status, '~~', 'ok', '* update status';
+            isa_ok $tuple => 'DR::Tarantool::Tuple', 'tuple was selected';
+            cmp_ok $tuple->name, '~~', 'привет', 'field was updated';
+            $cv->end;
+        });
+
+        $cv->begin;
+        $client->select(first_space => 111, sub {
+            my ($status, $tuple) = @_;
+            cmp_ok $status, '~~', 'ok', 'select deleted status';
+            isa_ok $tuple => 'DR::Tarantool::Tuple', 'tuple was selected';
+            cmp_ok $tuple->name, '~~', 'привет', 'field was updated';
+            $cv->end;
+        });
+
+        $cv->recv;
+    }
 }
 
 

@@ -7,7 +7,7 @@ use open qw(:std :utf8);
 use lib qw(lib ../lib);
 use lib qw(blib/lib blib/arch ../blib/lib ../blib/arch);
 
-use constant PLAN       => 41;
+use constant PLAN       => 44;
 use Test::More tests    => PLAN;
 use Encode qw(decode encode);
 
@@ -128,4 +128,12 @@ SKIP: {
     cmp_ok $t->name, '~~', 'привет', 'name';
     cmp_ok $t->key, '~~', 2, 'key';
     cmp_ok $t->password, '~~', 'test', 'password';
+
+    $t = $client->update(first_space => 2 => [ name => set => 'привет1' ]);
+    cmp_ok $t, '~~', 'ok', '* update without flags';
+    $t = $client->update(
+        first_space => 2 => [ name => set => 'привет медвед' ], TNT_FLAG_RETURN
+    );
+    isa_ok $t => 'DR::Tarantool::Tuple', 'update with flags';
+    cmp_ok $t->name, '~~', 'привет медвед', '$t->name';
 }
