@@ -1,4 +1,3 @@
-README
 Makefile.PL
 t/060-sync-client.t
 t/030-spaces.t
