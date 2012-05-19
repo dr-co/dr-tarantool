@@ -1,4 +1,13 @@
 /* vim: set ft=c */
+/*
+
+ Copyright (C) 2011 Dmitry E. Oboukhov <unera@debian.org>
+ Copyright (C) 2011 Roman V. Nikolaev <rshadow@rambler.ru>
+
+ This program is free software, you can redistribute it and/or
+ modify it under the terms of the Artistic License.
+
+*/
 #include "EXTERN.h"
 #include "perl.h"
 #include "XSUB.h"
@@ -419,3 +428,4 @@ unsigned _flag_not_store()
 		RETVAL = TNT_FLAG_NOT_STORE;
 	OUTPUT:
 		RETVAL
+

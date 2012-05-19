@@ -83,11 +83,16 @@ Dmitry E. Oboukhov, E<lt>dimka@E<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2012 by Dmitry E. Oboukhov
+ Copyright (C) 2011 Dmitry E. Oboukhov <unera@debian.org>
+ Copyright (C) 2011 Roman V. Nikolaev <rshadow@rambler.ru>
 
-This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself, either Perl version 5.10.1 or,
-at your option, any later version of Perl 5 you may have available.
+ This program is free software, you can redistribute it and/or
+ modify it under the terms of the Artistic License.
+
+=head1 VCS
+
+The project is placed git repo on github:
+L<https://github.com/unera/dr-tarantool/>.
 
 
 =cut

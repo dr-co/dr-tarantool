@@ -1,0 +1,18 @@
+Source: libdr-tarantool-perl
+Section: perl
+Homepage: http://search.cpan.org/dist/DBIx-DR/
+Maintainer: Dmitry E. Oboukhov <unera@debian.org>
+Build-Depends: debhelper (>= 7), cdbs,
+ libanyevent-perl,
+ libtarantool-dev,
+ tarantool
+Standards-Version: 3.9.2
+Priority: extra
+VCS-Browser: https://github.com/unera/dbix-dr
+
+Package: libdr-tarantool-perl
+Depends: ${perl:Depends}, ${misc:Depends},
+ libanyevent-perl
+Architecture: any
+Description: perl driver for Tarantool
+ The package contains sync and async drivers for tarantool database.

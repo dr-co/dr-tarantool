@@ -15,6 +15,12 @@ t/test-data/00013-14082-error.bin
 t/010-xs.t
 t/040-tuple.t
 Tarantool.xs
+debian/changelog
+debian/compat
+debian/copyright
+debian/rules
+debian/watch
+debian/control
 MANIFEST
 Changes
 lib/DR/Tarantool.pm

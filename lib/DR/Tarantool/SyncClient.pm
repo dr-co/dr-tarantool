@@ -52,4 +52,19 @@ sub DESTROY {
     $cv->recv;
 }
 
+=head1 COPYRIGHT AND LICENSE
+
+ Copyright (C) 2011 Dmitry E. Oboukhov <unera@debian.org>
+ Copyright (C) 2011 Roman V. Nikolaev <rshadow@rambler.ru>
+
+ This program is free software, you can redistribute it and/or
+ modify it under the terms of the Artistic License.
+
+=head1 VCS
+
+The project is placed git repo on github:
+L<https://github.com/unera/dr-tarantool/>.
+
+=cut
+
 1;
