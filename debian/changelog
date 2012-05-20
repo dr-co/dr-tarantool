@@ -1,3 +1,10 @@
+libdr-tarantool-perl (0.03-1) unstable; urgency=low
+
+  * New version.
+  * Add depends on Devel::GlobalDestruction.
+
+ -- Dmitry E. Oboukhov <unera@debian.org>  Sun, 20 May 2012 17:16:21 +0400
+
 libdr-tarantool-perl (0.02-1) unstable; urgency=low
 
   * New version.

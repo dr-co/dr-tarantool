@@ -13,6 +13,7 @@ WriteMakefile(
             'Cwd'                       => 0,
             'IO::Socket::INET'          => 0,
             'AnyEvent'                  => 0,
+            'Devel::GlobalDestruction'   => 0,
     }, # e.g., Module::Name => 1.1
     ABSTRACT_FROM  => 'lib/DR/Tarantool.pm', # retrieve abstract from module
     AUTHOR         => 'Dmitry E. Oboukhov <unera@debian.org>',

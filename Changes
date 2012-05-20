@@ -6,3 +6,6 @@ Revision history for Perl extension DR::Tarantool.
 
 0.02  Sun May 20 10:38:44 MSK 2012
         - update documentation
+
+0.03  Sun May 20 17:17:38 MSK 2012
+	- fix forgotten depends
