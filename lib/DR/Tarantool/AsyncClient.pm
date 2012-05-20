@@ -45,6 +45,10 @@ DR::Tarantool::AsyncClient - async client for L<tarantool|http://tarantool.org>
                 fields  => [ qw(name title) ],
                 indexes => {
                     0   => 'name',
+                    1   => {
+                        name    => 'myindex',
+                        fields  => [ 'name', 'title' ],
+                    }
                 }
             }
         }
@@ -60,10 +64,14 @@ DR::Tarantool::AsyncClient - async client for L<tarantool|http://tarantool.org>
 
     $client->call_lua(foo => ['arg1', 'arg2'], sub {  });
 
-=cut
+    client->select('space', 1, sub { ... });
+
+    $client->delete('space', 1, sub { ... });
+
+    $client->update('space', 1, [ passwd => set => 'abc' ], sub { .. });
 
 
-=head1 DESCRIPTION
+=head1 Class methods
 
 
 =cut
@@ -279,6 +287,8 @@ Inserts tuple into database.
 =item tuple
 
 =item flags (optional)
+
+Flag list described in perldoc L<DR::Tarantool/:constant>.
 
 =item callback
 
@@ -516,6 +526,8 @@ Deletes tuple.
 
 =item flags (optional)
 
+Flag list described in perldoc L<DR::Tarantool/:constant>.
+
 =item callback
 
 =back
@@ -563,6 +575,8 @@ Updates tuple.
 =item operations list
 
 =item flags (optional)
+
+Flag list described in perldoc L<DR::Tarantool/:constant>.
 
 =item callback
 

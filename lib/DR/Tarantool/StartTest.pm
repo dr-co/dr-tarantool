@@ -23,6 +23,23 @@ DR::Tarantool::StartTest - finds and starts tarantool on free port.
 
 The module tries to find and then to start B<tarantool_box>.
 
+The module is used inside tests.
+
+
+=head1 METHODS
+
+=head2 run
+
+Constructor. Receives the following arguments:
+
+=over
+
+=item cfg
+
+path to tarantool.cfg
+
+=back
+
 =cut
 
 
@@ -49,10 +66,24 @@ sub run {
     $self;
 }
 
+
+=head2 started
+
+Returns true if tarantool is found and started
+
+=cut
+
 sub started {
     my ($self) = @_;
     return $self->{started};
 }
+
+
+=head2 log
+
+Returns tarantool logs
+
+=cut
 
 sub log {
     my ($self) = @_;
@@ -105,9 +136,30 @@ sub _start_tarantool {
     chdir $self->{cwd};
 }
 
+
+=head2 primary_port
+
+Returns tarantool primary port
+
+=cut
+
 sub primary_port { return $_[0]->{primary_port} }
 
+
+=head2 tarantool_pid
+
+Returns B<PID>
+
+=cut
+
 sub tarantool_pid { return $_[0]->{child} }
+
+
+=head2 kill
+
+Kills tarantool
+
+=cut
 
 sub kill :method {
     my ($self) = @_;
@@ -118,6 +170,12 @@ sub kill :method {
         delete $self->{child};
     }
 }
+
+=head2 DESTROY
+
+Destructor. Kills tarantool, removes temporary files.
+
+=cut
 
 sub DESTROY {
     my ($self) = @_;

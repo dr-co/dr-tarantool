@@ -20,6 +20,15 @@ DR::Tarantool::Tuple - tuple container for L<DR::Tarantool>
     $f = $tuple->name_field;
 
 
+=head1 DESCRIPTION
+
+Tuple contains normalized (unpacked) fields. You can access the fields
+by their indexes (see L<raw> function) or by their names (if they are
+described in space).
+
+Each tuple can contain references to L<next> tuple and L<iter>ator.
+So If You extract more than one tuple, You can access them.
+
 =head1 METHODS
 
 =cut
@@ -116,6 +125,8 @@ sub raw :method {
 
 Appends or returns the following tuple.
 
+    my $next_tuple = $tuple->next;
+
 =cut
 
 sub next :method {
@@ -137,6 +148,13 @@ sub next :method {
 
 Returns iterator linked with the tuple.
 
+    my $iterator = $tuple->iter;
+
+    while(my $t = $iterator->next) {
+        # the first value of $t and $tuple are the same
+        ...
+    }
+
 =cut
 
 sub iter :method {
@@ -147,7 +165,11 @@ sub iter :method {
 
 =head2 AUTOLOAD
 
-Each fields autoloads fields by their names that defined in space.
+Each tuple autoloads fields by their names that defined in space.
+
+    my $name = $tuple->password; # space contains field with name 'password'
+    my $name = $tuple->login;
+    ...
 
 =cut
 
@@ -171,6 +193,8 @@ use Scalar::Util 'weaken', 'blessed';
 =head2 new
 
     my $iter = DR::Tarantool::Tuple::Iterator->new( $tuple );
+
+    my $iter = $tuple->iter;    # the same
 
 =cut
 

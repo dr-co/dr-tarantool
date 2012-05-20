@@ -4,3 +4,5 @@ Revision history for Perl extension DR::Tarantool.
 	- original version; created by h2xs 1.23 with options
 		-n DR::Tarantool
 
+0.02  Sun May 20 10:38:44 MSK 2012
+        - update documentation

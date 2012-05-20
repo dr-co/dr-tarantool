@@ -21,17 +21,17 @@ for L<tarantool | http://tarantool.org>
     $tnt->ping( sub { .. } );
     $tnt->insert(0, [ 1, 2, 3 ], sub { ... });
     $tnt->select(1, 0, [ [ 1, 2 ], [ 3, 4 ] ], sub { ... });
-    $tnt->update(0, [ 1 ], [ [ 1 => add 1 ] ], sub { ... });
+    $tnt->update(0, [ 1 ], [ [ 1 => add pack 'L<', 1 ] ], sub { ... });
     $tnt->call_lua( 'box.select', [ 0, 1, 2 ], sub { ... });
 
 
 =head1 DESCRIPTION
 
-The module provides low-level interface to L<tarantool | http://tarantool.org>
+The module provides low-level interface to L<tarantool|http://tarantool.org>
 
 =head1 METHODS
 
-All methods receives B<callback> as the last argument. The callback receives
+All methods receive B<callback> as the last argument. The callback receives
 B<HASHREF> value with the following fields:
 
 =over
@@ -71,16 +71,14 @@ Contains reply code.
 =item req_id
 
 Contains request id.
-(see L<protocol documentation|
-https://github.com/mailru/tarantool/blob/master/doc/box-protocol.txt
->)
+(see
+L<protocol documentation|https://github.com/mailru/tarantool/blob/master/doc/box-protocol.txt>)
 
 =item type
 
 Contains request type
-(see L<protocol documentation|
-https://github.com/mailru/tarantool/blob/master/doc/box-protocol.txt
->)
+(see
+L<protocol documentation|https://github.com/mailru/tarantool/blob/master/doc/box-protocol.txt>)
 
 =item count
 

@@ -11,7 +11,7 @@ $Carp::Internal{ (__PACKAGE__) }++;
 
 =head1 NAME
 
-DR::Tarantool::SyncClient - sync driver for tarantool
+DR::Tarantool::SyncClient - sync driver for L<tarantool|http://tarantool.org>
 
 =head1 SYNOPSIS
 
@@ -28,13 +28,24 @@ DR::Tarantool::SyncClient - sync driver for tarantool
 
     $t = $client->call_lua('luafunc' =>  [ 0, 0, 1 ], 'space_name');
 
-
     $t = $client->select(space_name => $key);
 
     $t = $client->update(space_name => 2 => [ name => set => 'new' ]);
 
     $client->delete(space_name => $key);
 
+
+=head1 METHODS
+
+=head2 connect
+
+Connects to tarantool.
+
+=head3 Arguments
+
+The same L<DR::Tarantool::AsyncClient/connect> exclude callback.
+
+Returns a connector or croaks error.
 
 =cut
 
@@ -54,6 +65,44 @@ sub connect {
     $self;
 }
 
+=head2 ping
+
+The same L<DR::Tarantool::AsyncClient/ping> exclude callback.
+
+Returns 'B<ok>' or B<FALSE> if an error.
+
+=head2 insert
+
+The same L<DR::Tarantool::AsyncClient/insert> exclude callback.
+
+Returns 'B<ok>' or tuples that were extracted from database.
+
+=head2 select
+
+The same L<DR::Tarantool::AsyncClient/select> exclude callback.
+
+Returns 'B<ok>' or tuples that were extracted from database.
+
+=head2 update
+
+The same L<DR::Tarantool::AsyncClient/update> exclude callback.
+
+Returns 'B<ok>' or tuples that were extracted from database.
+
+=head2 delete
+
+The same L<DR::Tarantool::AsyncClient/delete> exclude callback.
+
+Returns 'B<ok>' or tuples that were extracted from database.
+
+=head2 call_lua
+
+The same L<DR::Tarantool::AsyncClient/call_lua> exclude callback.
+
+Returns 'B<ok>' or tuples that were extracted from database.
+
+=cut
+
 
 for my $method (qw(ping insert select update delete call_lua)) {
     no strict 'refs';
@@ -68,6 +117,7 @@ for my $method (qw(ping insert select update delete call_lua)) {
         if ($res[0] ~~ 'ok') {
             return $res[1] // $res[0];
         }
+        return if $method eq 'ping';
         croak  "$res[1]: $res[2]";
     };
 }
