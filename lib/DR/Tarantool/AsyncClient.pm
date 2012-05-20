@@ -10,9 +10,6 @@ use Carp;
 $Carp::Internal{ (__PACKAGE__) }++;
 use Data::Dumper;
 use Scalar::Util 'blessed';
-use base qw(Exporter);
-
-our @EXPORT_OK = qw(tarantool);
 
 =head1 NAME
 
