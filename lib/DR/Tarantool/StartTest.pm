@@ -110,7 +110,8 @@ sub _start_tarantool {
         printf $fh "%s = %s\n", $_, $self->{$_};
     }
 
-    printf $fh "script_dir = %s\n", $self->{temp};
+    printf $fh "script_dir = %s\n", $self->{temp}
+        if $self->{cfg_data} =~ /script_dir/;
     printf $fh "pid_file = %s\n", $self->{pid};
     printf $fh qq{logger = "cat > %s"\n"}, $self->{log};
 

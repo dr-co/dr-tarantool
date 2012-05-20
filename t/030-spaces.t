@@ -42,7 +42,7 @@ my $s = MODEL->new({
                 name    => 'd'
             },
             {
-                type    => 'NUM64',
+                type    => 'NUM',
                 name    => 'a123',
             },
             {
@@ -68,7 +68,7 @@ $v = unpack 'L<', $s->pack_field( test => 0 => 11 );
 cmp_ok $v, '~~', 11, 'pack_field NUM';
 $v = unpack 'L<', $s->pack_field( 0 => 0 => 13 );
 cmp_ok $v, '~~', 13, 'pack_field NUM';
-$v = unpack 'Q<', $s->pack_field( test => a123 => 13 );
+$v = unpack 'L<', $s->pack_field( test => a123 => 13 );
 cmp_ok $v, '~~', 13, 'pack_field NUM64';
 $v = $s->pack_field( test => d => 'test' );
 cmp_ok $v, '~~', 'test', 'pack_field STR';
@@ -103,7 +103,7 @@ cmp_ok unpack('L<', $t->[0]), '~~', 0, 'tuple[0]';
 cmp_ok unpack('L<', $t->[1]), '~~', 1, 'tuple[1]';
 cmp_ok unpack('L<', $t->[2]), '~~', 2, 'tuple[2]';
 cmp_ok $t->[3], '~~', encode(utf8 => 'медвед'), 'tuple[3]';
-cmp_ok unpack('Q<', $t->[4]), '~~', 10, 'tuple[4]';
+cmp_ok unpack('L<', $t->[4]), '~~', 10, 'tuple[4]';
 cmp_ok $t->[5], '~~', 'test', 'tuple[5]';
 
 # indexes
@@ -146,7 +146,7 @@ for (qw(insert add and or xor set)) {
     $op = $s->space('test')->pack_operation([a123 => $_ => $n]);
     cmp_ok $op->[0], '~~', 4, "operation field: $_";
     cmp_ok $op->[1], '~~', $_, 'operation name';
-    cmp_ok unpack('Q<', $op->[2]), '~~', $n, 'operation argument';
+    cmp_ok unpack('L<', $op->[2]), '~~', $n, 'operation argument';
 }
 
 $op = $s->space('test')->pack_operation([d => 'substr', 1, 2]);
