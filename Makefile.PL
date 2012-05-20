@@ -15,6 +15,12 @@ WriteMakefile(
             'AnyEvent'                  => 0,
             'Devel::GlobalDestruction'   => 0,
     }, # e.g., Module::Name => 1.1
+    META_MERGE => {
+        resources => {
+            homepage   => 'https://github.com/unera/dr-tarantool',
+            bugtracker => 'https://github.com/unera/dr-tarantool/issues',
+        }
+    },
     ABSTRACT_FROM  => 'lib/DR/Tarantool.pm', # retrieve abstract from module
     AUTHOR         => 'Dmitry E. Oboukhov <unera@debian.org>',
     LIBS              => ['-ltarantool'], # e.g., '-lm'
