@@ -11,7 +11,7 @@ PERLVERSION = $(shell grep '^our[[:space:]]\+$$VERSION' $(MAIN_MODULE) \
 	|head -n 1 \
 	|awk '{print $$4}'|sed "s/[';']//g" )
 
-install/libdbix-dr-perl::
+install/libdr-tarantool-perl::
 	test $(DEBVERSION) = $(PERLVERSION)
 	make tardist
 
