@@ -62,7 +62,7 @@ our %EXPORT_TAGS = (
 our @EXPORT_OK = ( map { @$_ } values %EXPORT_TAGS );
 $EXPORT_TAGS{all} = \@EXPORT_OK;
 our @EXPORT = @{ $EXPORT_TAGS{client} };
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 
 
 =head1 EXPORT

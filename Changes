@@ -9,3 +9,6 @@ Revision history for Perl extension DR::Tarantool.
 
 0.03  Sun May 20 17:17:38 MSK 2012
 	- fix forgotten depends
+
+0.04  Tue May 22 17:52:21 MSK 2012
+	- upgrade tests for new upstream library (there is no changes in driver)
