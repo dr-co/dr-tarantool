@@ -7,7 +7,7 @@ use open qw(:std :utf8);
 use lib qw(lib ../lib);
 use lib qw(blib/lib blib/arch ../blib/lib ../blib/arch);
 
-use Test::More tests    => 137;
+use Test::More tests    => 144;
 use Encode qw(decode encode);
 
 
@@ -80,8 +80,14 @@ cmp_ok $a[1], '~~', length($sbody) - 3 * 4, 'body length';
 cmp_ok $a[2], '~~', 119, 'request id';
 
 cmp_ok $a[3], '~~', 120, 'space no';
-# cmp_ok $a[4], '~~', 121, 'flags';  # libtarantool ignores flags
-cmp_ok $a[4], '~~', 2,  'tuple size';
+
+if (TNT_DELETE == 20) {
+    ok 1, '# skipped old delete code';
+    cmp_ok $a[4], '~~', 2,  'tuple size';
+} else {
+    cmp_ok $a[4], '~~', 121, 'flags';  # libtarantool ignores flags
+    cmp_ok $a[5], '~~', 2,  'tuple size';
+}
 
 # call
 $sbody = DR::Tarantool::_pkt_call_lua( 124, 125, 'tproc', [ 126, 127 ]);
@@ -151,9 +157,12 @@ for my $bin (@bins) {
     ok $pkt, 'response body was read';
 
     my $res = DR::Tarantool::_pkt_parse_response( $pkt );
-    cmp_ok $res->{status}, '~~', $status, 'status';
-    cmp_ok $res->{type}, '~~', $type, 'status';
-    cmp_ok $res->{code}, '~~', $err, 'error code';
-    ok $res->{errstr}, 'errstr' if $res->{code};
+    SKIP: {
+        skip 'legacy delete packet', 4 if $type == 20 and TNT_DELETE != 20;
+        cmp_ok $res->{status}, '~~', $status, 'status';
+        cmp_ok $res->{type}, '~~', $type, 'status';
+        cmp_ok $res->{code}, '~~', $err, 'error code';
+        ok ( !($res->{code} xor $res->{errstr}), 'errstr' );
+    }
 }
 
