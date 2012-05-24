@@ -19,3 +19,6 @@ Revision history for Perl extension DR::Tarantool.
 
 0.06  Thu May 24 13:54:30 MSK 2012
 	- sync methods return tuple or undef
+
+0.07  Thu May 24 18:06:17 MSK 2012
+        - iterator can construct Your objects.

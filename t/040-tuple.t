@@ -6,7 +6,7 @@ use utf8;
 use open qw(:std :utf8);
 use lib qw(lib ../lib);
 
-use Test::More tests    => 25;
+use Test::More tests    => 32;
 use Encode qw(decode encode);
 
 
@@ -77,14 +77,37 @@ while( my $t = $it->next ) {
 }
 
 
-$tp = new DR::Tarantool::Tuple( [ [ 'aa' ], [ 'bb' ], ], $s->space('test') );
-isa_ok $tp => 'DR::Tarantool::Tuple';
-cmp_ok $tp->iter->count, '~~', 2, 'create tuple list';
-
-
 $tp = DR::Tarantool::Tuple->unpack(
     [ pack('L<', 10), pack('L<', 20) ], $s->space('test')
 );
 isa_ok $tp => 'DR::Tarantool::Tuple';
 cmp_ok $tp->raw(0), '~~', 10, 'raw(0)';
 cmp_ok $tp->raw(1), '~~', 20, 'raw(1)';
+
+$tp = new DR::Tarantool::Tuple( [ [ 'aa' ], [ 'bb' ], ], $s->space('test') );
+isa_ok $tp => 'DR::Tarantool::Tuple';
+cmp_ok $tp->iter->count, '~~', 2, 'create tuple list';
+
+my $iter = $tp->iter;
+isa_ok $iter => 'DR::Tarantool::Tuple::Iterator', 'iterator';
+isa_ok $iter->next => 'DR::Tarantool::Tuple', 'no iterator class';
+
+$iter = $tp->iter('TestItem');
+isa_ok $iter => 'DR::Tarantool::Tuple::Iterator', 'iterator with TestItem';
+$tp = $iter->next;
+isa_ok $tp => 'TestItem';
+isa_ok $tp->{tuple} => 'DR::Tarantool::Tuple';
+cmp_ok $tp->{tuple}->raw(0), '~~', 'aa',  'tuple(0).raw(0)';
+cmp_ok $iter->next->{tuple}->raw(0), '~~', 'bb', 'tuple(1).raw(0)';
+
+
+package TestItem;
+
+sub new {
+    my ($class, $tuple) = @_;
+    return bless { tuple => $tuple } => $class;
+}
+
+
+
+

@@ -1,3 +1,9 @@
+libdr-tarantool-perl (0.07-1) unstable; urgency=low
+
+  * Iterators can construct objects. New version.
+
+ -- Dmitry E. Oboukhov <unera@debian.org>  Thu, 24 May 2012 18:06:52 +0400
+
 libdr-tarantool-perl (0.06-1) unstable; urgency=low
 
   * New version (sync methods return tuple or undef).

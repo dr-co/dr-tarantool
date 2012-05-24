@@ -148,18 +148,34 @@ sub next :method {
 
 Returns iterator linked with the tuple.
 
+
     my $iterator = $tuple->iter;
+
+    my $iterator = $tuple->iter('MyTupleClass', 'new');
 
     while(my $t = $iterator->next) {
         # the first value of $t and $tuple are the same
         ...
     }
 
+=head3 Arguments
+
+=over
+
+=item package (optional)
+
+=item method (optional, default: B<new>)
+
+if 'package' and 'method' are present, $iterator->L<next> method will
+construct objects using C<< $package->$method( $next_tuple ) >>
+
+=back
+
 =cut
 
 sub iter :method {
-    my ($self) = @_;
-    return DR::Tarantool::Tuple::Iterator->new( $self );
+    my ($self, $class, $method) = @_;
+    return DR::Tarantool::Tuple::Iterator->new( $self, $class, $method );
 }
 
 
@@ -196,11 +212,31 @@ use Scalar::Util 'weaken', 'blessed';
 
     my $iter = $tuple->iter;    # the same
 
+=head3 Arguments
+
+=over
+
+=item tuple
+
+=item package (optional)
+
+=item method (optional, default: new)
+
+
+if 'package' and 'method' are present, L<next> method will construct
+objects using C<< $package->$method( $next_tuple ) >>
+
+=back
+
 =cut
 
 sub new {
-    my ($class, $t) = @_;
-    return bless { head => $t } => ref($class) || $class;
+    my ($class, $t, $iclass, $imethod) = @_;
+    return bless {
+        head => $t,
+        class   => $iclass,
+        method  => $imethod
+    } => ref($class) || $class;
 }
 
 
@@ -263,7 +299,16 @@ sub next :method {
     } else {
         $self->{cur} = $self->{head}
     }
-    weaken $self->{cur} if defined $self->{cur};
+
+    return undef unless defined $self->{cur};
+    weaken $self->{cur};
+
+
+    if ($self->{class}) {
+        my ($c, $m) = ($self->{class}, $self->{method});
+        $m ||= 'new';
+        return $c->$m( $self->{cur} );
+    }
     return $self->{cur};
 
 }
