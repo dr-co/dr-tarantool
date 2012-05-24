@@ -232,6 +232,12 @@ objects using C<< $package->$method( $next_tuple ) >>
 
 sub new {
     my ($class, $t, $iclass, $imethod) = @_;
+
+    if ($iclass) {
+        $imethod ||= 'new';
+        croak "Can't locate method '$imethod' via package '$iclass'"
+            unless $iclass->can($imethod);
+    }
     return bless {
         head => $t,
         class   => $iclass,
