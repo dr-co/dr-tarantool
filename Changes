@@ -12,3 +12,7 @@ Revision history for Perl extension DR::Tarantool.
 
 0.04  Tue May 22 17:52:21 MSK 2012
 	- upgrade tests for new upstream library (there is no changes in driver)
+
+0.05  Thu May 24 11:50:11 MSK 2012
+        - call_lua always unpacks fields, even if You doesn't define
+            their types.

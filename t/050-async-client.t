@@ -7,7 +7,7 @@ use open qw(:std :utf8);
 use lib qw(lib ../lib);
 use lib qw(blib/lib blib/arch ../blib/lib ../blib/arch);
 
-use constant PLAN       => 74;
+use constant PLAN       => 80;
 use Test::More tests    => PLAN;
 use Encode qw(decode encode);
 
@@ -192,6 +192,7 @@ SKIP: {
                 $cv->end;
             }
         );
+
         $cv->begin;
         $client->call_lua(
             'box.select' => [ 0, 0, 10 ],
@@ -208,6 +209,26 @@ SKIP: {
                 $cv->end;
             }
         );
+
+        $cv->begin;
+        $client->call_lua(
+            'box.select' => [ 0, 0, 10 ],
+            args    => [ 's', 'i', { type => 'NUM' } ],
+            sub {
+                my ($status, $tuple) = @_;
+                cmp_ok $status, '~~', 'ok', 'status';
+                isa_ok $tuple => 'DR::Tarantool::Tuple', 'tuple packed';
+                SKIP: {
+                    skip 'there is no tuple', 4 unless $tuple;
+                    cmp_ok unpack('L<', $tuple->raw(0)), '~~', 10, 'id';
+                    cmp_ok $tuple->raw(1), '~~', 'user', 'name';
+                    cmp_ok unpack('L<', $tuple->raw(2)), '~~', 11, 'key';
+                    cmp_ok $tuple->raw(3), '~~', 'password', 'password';
+                }
+                $cv->end;
+            }
+        );
+
         $cv->begin;
         $client->call_lua(
             'box.select' => [ 0, 0, pack 'L<' => 10 ],
@@ -223,6 +244,7 @@ SKIP: {
                 $cv->end;
             }
         );
+
         $cv->begin;
         $client->call_lua(
             'box.select' => [ 0, 0, pack 'L<' => 11 ],
@@ -234,6 +256,7 @@ SKIP: {
                 $cv->end;
             }
         );
+
         $cv->begin;
         $client->call_lua(
             'box.select' => [ ],

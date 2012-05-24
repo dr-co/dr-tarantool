@@ -404,6 +404,15 @@ sub call_lua {
                 indexes => {}
             },
         );
+    } else {
+        $s = DR::Tarantool::Space->new(
+            0 =>
+            {
+                name            => 'temp_space',
+                fields          => [],
+                indexes         => {}
+            },
+        );
     }
 
     if ($opts{args}) {
