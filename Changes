@@ -16,3 +16,6 @@ Revision history for Perl extension DR::Tarantool.
 0.05  Thu May 24 11:50:11 MSK 2012
         - call_lua always unpacks fields, even if You doesn't define
             their types.
+
+0.06  Thu May 24 13:54:30 MSK 2012
+	- sync methods return tuple or undef
