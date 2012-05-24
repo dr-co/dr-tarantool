@@ -130,7 +130,7 @@ SKIP: {
     cmp_ok $t->password, '~~', 'test', 'password';
 
     $t = $client->update(first_space => 2 => [ name => set => 'привет1' ]);
-    cmp_ok $t, '~~', 'ok', '* update without flags';
+    cmp_ok $t, '~~', undef, '* update without flags';
     $t = $client->update(
         first_space => 2 => [ name => set => 'привет медвед' ], TNT_FLAG_RETURN
     );

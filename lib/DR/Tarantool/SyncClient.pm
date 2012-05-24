@@ -69,37 +69,42 @@ sub connect {
 
 The same L<DR::Tarantool::AsyncClient/ping> exclude callback.
 
-Returns 'B<ok>' or B<FALSE> if an error.
+Returns B<TRUE> or B<FALSE> if an error.
 
 =head2 insert
 
 The same L<DR::Tarantool::AsyncClient/insert> exclude callback.
 
-Returns 'B<ok>' or tuples that were extracted from database.
+Returns tuples that were extracted from database or undef.
+Croaks error if an error was happened.
 
 =head2 select
 
 The same L<DR::Tarantool::AsyncClient/select> exclude callback.
 
-Returns 'B<ok>' or tuples that were extracted from database.
+Returns tuples that were extracted from database or undef.
+Croaks error if an error was happened.
 
 =head2 update
 
 The same L<DR::Tarantool::AsyncClient/update> exclude callback.
 
-Returns 'B<ok>' or tuples that were extracted from database.
+Returns tuples that were extracted from database or undef.
+Croaks error if an error was happened.
 
 =head2 delete
 
 The same L<DR::Tarantool::AsyncClient/delete> exclude callback.
 
-Returns 'B<ok>' or tuples that were extracted from database.
+Returns tuples that were extracted from database or undef.
+Croaks error if an error was happened.
 
 =head2 call_lua
 
 The same L<DR::Tarantool::AsyncClient/call_lua> exclude callback.
 
-Returns 'B<ok>' or tuples that were extracted from database.
+Returns tuples that were extracted from database or undef.
+Croaks error if an error was happened.
 
 =cut
 
@@ -115,9 +120,10 @@ for my $method (qw(ping insert select update delete call_lua)) {
         $cv->recv;
 
         if ($res[0] ~~ 'ok') {
-            return $res[1] // $res[0];
+            return 1 if $method eq 'ping';
+            return $res[1];
         }
-        return if $method eq 'ping';
+        return 0 if $method eq 'ping';
         croak  "$res[1]: $res[2]";
     };
 }
