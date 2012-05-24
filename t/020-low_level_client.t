@@ -7,7 +7,7 @@ use open qw(:std :utf8);
 use lib qw(lib ../lib);
 use lib qw(blib/lib blib/arch ../blib/lib ../blib/arch);
 
-use constant PLAN       => 72;
+use constant PLAN       => 76;
 use Test::More tests    => PLAN;
 use Encode qw(decode encode);
 
@@ -257,12 +257,18 @@ SKIP: {
                 cmp_ok $res->{status}, '~~', 'ok', 'status';
                 cmp_ok $res->{type}, '~~', TNT_DELETE, 'type';
 
-#                 cmp_ok $res->{tuples}[0][1], '~~', 'abeftail',
-#                     'deleted tuple 1';
-#                 cmp_ok $res->{tuples}[0][2], '~~', (pack 'L<', 123),
-#                     'deleted tuple 2';
-#                 cmp_ok $res->{tuples}[0][3], '~~', 'third', 'deleted tuple 3';
-#                 cmp_ok $res->{tuples}[0][4], '~~', 'fourth', 'deleted tuple 4';
+                SKIP: {
+                    skip 'Old version of delete', 4 unless TNT_DELETE == 21;
+                    cmp_ok $res->{tuples}[0][1], '~~', 'abeftail',
+                        'deleted tuple 1';
+                    cmp_ok $res->{tuples}[0][2], '~~', (pack 'L<', 123),
+                        'deleted tuple 2';
+                    cmp_ok $res->{tuples}[0][3], '~~', 'third',
+                        'deleted tuple 3';
+                    cmp_ok $res->{tuples}[0][4], '~~', 'fourth',
+                        'deleted tuple 4';
+                }
+
                 $cv->send if --$cnt == 0;
             }
         );
