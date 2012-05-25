@@ -6,6 +6,7 @@ Build-Depends: debhelper (>= 7), cdbs,
  libanyevent-perl,
  libtarantool-dev,
  libdevel-globaldestruction-perl,
+ libjson-xs-perl,
  tarantool
 Standards-Version: 3.9.2
 Priority: extra
@@ -14,6 +15,7 @@ VCS-Browser: https://github.com/unera/dbix-dr
 Package: libdr-tarantool-perl
 Depends: ${perl:Depends}, ${misc:Depends}, ${shlibs:Depends},
  libanyevent-perl,
+ libjson-xs-perl,
  libdevel-globaldestruction-perl
 Architecture: any
 Suggests: tarantool
