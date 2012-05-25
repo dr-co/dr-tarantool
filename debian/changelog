@@ -1,3 +1,9 @@
+libdr-tarantool-perl (0.08-1) unstable; urgency=low
+
+  * New version. Add 'JSON' to fields type list.
+
+ -- Dmitry E. Oboukhov <unera@debian.org>  Fri, 25 May 2012 11:13:30 +0400
+
 libdr-tarantool-perl (0.07-1) unstable; urgency=low
 
   * Iterators can construct objects. New version.

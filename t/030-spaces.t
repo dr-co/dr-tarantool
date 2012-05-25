@@ -6,7 +6,7 @@ use utf8;
 use open qw(:std :utf8);
 use lib qw(lib ../lib);
 
-use Test::More tests    => 84;
+use Test::More tests    => 106;
 use Encode qw(decode encode);
 
 
@@ -59,6 +59,16 @@ my $s = MODEL->new({
                 fields  => [ qw(a b c) ]
             }
         }
+    },
+    1   => {
+        name    => 'json',
+        fields  => [
+            {
+                name => 'f',
+                type => 'JSON',
+            }
+        ],
+        indexes => {}
     }
 });
 
@@ -177,3 +187,48 @@ cmp_ok decode(utf8 => $op->[0][2]), '~~', 'тест', 'operation argument';
 cmp_ok $op->[1][0], '~~', 1, "operation field: set";
 cmp_ok $op->[1][1], '~~', 'insert', 'operation name';
 cmp_ok unpack('L<', $op->[1][2]), '~~', 500, 'operation argument';
+
+
+$op = $s->pack_field(json => f => undef);
+cmp_ok $op, '~~', 'null', 'pack json: undef';
+cmp_ok $s->unpack_field(json => f => $op), '~~', undef, 'unpack json: undef';
+
+$op = $s->pack_field(json => f => 123);
+cmp_ok $op, '~~', '123', 'pack json: scalar';
+cmp_ok $s->unpack_field(json => f => $op), '~~', 123, 'unpack json: scalar';
+
+$op = $s->pack_field(json => f => []);
+cmp_ok $op, '~~', '[]', 'pack json: empty array';
+isa_ok $s->unpack_field(json => f => $op) => 'ARRAY',
+    'unpack json: empty array';
+
+$op = $s->pack_field(json => f => {});
+cmp_ok $op, '~~', '{}', 'pack json: empty hash';
+isa_ok $s->unpack_field(json => f => $op) => 'HASH',
+    'unpack json: empty hash';
+
+$op = $s->pack_field(json => f => [qw(hello world)]);
+cmp_ok decode(utf8 => $op), '~~', '["hello","world"]', 'pack json: array';
+$op = $s->unpack_field(json => f => $op);
+isa_ok $op => 'ARRAY', 'unpack json: array';
+cmp_ok $op->[0], '~~', 'hello', 'first element';
+cmp_ok $op->[1], '~~', 'world', 'second element';
+
+$op = $s->pack_field(json => f => [qw(привет медвед)]);
+cmp_ok decode(utf8 => $op), '~~', '["привет","медвед"]', 'pack json: array';
+$op = $s->unpack_field(json => f => $op);
+isa_ok $op => 'ARRAY', 'unpack json: array';
+cmp_ok $op->[0], '~~', 'привет', 'first utf8 element';
+cmp_ok $op->[1], '~~', 'медвед', 'second utf8 element';
+
+$op = $s->pack_field(json => f => {qw(hello world)});
+cmp_ok decode(utf8 => $op), '~~', '{"hello":"world"}', 'pack json: hash';
+$op = $s->unpack_field(json => f => $op);
+isa_ok $op => 'HASH', 'unpack json: hash';
+cmp_ok $op->{hello}, '~~', 'world', 'key element';
+
+$op = $s->pack_field(json => f => {qw(привет медвед)});
+cmp_ok decode(utf8 => $op), '~~', '{"привет":"медвед"}', 'pack json: hash';
+$op = $s->unpack_field(json => f => $op);
+isa_ok $op => 'HASH', 'unpack json: hash';
+cmp_ok $op->{привет}, '~~', 'медвед', 'key utf8 element';

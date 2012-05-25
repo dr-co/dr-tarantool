@@ -7,7 +7,7 @@ use open qw(:std :utf8);
 use lib qw(lib ../lib);
 use lib qw(blib/lib blib/arch ../blib/lib ../blib/arch);
 
-use constant PLAN       => 44;
+use constant PLAN       => 51;
 use Test::More tests    => PLAN;
 use Encode qw(decode encode);
 
@@ -54,6 +54,10 @@ my $spaces = {
             {
                 name    => 'password',
                 type    => 'STR',
+            },
+            {
+                name    => 'json',
+                type    => 'JSON',
             }
         ],
         indexes => {
@@ -136,4 +140,26 @@ SKIP: {
     );
     isa_ok $t => 'DR::Tarantool::Tuple', 'update with flags';
     cmp_ok $t->name, '~~', 'привет медвед', '$t->name';
+
+
+    $t = $client->insert(first_space => [1, 2, 3, 4, undef], TNT_FLAG_RETURN);
+    cmp_ok $t->json, '~~', undef, 'JSON insert: undef';
+
+    $t = $client->insert(first_space => [1, 2, 3, 4, 22], TNT_FLAG_RETURN);
+    cmp_ok $t->json, '~~', 22, 'JSON insert: scalar';
+
+    $t = $client->insert(first_space => [1, 2, 3, 4, 'тест'], TNT_FLAG_RETURN);
+    cmp_ok $t->json, '~~', 'тест', 'JSON insert: utf8 scalar';
+
+    $t = $client->insert(
+        first_space => [ 1, 2, 3, 4, { a => 'b' } ], TNT_FLAG_RETURN
+    );
+    isa_ok $t->json => 'HASH', 'JSON insert: hash';
+    cmp_ok $t->json->{a}, '~~', 'b', 'JSON insert: hash value';
+
+    $t = $client->insert(
+        first_space => [ 1, 2, 3, 4, { привет => 'медвед' } ], TNT_FLAG_RETURN
+    );
+    isa_ok $t->json => 'HASH', 'JSON insert: hash';
+    cmp_ok $t->json->{привет}, '~~', 'медвед', 'JSON insert: hash utf8 value';
 }

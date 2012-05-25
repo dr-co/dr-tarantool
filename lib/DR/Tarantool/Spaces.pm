@@ -26,6 +26,10 @@ DR::Tarantool::Spaces - spaces container
                     {
                         name    => 'something',
                         type    => 'UTF8STR',
+                    },
+                    {
+                        name    => 'opts',
+                        type    => 'JSON',
                     }
                 ],
                 indexes => {
@@ -51,6 +55,29 @@ DR::Tarantool::Spaces - spaces container
     my $f = $s->pack_field('users', 1, 10);             # the same
     my $f = $s->pack_field(1, 1, 10);                   # the same
 
+
+=head1 DESCRIPTION
+
+The package describes all spaces that You use. It supports the following
+field types:
+
+=over
+
+=item NUM, NUM64, STR
+
+- standard L<tarantool|http://tarantool.org> types.
+
+=item UTF8STR
+
+- the same as B<STR>, but string will be utf8-decoded after extracting
+from database.
+
+=item JSON
+
+- the filed will be encoded by L<JSON::XS> before inserting and decoded
+after extracting from database.
+
+=back
 
 =head1 METHODS
 
@@ -167,6 +194,7 @@ sub unpack_tuple {
 package DR::Tarantool::Space;
 use Carp;
 $Carp::Internal{ (__PACKAGE__) }++;
+use JSON::XS ();
 
 =head1 SPACES methods
 
@@ -195,7 +223,7 @@ sub new {
     my (@fields, %fast, $default_type);
     $default_type = $space->{default_type} || 'STR';
     croak "wrong 'default_type'"
-        unless $default_type =~ /^(?:STR|NUM|NUM64|UTF8STR)$/;
+        unless $default_type =~ /^(?:STR|NUM|NUM64|UTF8STR|JSON)$/;
 
     for (my $no = 0; $no < @{ $space->{fields} }; $no++) {
         my $f = $space->{ fields }[ $no ];
@@ -218,7 +246,8 @@ sub new {
 
         my $s = $fields[ -1 ];
         croak 'unknown field type: ' . ($s->{type} // 'undef')
-            unless $s->{type} and $s->{type} =~ /^(?:STR|NUM|NUM64|UTF8STR)$/;
+            unless $s->{type} and
+                $s->{type} =~ /^(?:STR|NUM|NUM64|UTF8STR|JSON)$/;
 
         croak 'wrong field name: ' . ($s->{name} // 'undef')
             unless $s->{name} and $s->{name} =~ /^[a-z_]\w*$/i;
@@ -321,6 +350,12 @@ sub pack_field {
 
     my $type = $f ? $f->{type} : $self->{default_type};
 
+    if ($type eq 'JSON') {
+        my $v = eval { JSON::XS->new->allow_nonref->utf8->encode( $value ) };
+        croak "Can't pack json: $@" if $@;
+        return $v;
+    }
+
     my $v = $value;
     utf8::encode( $v ) if utf8::is_utf8( $v );
     return $v if $type eq 'STR' or $type eq 'UTF8STR';
@@ -347,6 +382,13 @@ sub unpack_field {
 
     my $v = $value;
     utf8::encode( $v ) if utf8::is_utf8( $v );
+
+    if ($type eq 'JSON') {
+        $v = JSON::XS->new->allow_nonref->utf8->decode( $v );
+        croak "Can't unpack json: $@" if $@;
+        return $v;
+    }
+
     $v = unpack 'L<' => $v  if $type eq 'NUM';
     $v = unpack 'Q<' => $v  if $type eq 'NUM64';
     utf8::decode( $v )      if $type eq 'UTF8STR';

@@ -22,3 +22,6 @@ Revision history for Perl extension DR::Tarantool.
 
 0.07  Thu May 24 18:06:17 MSK 2012
         - iterator can construct Your objects.
+
+0.08  Fri May 25 11:12:40 MSK 2012
+        - add 'JSON' to filed type list.
