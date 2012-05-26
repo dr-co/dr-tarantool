@@ -61,7 +61,7 @@ sub new :method {
         my $self = $class->new( $tuple->[0], $space );
 
         for (my $i = 1; $i < @$tuple; $i++) {
-            $self->next( $tuple->[1] );
+            $self->next( $tuple->[ $i ] );
         }
         return $self;
     }

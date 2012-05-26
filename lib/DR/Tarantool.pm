@@ -62,7 +62,7 @@ our %EXPORT_TAGS = (
 our @EXPORT_OK = ( map { @$_ } values %EXPORT_TAGS );
 $EXPORT_TAGS{all} = \@EXPORT_OK;
 our @EXPORT = @{ $EXPORT_TAGS{client} };
-our $VERSION = '0.08';
+our $VERSION = '0.09';
 
 
 =head1 EXPORT
@@ -88,7 +88,7 @@ sub tarantool       {
 =head2 async_tarantool
 
 connects to L<tarantool|http://tarantool.org> in sync mode using
-L<DR::Tarantool::SyncClient>.
+L<DR::Tarantool::AsyncClient>.
 
 =cut
 

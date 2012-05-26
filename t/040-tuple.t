@@ -6,7 +6,7 @@ use utf8;
 use open qw(:std :utf8);
 use lib qw(lib ../lib);
 
-use Test::More tests    => 46;
+use Test::More tests    => 49;
 use Encode qw(decode encode);
 
 
@@ -96,6 +96,13 @@ while( my $t = $it->next ) {
     isa_ok $t => 'DR::Tarantool::Tuple';
 }
 
+$tp = new DR::Tarantool::Tuple( [ [ 'aa' ], [ 'bb' ], [ 'cc' ] ],
+    $s->space('test')
+);
+
+cmp_ok $tp->raw(0), '~~', 'aa', 'tuple[0]';
+cmp_ok $tp->next->raw(0), '~~', 'bb', 'tuple[0]';
+cmp_ok $tp->next->next->raw(0), '~~', 'cc', 'tuple[0]';
 
 $tp = DR::Tarantool::Tuple->unpack(
     [ pack('L<', 10), pack('L<', 20) ], $s->space('test')
