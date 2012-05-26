@@ -301,7 +301,7 @@ Returns next element from the iterator.
 sub next :method {
     my ($self) = @_;
     if (defined $self->{cur}) {
-        $self->{cur} = $self->{cur}{tail};
+        $self->{cur} = $self->{cur}->next;
     } else {
         $self->{cur} = $self->{head}
     }

@@ -6,7 +6,7 @@ use utf8;
 use open qw(:std :utf8);
 use lib qw(lib ../lib);
 
-use Test::More tests    => 32;
+use Test::More tests    => 46;
 use Encode qw(decode encode);
 
 
@@ -63,11 +63,31 @@ cmp_ok $tp->d, '~~', undef, 'raw(3)';
 ok !eval { $tp->unknown; 1 }, 'unknown';
 
 my $tp2 = $tp->next(['dd', 'ee']);
+my $tp3 = $tp->next(['ff', 'gg']);
 isa_ok $tp2 => 'DR::Tarantool::Tuple';
+isa_ok $tp3 => 'DR::Tarantool::Tuple';
+
+cmp_ok $tp2->raw(0), '~~', 'dd', 'tp2->raw(0)';
+cmp_ok $tp2->raw(1), '~~', 'ee', 'tp2->raw(1)';
+cmp_ok $tp3->raw(0), '~~', 'ff', 'tp3->raw(0)';
+cmp_ok $tp3->raw(1), '~~', 'gg', 'tp3->raw(1)';
 
 my $it = $tp->iter;
 isa_ok $it => 'DR::Tarantool::Tuple::Iterator';
-cmp_ok $it->count, '~~', 2, 'count';
+cmp_ok $it->count, '~~', 3, 'count';
+
+$tp = $it->next;
+cmp_ok $tp->raw(0), '~~', 'aa', 'raw(0)';
+cmp_ok $tp->raw(1), '~~', 'bb', 'raw(1)';
+$tp = $it->next;
+cmp_ok $tp->raw(0), '~~', 'dd', 'raw(0)';
+cmp_ok $tp->raw(1), '~~', 'ee', 'raw(1)';
+$tp = $it->next;
+cmp_ok $tp->raw(0), '~~', 'ff', 'raw(0)';
+cmp_ok $tp->raw(1), '~~', 'gg', 'raw(1)';
+$tp = $it->next;
+cmp_ok $tp, '~~', undef, 'iterator finished';
+
 
 while( my $t = $it->next ) {
     isa_ok $t => 'DR::Tarantool::Tuple';
