@@ -7,7 +7,9 @@ Build-Depends: debhelper (>= 7), cdbs,
  libtarantool-dev,
  libdevel-globaldestruction-perl,
  libjson-xs-perl,
- tarantool
+ tarantool,
+ aspell-en,
+ libtest-spelling-perl
 Standards-Version: 3.9.2
 Priority: extra
 VCS-Browser: https://github.com/unera/dbix-dr
