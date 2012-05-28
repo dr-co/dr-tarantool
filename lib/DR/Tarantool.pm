@@ -12,7 +12,10 @@ DR::Tarantool - perl driver for L<tarantool|http://tarantool.org>
 
     my $tnt = tarantool
         host    => '127.0.0.1',
-        port    => 123
+        port    => 123,
+        spaces  => {
+            ...
+        }
     ;
 
     $tnt->update( ... );
@@ -22,6 +25,9 @@ DR::Tarantool - perl driver for L<tarantool|http://tarantool.org>
     async_tarantool
         host    => '127.0.0.1',
         port    => 123,
+        spaces  => {
+            ...
+        },
         sub {
             ...
         }
