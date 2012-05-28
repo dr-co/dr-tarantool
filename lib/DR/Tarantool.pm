@@ -20,6 +20,14 @@ DR::Tarantool - perl driver for L<tarantool|http://tarantool.org>
 
     $tnt->update( ... );
 
+    my $tnt = coro_tarantool
+        host    => '127.0.0.1',
+        port    => 123,
+        spaces  => {
+            ...
+        }
+    ;
+
     use DR::Tarantool ':constant', 'async_tarantool';
 
     async_tarantool
