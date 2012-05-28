@@ -25,6 +25,8 @@ t/050-async-client.t
 t/060-sync-client.t
 t/070-coro-client.t
 t/080-tarantool.t
+t/900-podspell.t
+t/910-pod.t
 Tarantool.xs
 t/test-data/00013-000-ok.bin
 t/test-data/00013-14082-error.bin
@@ -35,4 +37,3 @@ t/test-data/00022-000-ok.bin
 t/test-data/65280-000-ok.bin
 t/test-data/llc-easy2.cfg
 t/test-data/llc-easy.cfg
-t/900-podspell.t
