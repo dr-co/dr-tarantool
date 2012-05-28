@@ -7,7 +7,7 @@ use open qw(:std :utf8);
 use lib qw(lib ../lib);
 use lib qw(blib/lib blib/arch ../blib/lib ../blib/arch);
 
-use constant PLAN       => 13;
+use constant PLAN       => 15;
 use Test::More tests    => PLAN;
 use Encode qw(decode encode);
 
@@ -76,7 +76,7 @@ SKIP: {
     );
 
     isa_ok $client => 'DR::Tarantool::SyncClient';
-    ok $client->ping, '* ping';
+    ok $client->ping, '* tarantool ping';
 
     # connect
     for my $cv (condvar AnyEvent) {
@@ -103,11 +103,18 @@ SKIP: {
         $client->ping(
             sub {
                 my ($status) = @_;
-                cmp_ok $status, '~~', 'ok', '* ping';
+                cmp_ok $status, '~~', 'ok', '* async_tarantool ping';
                 $cv->send;
             }
         );
         $cv->recv;
     }
+
+    $client = coro_tarantool
+        port    => $tnt->primary_port,
+        spaces  => $spaces
+    ;
+    isa_ok $client => 'DR::Tarantool::CoroClient';
+    ok $client->ping, '* coro_tarantool ping';
 }
 

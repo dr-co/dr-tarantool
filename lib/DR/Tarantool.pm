@@ -55,7 +55,7 @@ use base qw(Exporter);
 
 
 our %EXPORT_TAGS = (
-    client      => [ qw( tarantool async_tarantool ) ],
+    client      => [ qw( tarantool async_tarantool coro_tarantool) ],
     constant    => [
         qw(
             TNT_INSERT TNT_SELECT TNT_UPDATE TNT_DELETE TNT_CALL TNT_PING
@@ -68,7 +68,7 @@ our %EXPORT_TAGS = (
 our @EXPORT_OK = ( map { @$_ } values %EXPORT_TAGS );
 $EXPORT_TAGS{all} = \@EXPORT_OK;
 our @EXPORT = @{ $EXPORT_TAGS{client} };
-our $VERSION = '0.09';
+our $VERSION = '0.10';
 
 
 =head1 EXPORT
@@ -81,13 +81,13 @@ L<DR::Tarantool::SyncClient>.
 
 =cut
 
-sub tarantool       {
+sub tarantool {
     require DR::Tarantool::SyncClient;
     no warnings 'redefine';
     *tarantool = sub {
         DR::Tarantool::SyncClient->connect(@_);
     };
-    &tarantool;
+    goto \&tarantool;
 }
 
 
@@ -104,9 +104,26 @@ sub async_tarantool {
     *async_tarantool = sub {
         DR::Tarantool::AsyncClient->connect(@_);
     };
-    &async_tarantool;
+    goto \&async_tarantool;
 }
 
+
+=head2 coro_tarantol
+
+connects to L<tarantool|http://tarantool.org> in async mode using
+L<DR::Tarantool::CoroClient>.
+
+
+=cut
+
+sub coro_tarantool {
+    require DR::Tarantool::CoroClient;
+    no warnings 'redefine';
+    *coro_tarantool = sub {
+        DR::Tarantool::CoroClient->connect(@_);
+    };
+    goto \&coro_tarantool;
+}
 
 
 =head2 :constant

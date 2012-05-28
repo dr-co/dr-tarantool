@@ -4,8 +4,10 @@ debian/compat
 debian/control
 debian/copyright
 debian/rules
+debian/source/format
 debian/watch
 lib/DR/Tarantool/AsyncClient.pm
+lib/DR/Tarantool/CoroClient.pm
 lib/DR/Tarantool/LLClient.pm
 lib/DR/Tarantool.pm
 lib/DR/Tarantool/Spaces.pm
@@ -21,6 +23,8 @@ t/030-spaces.t
 t/040-tuple.t
 t/050-async-client.t
 t/060-sync-client.t
+t/070-coro-client.t
+t/080-tarantool.t
 Tarantool.xs
 t/test-data/00013-000-ok.bin
 t/test-data/00013-14082-error.bin
