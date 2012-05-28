@@ -14,10 +14,10 @@ VCS-Browser: https://github.com/unera/dbix-dr
 
 Package: libdr-tarantool-perl
 Depends: ${perl:Depends}, ${misc:Depends}, ${shlibs:Depends},
-Recommends: libcoro-perl
  libanyevent-perl,
  libjson-xs-perl,
  libdevel-globaldestruction-perl
+Recommends: libcoro-perl
 Architecture: any
 Suggests: tarantool
 Description: perl driver for Tarantool
