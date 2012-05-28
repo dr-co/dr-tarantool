@@ -1,6 +1,6 @@
 Source: libdr-tarantool-perl
 Section: perl
-Homepage: http://search.cpan.org/dist/DBIx-DR/
+Homepage: http://search.cpan.org/dist/DR-Tarantool/
 Maintainer: Dmitry E. Oboukhov <unera@debian.org>
 Build-Depends: debhelper (>= 7), cdbs,
  libanyevent-perl,
