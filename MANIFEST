@@ -27,6 +27,7 @@ t/070-coro-client.t
 t/080-tarantool.t
 t/900-podspell.t
 t/910-pod.t
+t/920-critic.xt
 Tarantool.xs
 t/test-data/00013-000-ok.bin
 t/test-data/00013-14082-error.bin

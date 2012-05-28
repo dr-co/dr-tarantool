@@ -48,7 +48,7 @@ sub run {
 
     my $cfg_file = $opts{cfg} or croak "config file not defined";
     croak "File not found" unless -r $cfg_file;
-    open my $fh, '<:utf8', $cfg_file or die "$@\n";
+    open my $fh, '<:encoding(UTF-8)', $cfg_file or die "$@\n";
     local $/;
     my $cfg = <$fh>;
 
@@ -88,7 +88,7 @@ Returns tarantool logs
 sub log {
     my ($self) = @_;
     return '' unless $self->{log} and -r $self->{log};
-    open my $fh, '<:utf8', $self->{log};
+    open my $fh, '<encoding(UTF-8)', $self->{log};
     local $/;
     my $l = <$fh>;
     return $l;
@@ -101,7 +101,7 @@ sub _start_tarantool {
     $self->{log} = catfile $self->{temp}, 'tarantool.log';
     $self->{pid} = catfile $self->{temp}, 'tarantool.pid';
 
-    return unless open my $fh, '>:utf8', $self->{cfg};
+    return unless open my $fh, '>:encoding(UTF-8)', $self->{cfg};
 
     print $fh "slab_alloc_arena = 0.1\n";
     print $fh "\n\n\n", $self->{cfg_data}, "\n\n\n";
@@ -139,7 +139,7 @@ sub _start_tarantool {
             PeerAddr => '127.0.0.1', PeerPort => $self->primary_port
         );
 
-        select undef, undef, undef, 0.01;
+        sleep 0.01;
     }
 }
 
