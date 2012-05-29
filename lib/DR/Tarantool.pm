@@ -101,7 +101,7 @@ sub tarantool {
 
 =head2 async_tarantool
 
-connects to L<tarantool|http://tarantool.org> in sync mode using
+connects to L<tarantool|http://tarantool.org> in async mode using
 L<DR::Tarantool::AsyncClient>.
 
 =cut
