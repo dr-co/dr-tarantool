@@ -6,7 +6,7 @@ use utf8;
 use open qw(:std :utf8);
 use lib qw(lib ../lib);
 
-use Test::More tests    => 106;
+use Test::More tests    => 110;
 use Encode qw(decode encode);
 
 
@@ -117,19 +117,33 @@ cmp_ok unpack('L<', $t->[4]), '~~', 10, 'tuple[4]';
 cmp_ok $t->[5], '~~', 'test', 'tuple[5]';
 
 # indexes
-$t = $s->space('test')->pack_keys([1, 2], 'i0');
-ok @{ $t->[0] } ~~ @{[ pack('L<', 1), pack 'L<', 2 ]}, 'pack_keys';
-$t = $s->space('test')->pack_keys([[2, 3]], 'i0');
-ok @{ $t->[0] } ~~ @{[ pack('L<', 2), pack 'L<', 3 ]}, 'pack_keys';
-$t = eval { $s->space('test')->pack_keys(1, 'i0'); };
+{
+    my $w;
+    local $SIG{__WARN__} = sub { $w = $_[0] };
+    $t = $s->space('test')->pack_keys([1, 2], 'i0');
+    like $w => qr{Ambiguous keys list}, 'ambiguous keys warning';
+    ok @{ $t->[0] } ~~ @{[ pack('L<', 1), pack 'L<', 2 ]}, 'pack_keys';
+    undef $w;
+    $t = $s->space('test')->pack_keys([[2, 3]], 'i0');
+    ok @{ $t->[0] } ~~ @{[ pack('L<', 2), pack 'L<', 3 ]}, 'pack_keys';
+    cmp_ok $w, '~~', undef, 'there was no ambiguous warning';
+}
+$t = eval { $s->space('test')->pack_keys([[1, 2, 3]], 'i0'); };
 like $@, qr{must have 2}, 'error message';
 cmp_ok $t, '~~', undef, 'wrong elements count';
 
-$t = $s->space('test')->pack_keys([1, 2], 0);
-ok @{ $t->[0] } ~~ @{[ pack('L<', 1), pack 'L<', 2 ]}, 'pack_keys';
-$t = $s->space('test')->pack_keys([[2, 3]], 0);
-ok @{ $t->[0] } ~~ @{[ pack('L<', 2), pack 'L<', 3 ]}, 'pack_keys';
-$t = eval { $s->space('test')->pack_keys(1, 0); };
+{
+    my $w;
+    local $SIG{__WARN__} = sub { $w = $_[0] };
+    $t = $s->space('test')->pack_keys([2, 3], 0);
+    like $w => qr{Ambiguous keys list}, 'ambiguous keys warning';
+    ok @{ $t->[0] } ~~ @{[ pack('L<', 2), pack 'L<', 3 ]}, 'pack_keys';
+    undef $w;
+    $t = $s->space('test')->pack_keys([[2, 3]], 0);
+    ok @{ $t->[0] } ~~ @{[ pack('L<', 2), pack 'L<', 3 ]}, 'pack_keys';
+    cmp_ok $w, '~~', undef, 'there was no ambiguous warning';
+}
+$t = eval { $s->space('test')->pack_keys([[1,2,3]], 0); };
 like $@, qr{must have 2}, 'error message';
 cmp_ok $t, '~~', undef, 'wrong elements count';
 
@@ -145,6 +159,9 @@ cmp_ok unpack('L<', $t->[1][0]), '~~', 8, 'pack_keys';
 cmp_ok unpack('L<', $t->[2][0]), '~~', 9, 'pack_keys';
 $t = eval { $s->space('test')->pack_keys([[7,8,9]], 'i2') };
 like $@, qr{must have 1}, 'error message';
+
+
+
 
 # pack_operation
 my $op = $s->space('test')->pack_operation([d => 'delete']);

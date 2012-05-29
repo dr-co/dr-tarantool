@@ -132,7 +132,7 @@ SKIP: {
     cmp_ok $t->key, '~~', 2, 'key';
     cmp_ok $t->password, '~~', 'test', 'password';
 
-    $t = $client->select(first_space => [2, 'test'], 'i2');
+    $t = $client->select(first_space => [[2, 'test']], 'i2');
     isa_ok $t => 'DR::Tarantool::Tuple', 'select tuple packed (i2)';
     cmp_ok $t->id, '~~', 1, 'id';
     cmp_ok $t->name, '~~', 'привет', 'name';

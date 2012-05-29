@@ -551,7 +551,7 @@ sub delete :method {
 
     $self->_llc->delete(
         $s->number,
-        $s->pack_key( $key ),
+        $s->pack_primary_key( $key ),
         $flags,
         sub { _cb_default($_[0], $s, $cb) }
     );
@@ -602,7 +602,7 @@ sub update {
 
     $self->_llc->update(
         $s->number,
-        $s->pack_key( $key ),
+        $s->pack_primary_key( $key ),
         $s->pack_operations( $op ),
         $flags,
         sub { _cb_default($_[0], $s, $cb) }

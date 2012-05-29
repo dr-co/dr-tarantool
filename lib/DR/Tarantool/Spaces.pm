@@ -55,6 +55,9 @@ DR::Tarantool::Spaces - spaces container
     my $f = $s->pack_field('users', 1, 10);             # the same
     my $f = $s->pack_field(1, 1, 10);                   # the same
 
+    my $ts = $s->pack_keys([1,2,3] => 'my_idx');
+    my $t = $s->pack_primary_key([1,2,3]);
+
 
 =head1 DESCRIPTION
 
@@ -444,24 +447,26 @@ sub _index {
 }
 
 sub pack_keys {
-    my ($self, $keys, $idx) = @_;
+    my ($self, $keys, $idx, $disable_warn) = @_;
 
     $idx = $self->_index($idx);
     my $ksize = @{ $idx->{fields} };
 
-    if ($ksize == 1) {
-        $keys = [ $keys ] unless ref $keys;
-        unless('ARRAY' eq ref $keys->[ 0 ]) {
-            $_ = [ $_ ] for @$keys;
+    $keys = [[ $keys ]] unless 'ARRAY' eq ref $keys;
+    unless('ARRAY' eq ref $keys->[0]) {
+        if ($ksize == @$keys) {
+            $keys = [ $keys ];
+            carp "Ambiguous keys list (it was used as ONE key), ".
+                    "Use brackets to solve the trouble."
+                        if $ksize > 1 and !$disable_warn;
+        } else {
+            $keys = [ map { [ $_ ] } @$keys ];
         }
-    } else {
-        croak "key must have $ksize elements" unless 'ARRAY' eq ref $keys;
-        $keys = [ $keys ] unless 'ARRAY' eq ref $keys->[ 0 ];
     }
 
     my @res;
     for my $k (@$keys) {
-        croak "key must have $ksize elements" unless $ksize == @$k;
+        croak "key must have $ksize elements" unless $ksize >= @$k;
         my @packed;
         for (my $i = 0; $i < @$k; $i++) {
             my $f = $self->_field($idx->{fields}[$i]);
@@ -472,13 +477,13 @@ sub pack_keys {
     return \@res;
 }
 
-sub pack_key {
+sub pack_primary_key {
     my ($self, $key) = @_;
 
     croak 'wrong key format'
         if 'ARRAY' eq ref $key and 'ARRAY' eq ref $key->[0];
 
-    my $t = $self->pack_keys($key, 0);
+    my $t = $self->pack_keys($key, 0, 1);
     return $t->[0];
 }
 
