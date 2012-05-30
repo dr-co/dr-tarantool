@@ -315,7 +315,7 @@ SV * _pkt_call_lua( req_id, flags, proc, tuple )
 
 
 
-HV * _pkt_parse_response( response )
+SV * _pkt_parse_response( response )
 	SV *response
 
 	CODE:
@@ -354,8 +354,7 @@ HV * _pkt_parse_response( response )
                             );
                         }
 		}
-                sv_2mortal( (SV *) res );
-		RETVAL = res;
+		RETVAL = newRV_noinc(res);
 		tnt_reply_free( &reply );
 
 	OUTPUT:
