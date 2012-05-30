@@ -101,6 +101,7 @@ use AnyEvent;
 use AnyEvent::Socket;
 use AnyEvent::Handle;
 use Carp;
+use Devel::GlobalDestruction;
 $Carp::Internal{ (__PACKAGE__) }++;
 
 use Scalar::Util 'weaken';
@@ -206,11 +207,12 @@ sub disconnect {
 }
 
 sub DESTROY {
+    return if in_global_destruction;
     my ($self) = @_;
     if ($self->is_connected) {
-        $self->{handle}->destroy;
         $self->{handle}->on_error( sub {  });
         $self->{handle}->on_eof( sub {  });
+        $self->{handle}->destroy;
         delete $self->{handle};
     }
 }

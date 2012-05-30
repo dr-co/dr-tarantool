@@ -199,6 +199,8 @@ sub AUTOLOAD :method {
     return $self->raw( $self->{space}->_field( $foo )->{idx} );
 }
 
+sub DESTROY {  }
+
 package DR::Tarantool::Tuple::Iterator;
 use Carp;
 $Carp::Internal{ (__PACKAGE__) }++;
