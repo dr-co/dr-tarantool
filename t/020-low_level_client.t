@@ -318,7 +318,7 @@ SKIP: {
     }
 
     # memory leak (You have touse external tool to watch memory)
-    if ($ENV{DRV_LEAK_TEST}) {
+    if ($ENV{LEAK_TEST}) {
         for my $cv (condvar AnyEvent) {
 
             my $cnt = 1000000;

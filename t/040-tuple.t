@@ -127,6 +127,11 @@ isa_ok $tp->{tuple} => 'DR::Tarantool::Tuple';
 cmp_ok $tp->{tuple}->raw(0), '~~', 'aa',  'tuple(0).raw(0)';
 cmp_ok $iter->next->{tuple}->raw(0), '~~', 'bb', 'tuple(1).raw(0)';
 
+# You have to use external tool to watch memory
+while($ENV{LEAK_TEST}) {
+    $tp = DR::Tarantool::Tuple->new([ [ 'aa' ], [ 'bb' ], ], $s->space('test'));
+    $tp = $tp->iter('TestItem')->next;
+}
 
 package TestItem;
 
