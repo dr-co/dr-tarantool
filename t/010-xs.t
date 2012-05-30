@@ -123,9 +123,10 @@ isa_ok $res => 'HASH', 'empty input';
 like $res->{errstr}, qr{too short}, 'error message';
 cmp_ok $res->{status}, '~~', 'buffer', 'status';
 
+my $data;
 for (TNT_INSERT, TNT_UPDATE, TNT_SELECT, TNT_DELETE, TNT_CALL, TNT_PING) {
     my $msg = "test message";
-    my $data = pack 'L< L< L< L< Z*',
+    $data = pack 'L< L< L< L< Z*',
         $_, 5 + length $msg, $_ + 100, 0x0101, $msg;
     $res = DR::Tarantool::_pkt_parse_response( $data );
     isa_ok $res => 'HASH', 'well input ' . $_;
