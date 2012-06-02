@@ -32,3 +32,7 @@ Revision history for Perl extension DR::Tarantool.
 0.11 Tue May 29 21:18:58 MSK 2012
         - add DR::Tarantool::CoroClient.
         - you can select tuples using partial index.
+
+0.12 Sat Jun  2 22:37:15 MSK 2012
+        - add INT & INT64 types (signed value)
+        - add MONEY & BIGMONEY types

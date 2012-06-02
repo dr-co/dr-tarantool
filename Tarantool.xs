@@ -135,9 +135,12 @@ static struct tnt_stream *tmake_oplist( AV *ops ) {
 		}
 
 		ARITH: {
-			tnt_update_arith(
-				b, fno, opcode, SvIV( *av_fetch( aop, 2, 0 ) )
-			);
+		        unsigned long long v = 0;
+			char *data = SvPV( *av_fetch( aop, 2, 0 ), size );
+			if (sizeof(v) < size)
+			    size = sizeof(v);
+			memcpy(&v, data, size); 
+			tnt_update_arith( b, fno, opcode, v );
 			continue;
 		}
 
