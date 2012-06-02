@@ -75,6 +75,10 @@ field types:
 - the same as B<STR>, but string will be utf8-decoded after extracting
 from database.
 
+=item INT & INT64
+
+- the same as B<NUM> and B<NUM64>, but contain signed values.
+
 =item JSON
 
 - the filed will be encoded by L<JSON::XS> before inserting and decoded
@@ -223,10 +227,11 @@ sub new {
         unless $name and $name =~ /^[a-z_]\w*$/i;
 
 
+    my $fqr = qr{^(?:STR|NUM|NUM64|INT|INT64|UTF8STR|JSON|MONEY|BIGMONEY)$};
+
     my (@fields, %fast, $default_type);
     $default_type = $space->{default_type} || 'STR';
-    croak "wrong 'default_type'"
-        unless $default_type =~ /^(?:STR|NUM|NUM64|UTF8STR|JSON)$/;
+    croak "wrong 'default_type'" unless $default_type =~ $fqr;
 
     for (my $no = 0; $no < @{ $space->{fields} }; $no++) {
         my $f = $space->{ fields }[ $no ];
@@ -249,8 +254,7 @@ sub new {
 
         my $s = $fields[ -1 ];
         croak 'unknown field type: ' . ($s->{type} // 'undef')
-            unless $s->{type} and
-                $s->{type} =~ /^(?:STR|NUM|NUM64|UTF8STR|JSON)$/;
+            unless $s->{type} and $s->{type} =~ $fqr;
 
         croak 'wrong field name: ' . ($s->{name} // 'undef')
             unless $s->{name} and $s->{name} =~ /^[a-z_]\w*$/i;
@@ -363,7 +367,31 @@ sub pack_field {
     utf8::encode( $v ) if utf8::is_utf8( $v );
     return $v if $type eq 'STR' or $type eq 'UTF8STR';
     return pack 'L<' => $v if $type eq 'NUM';
+    return pack 'l<' => $v if $type eq 'INT';
     return pack 'Q<' => $v if $type eq 'NUM64';
+    return pack 'q<' => $v if $type eq 'INT64';
+
+    if ($type eq 'MONEY' or $type eq 'BIGMONEY') {
+        my ($r, $k) = split /\./, $v;
+        for ($k) {
+            $_ //= '.00';
+            s/^\.//;
+            $_ .= '0' if length $_ < 2;
+            $_ = substr $_, 0, 2;
+        }
+        $r ||= 0;
+
+        if ($r < 0) {
+            $v = $r * 100 - $k;
+        } else {
+            $v = $r * 100 + $k;
+        }
+
+        return pack 'l<', $v if $type eq 'MONEY';
+        return pack 'q<', $v;
+    }
+
+
     croak 'Unknown field type:' . $type;
 }
 
@@ -393,8 +421,22 @@ sub unpack_field {
     }
 
     $v = unpack 'L<' => $v  if $type eq 'NUM';
+    $v = unpack 'l<' => $v  if $type eq 'INT';
     $v = unpack 'Q<' => $v  if $type eq 'NUM64';
+    $v = unpack 'q<' => $v  if $type eq 'INT64';
     utf8::decode( $v )      if $type eq 'UTF8STR';
+    if ($type eq 'MONEY' or $type eq 'BIGMONEY') {
+        $v = unpack 'l<' => $v if $type eq 'MONEY';
+        $v = unpack 'q<' => $v if $type eq 'BIGMONEY';
+        my $s = '';
+        if ($v < 0) {
+            $v = -$v;
+            $s = '-';
+        }
+        my $k = $v % 100;
+        my $r = ($v - $k) / 100;
+        $v = sprintf '%s%d.%02d', $s, $r, $k;
+    }
     return $v;
 }
 

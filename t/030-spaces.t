@@ -6,7 +6,7 @@ use utf8;
 use open qw(:std :utf8);
 use lib qw(lib ../lib);
 
-use Test::More tests    => 110;
+use Test::More tests    => 123;
 use Encode qw(decode encode);
 
 
@@ -48,6 +48,14 @@ my $s = MODEL->new({
             {
                 type    => 'STR',
                 name    => 'abcd',
+            },
+            {
+                type    => 'INT',
+                name    => 'int',
+            },
+            {
+                type    => 'MONEY',
+                name    => 'money',
             }
         ],
         indexes => {
@@ -84,13 +92,33 @@ $v = $s->pack_field( test => d => 'test' );
 cmp_ok $v, '~~', 'test', 'pack_field STR';
 $v = decode utf8 => $s->pack_field( test => d => 'привет' );
 cmp_ok $v, '~~', 'привет', 'pack_field STR';
-
+$v = unpack 'l<' => $s->pack_field( test => int => -10 );
+cmp_ok $v, '~~', -10, 'pack_field INT';
 $v = decode utf8 => $s->pack_field( test => d => encode utf8 => 'привет' );
 cmp_ok $v, '~~', 'привет', 'pack_field STR';
+
+# money
+$v = unpack 'l<' => $s->pack_field( test => money => '123');
+cmp_ok $v, '~~', 12300, 'pack_field MONEY(123)';
+$v = unpack 'l<' => $s->pack_field( test => money => '-123');
+cmp_ok $v, '~~', -12300, 'pack_field MONEY(-123)';
+$v = unpack 'l<' => $s->pack_field( test => money => '.123');
+cmp_ok $v, '~~', 12, 'pack_field MONEY(.12)';
+$v = unpack 'l<' => $s->pack_field( test => money => '0');
+cmp_ok $v, '~~', 0, 'pack_field MONEY(0)';
+$v = unpack 'l<' => $s->pack_field( test => money => '12345.21');
+cmp_ok $v, '~~', 1234521, 'pack_field MONEY(12345.21)';
+$v = unpack 'l<' => $s->pack_field( test => money => '12345.2');
+cmp_ok $v, '~~', 1234520, 'pack_field MONEY(12345.20)';
+$v = unpack 'l<' => $s->pack_field( test => money => '-12345.21');
+cmp_ok $v, '~~', -1234521, 'pack_field MONEY(-12345.21)';
+
 
 
 $v = $s->unpack_field( test => a => pack 'L<' => 14);
 cmp_ok $v, '~~', 14, 'unpack_field NUM';
+$v = $s->unpack_field( test => int => pack 'l<' => -14);
+cmp_ok $v, '~~', -14, 'unpack_field INT';
 $v = $s->unpack_field( test => 0 => pack 'L<' => 14);
 cmp_ok $v, '~~', 14, 'unpack_field NUM';
 $v = $s->unpack_field( 0 => 0 => pack 'L<' => 14);
@@ -101,6 +129,16 @@ $v = $s->unpack_field( 0 => 'abcd' => 'привет');
 cmp_ok $v, '~~', encode(utf8 => 'привет'), 'unpack_field STR';
 $v = $s->unpack_field( 0 => 'd' => 'привет');
 cmp_ok $v, '~~', 'привет', 'unpack_field STR';
+
+$v = $s->unpack_field( test => money => pack 'l<' => 12345);
+cmp_ok $v, '~~', 123.45, 'unpack_field MONEY(123.45)';
+$v = $s->unpack_field( test => money => pack 'l<' => 0);
+cmp_ok $v, '~~', '0.00', 'unpack_field MONEY(0)';
+$v = $s->unpack_field( test => money => pack 'l<' => -1234);
+cmp_ok $v, '~~', '-12.34', 'unpack_field MONEY(-12.34)';
+$v = $s->unpack_field( test => money => pack 'l<' => 4);
+cmp_ok $v, '~~', '0.04', 'unpack_field MONEY(0.04)';
+
 
 my $tt = [0, 1, 2, 'медвед', 10, 'test'];
 my $t = $s->pack_tuple(test => $tt);

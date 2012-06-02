@@ -7,7 +7,7 @@ use open qw(:std :utf8);
 use lib qw(lib ../lib);
 use lib qw(blib/lib blib/arch ../blib/lib ../blib/arch);
 
-use constant PLAN       => 15;
+use constant PLAN       => 33;
 use Test::More tests    => PLAN;
 use Encode qw(decode encode);
 
@@ -49,11 +49,15 @@ my $spaces = {
             },
             {
                 name    => 'key',
-                type    => 'NUM',
+                type    => 'INT',
             },
             {
                 name    => 'password',
                 type    => 'STR',
+            },
+            {
+                name    => 'balance',
+                type    => 'MONEY',
             }
         ],
         indexes => {
@@ -77,6 +81,68 @@ SKIP: {
 
     isa_ok $client => 'DR::Tarantool::SyncClient';
     ok $client->ping, '* tarantool ping';
+
+    my $t = $client->insert(
+        first_space => [1, 'привет', 11, 'password', '1.23'],
+        TNT_FLAG_RETURN
+    );
+    isa_ok $t => 'DR::Tarantool::Tuple';
+    cmp_ok $t->balance, '~~', '1.23', 'money(1.23)';
+    cmp_ok $t->key, '~~', 11, 'key(11)';
+
+    $t = $client->update(first_space => 1 =>
+        [
+            [ balance => add => '1.12' ],
+            [ key     => add => 101 ],
+        ],
+        TNT_FLAG_RETURN
+    );
+
+    isa_ok $t => 'DR::Tarantool::Tuple';
+    cmp_ok $t->balance, '~~', '2.35', 'money(2.35)';
+    cmp_ok $t->key, '~~', 112, 'key(112)';
+    $t = $client->update(first_space => 1 =>
+        [
+            [ balance => add => '-3.17' ],
+            [ key     => add => -222 ],
+        ],
+        TNT_FLAG_RETURN
+    );
+
+    isa_ok $t => 'DR::Tarantool::Tuple';
+    cmp_ok $t->balance, '~~', '-0.82', 'money(-0.82)';
+    cmp_ok $t->key, '~~', -110, 'key(-110)';
+
+    # second key
+    $t = $client->insert(
+        first_space => [2, 'привет2', -121, 'password2', '-2.34'],
+        TNT_FLAG_RETURN
+    );
+    isa_ok $t => 'DR::Tarantool::Tuple';
+    cmp_ok $t->key, '~~', '-121', 'key(-121)';
+    cmp_ok $t->balance, '~~', '-2.34', 'money(-2.34)';
+    $t = $client->update(first_space => 2 =>
+        [
+            [ balance => add => '-1.12' ],
+            [ key     => add => -101 ],
+        ],
+        TNT_FLAG_RETURN
+    );
+    isa_ok $t => 'DR::Tarantool::Tuple';
+    cmp_ok $t->key, '~~', '-222', 'key(-222)';
+    cmp_ok $t->balance, '~~', '-3.46', 'money(-3.46)';
+    $t = $client->update(first_space => 2 =>
+        [
+            [ balance => add => '5.17' ],
+            [ key     => add => 777 ],
+        ],
+        TNT_FLAG_RETURN
+    );
+    isa_ok $t => 'DR::Tarantool::Tuple';
+    cmp_ok $t->key, '~~', '555', 'key(555)';
+    cmp_ok $t->balance, '~~', '1.71', 'money(1.71)';
+
+
 
     # connect
     for my $cv (condvar AnyEvent) {
