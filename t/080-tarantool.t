@@ -176,6 +176,8 @@ SKIP: {
         $cv->recv;
     }
 
+    eval "require Coro";
+    skip "Coro isn't installed", 2 if $@;
     $client = coro_tarantool
         port    => $tnt->primary_port,
         spaces  => $spaces
