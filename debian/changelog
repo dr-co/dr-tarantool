@@ -1,3 +1,10 @@
+libdr-tarantool-perl (0.15-1) unstable; urgency=low
+
+  * New upstream version.
+    Fix tuple destructor (it doesn't crashes in global destructor).
+
+ -- Dmitry E. Oboukhov <unera@debian.org>  Thu, 07 Jun 2012 00:08:53 +0400
+
 libdr-tarantool-perl (0.14-1) unstable; urgency=low
 
   * New version: Coro can be uninstalled: some tests will be skipped.

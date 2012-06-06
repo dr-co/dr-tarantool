@@ -6,7 +6,7 @@ use utf8;
 use open qw(:std :utf8);
 use lib qw(lib ../lib);
 
-use Test::More tests    => 49;
+use Test::More tests    => 50;
 use Encode qw(decode encode);
 
 
@@ -126,6 +126,11 @@ isa_ok $tp => 'TestItem';
 isa_ok $tp->{tuple} => 'DR::Tarantool::Tuple';
 cmp_ok $tp->{tuple}->raw(0), '~~', 'aa',  'tuple(0).raw(0)';
 cmp_ok $iter->next->{tuple}->raw(0), '~~', 'bb', 'tuple(1).raw(0)';
+
+$tp = DR::Tarantool::Tuple->new([ [ 'aa' ], [ 'bb' ], ], $s->space('test'));
+$iter = $tp->iter;
+undef $tp;
+cmp_ok $iter->count, '~~', 2, 'iterator saves tuple ref';
 
 # You have to use external tool to watch memory
 while($ENV{LEAK_TEST}) {

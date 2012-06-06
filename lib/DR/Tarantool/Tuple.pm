@@ -261,7 +261,7 @@ sub count {
     unless (exists $self->{count}) {
         my $o = $self->{head};
         $self->{count} = 0;
-        last unless $o;
+        return $self->{count} unless $o;
 
         $self->{count}++;
 
