@@ -42,3 +42,6 @@ Revision history for Perl extension DR::Tarantool.
 
 0.15 Thu Jun  7 00:07:44 MSK 2012
 	- fix tuple destructor (it doesn't crashes in global destructor)
+
+0.16 Sat Jun 23 16:39:13 MSK 2012
+        - add some functions to iterator.
