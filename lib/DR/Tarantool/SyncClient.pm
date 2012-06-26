@@ -119,7 +119,7 @@ for my $method (qw(ping insert select update delete call_lua)) {
         $self->$m(@args, sub { @res = @_; $cv->send });
         $cv->recv;
 
-        if ($res[0] ~~ 'ok') {
+        if ($res[0] eq 'ok') {
             return 1 if $method eq 'ping';
             return $res[1];
         }

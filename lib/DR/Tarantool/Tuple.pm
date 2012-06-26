@@ -114,7 +114,7 @@ Returns raw data from tuple.
 sub raw :method {
     my ($self, $fno) = @_;
     return $self->{tuple} unless @_ > 1;
-    croak 'wrong field_no: ' . ($fno // 'undef')
+    croak 'wrong field_no: ' . (defined($fno) ? $fno : 'undef')
         unless defined $fno and $fno =~ /^\d+$/;
     return undef if $fno > $#{ $self->{tuple} };
     return $self->{tuple}[ $fno ];

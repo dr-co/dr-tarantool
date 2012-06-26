@@ -40,14 +40,14 @@ my $sbody = DR::Tarantool::_pkt_select( 9, 8, 7, 6, 5, [ [4], [3] ] );
 ok defined $sbody, '* select body';
 
 my @a = unpack '( L< )*', $sbody;
-cmp_ok $a[0], '~~', TNT_SELECT, 'select type';
-cmp_ok $a[1], '~~', length($sbody) - 3 * 4, 'body length';
-cmp_ok $a[2], '~~', 9, 'request id';
-cmp_ok $a[3], '~~', 8, 'space no';
-cmp_ok $a[4], '~~', 7, 'index no';
-cmp_ok $a[5], '~~', 6, 'offset';
-cmp_ok $a[6], '~~', 5, 'limit';
-cmp_ok $a[7], '~~', 2, 'tuple count';
+is $a[0], TNT_SELECT, 'select type';
+is $a[1], length($sbody) - 3 * 4, 'body length';
+is $a[2], 9, 'request id';
+is $a[3], 8, 'space no';
+is $a[4], 7, 'index no';
+is $a[5], 6, 'offset';
+is $a[6], 5, 'limit';
+is $a[7], 2, 'tuple count';
 ok !eval { DR::Tarantool::_pkt_select( 1, 2, 3, 4, 5, [ 6 ] ) }, 'keys format';
 like $@ => qr{ARRAYREF of ARRAYREF}, 'error string';
 
@@ -55,50 +55,50 @@ like $@ => qr{ARRAYREF of ARRAYREF}, 'error string';
 $sbody = DR::Tarantool::_pkt_ping( 11 );
 ok defined $sbody, '* ping body';
 @a = unpack '( L< )*', $sbody;
-cmp_ok $a[0], '~~', TNT_PING, 'ping type';
-cmp_ok $a[1], '~~', length($sbody) - 3 * 4, 'body length';
-cmp_ok $a[2], '~~', 11, 'request id';
+is $a[0], TNT_PING, 'ping type';
+is $a[1], length($sbody) - 3 * 4, 'body length';
+is $a[2], 11, 'request id';
 
 
 # insert
 $sbody = DR::Tarantool::_pkt_insert( 12, 13, 14, [ 'a', 'b', 'c', 'd' ]);
 ok defined $sbody, '* insert body';
 @a = unpack '( L< )*', $sbody;
-cmp_ok $a[0], '~~', TNT_INSERT, 'insert type';
-cmp_ok $a[1], '~~', length($sbody) - 3 * 4, 'body length';
-cmp_ok $a[2], '~~', 12, 'request id';
-cmp_ok $a[3], '~~', 13, 'space no';
-cmp_ok $a[4], '~~', 14, 'flags';
-cmp_ok $a[5], '~~', 4,  'tuple size';
+is $a[0], TNT_INSERT, 'insert type';
+is $a[1], length($sbody) - 3 * 4, 'body length';
+is $a[2], 12, 'request id';
+is $a[3], 13, 'space no';
+is $a[4], 14, 'flags';
+is $a[5], 4,  'tuple size';
 
 # delete
 $sbody = DR::Tarantool::_pkt_delete( 119, 120, 121, [ 122, 123 ] );
 ok defined $sbody, '* delete body';
 @a = unpack '( L< )*', $sbody;
-cmp_ok $a[0], '~~', TNT_DELETE, 'delete type';
-cmp_ok $a[1], '~~', length($sbody) - 3 * 4, 'body length';
-cmp_ok $a[2], '~~', 119, 'request id';
+is $a[0], TNT_DELETE, 'delete type';
+is $a[1], length($sbody) - 3 * 4, 'body length';
+is $a[2], 119, 'request id';
 
-cmp_ok $a[3], '~~', 120, 'space no';
+is $a[3], 120, 'space no';
 
 if (TNT_DELETE == 20) {
     ok 1, '# skipped old delete code';
-    cmp_ok $a[4], '~~', 2,  'tuple size';
+    is $a[4], 2,  'tuple size';
 } else {
-    cmp_ok $a[4], '~~', 121, 'flags';  # libtarantool ignores flags
-    cmp_ok $a[5], '~~', 2,  'tuple size';
+    is $a[4], 121, 'flags';  # libtarantool ignores flags
+    is $a[5], 2,  'tuple size';
 }
 
 # call
 $sbody = DR::Tarantool::_pkt_call_lua( 124, 125, 'tproc', [ 126, 127 ]);
 ok defined $sbody, '* call body';
 @a = unpack 'L< L< L< L< w/Z* L< L<', $sbody;
-cmp_ok $a[0], '~~', TNT_CALL, 'call type';
-cmp_ok $a[1], '~~', length($sbody) - 3 * 4, 'body length';
-cmp_ok $a[2], '~~', 124, 'request id';
-cmp_ok $a[3], '~~', 125, 'flags';
-cmp_ok $a[4], '~~', 'tproc',  'proc name';
-cmp_ok $a[5], '~~', 2, 'tuple size';
+is $a[0], TNT_CALL, 'call type';
+is $a[1], length($sbody) - 3 * 4, 'body length';
+is $a[2], 124, 'request id';
+is $a[3], 125, 'flags';
+is $a[4], 'tproc',  'proc name';
+is $a[5], 2, 'tuple size';
 
 # update
 my @ops = map { [ int rand 100, $_, int rand 100 ] }
@@ -106,12 +106,12 @@ my @ops = map { [ int rand 100, $_, int rand 100 ] }
 $sbody = DR::Tarantool::_pkt_update( 15, 16, 17, [ 18 ], \@ops);
 ok defined $sbody, '* update body';
 @a = unpack '( L< )*', $sbody;
-cmp_ok $a[0], '~~', TNT_UPDATE, 'update type';
-cmp_ok $a[1], '~~', length($sbody) - 3 * 4, 'body length';
-cmp_ok $a[2], '~~', 15, 'request id';
-cmp_ok $a[3], '~~', 16, 'space no';
-cmp_ok $a[4], '~~', 17, 'flags';
-cmp_ok $a[5], '~~', 1,  'tuple size';
+is $a[0], TNT_UPDATE, 'update type';
+is $a[1], length($sbody) - 3 * 4, 'body length';
+is $a[2], 15, 'request id';
+is $a[3], 16, 'space no';
+is $a[4], 17, 'flags';
+is $a[5], 1,  'tuple size';
 
 
 $sbody = DR::Tarantool::_pkt_call_lua( 124, 125, 'tproc', [  ]);
@@ -121,7 +121,7 @@ ok !eval { DR::Tarantool::_pkt_parse_response( undef ) }, '* parser: undef';
 my $res = DR::Tarantool::_pkt_parse_response( '' );
 isa_ok $res => 'HASH', 'empty input';
 like $res->{errstr}, qr{too short}, 'error message';
-cmp_ok $res->{status}, '~~', 'buffer', 'status';
+is $res->{status}, 'buffer', 'status';
 
 my $data;
 for (TNT_INSERT, TNT_UPDATE, TNT_SELECT, TNT_DELETE, TNT_CALL, TNT_PING) {
@@ -130,13 +130,13 @@ for (TNT_INSERT, TNT_UPDATE, TNT_SELECT, TNT_DELETE, TNT_CALL, TNT_PING) {
         $_, 5 + length $msg, $_ + 100, 0x0101, $msg;
     $res = DR::Tarantool::_pkt_parse_response( $data );
     isa_ok $res => 'HASH', 'well input ' . $_;
-    cmp_ok $res->{req_id}, '~~', $_ + 100, 'request id';
-    cmp_ok $res->{type}, '~~', $_, 'request type';
+    is $res->{req_id}, $_ + 100, 'request id';
+    is $res->{type}, $_, 'request type';
 
     unless($res->{type} == TNT_PING) {
-        cmp_ok $res->{status}, '~~', 'error', "status $_";
-        ok $res->{code} ~~ 0x101, 'code';
-        cmp_ok $res->{errstr}, '~~', $msg, 'errstr';
+        is $res->{status}, 'error', "status $_";
+        is $res->{code}, 0x101, 'code';
+        is $res->{errstr}, $msg, 'errstr';
     }
 }
 
@@ -160,9 +160,9 @@ for my $bin (@bins) {
     my $res = DR::Tarantool::_pkt_parse_response( $pkt );
     SKIP: {
         skip 'legacy delete packet', 4 if $type == 20 and TNT_DELETE != 20;
-        cmp_ok $res->{status}, '~~', $status, 'status';
-        cmp_ok $res->{type}, '~~', $type, 'status';
-        cmp_ok $res->{code}, '~~', $err, 'error code';
+        is $res->{status}, $status, 'status';
+        is $res->{type}, $type, 'status';
+        is $res->{code}, $err, 'error code';
         ok ( !($res->{code} xor $res->{errstr}), 'errstr' );
     }
 }

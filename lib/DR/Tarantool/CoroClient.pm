@@ -112,7 +112,7 @@ for my $method (qw(ping insert select update delete call_lua)) {
 
         my @res = Coro::rouse_wait;
 
-        if ($res[0] ~~ 'ok') {
+        if ($res[0] eq 'ok') {
             return 1 if $method eq 'ping';
             return $res[1];
         }

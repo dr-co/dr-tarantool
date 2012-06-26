@@ -93,81 +93,81 @@ SKIP: {
     );
 
     isa_ok $t => 'DR::Tarantool::Tuple', '* insert tuple packed';
-    cmp_ok $t->id, '~~', 1, 'id';
-    cmp_ok $t->name, '~~', 'привет', 'name';
-    cmp_ok $t->key, '~~', 2, 'key';
-    cmp_ok $t->password, '~~', 'test', 'password';
+    is $t->id, 1, 'id';
+    is $t->name, 'привет', 'name';
+    is $t->key, 2, 'key';
+    is $t->password, 'test', 'password';
 
     $t = $client->insert(
         first_space => [ 2, 'медвед', 3, 'test2' ], TNT_FLAG_RETURN
     );
 
     isa_ok $t => 'DR::Tarantool::Tuple', 'insert tuple packed';
-    cmp_ok $t->id, '~~', 2, 'id';
-    cmp_ok $t->name, '~~', 'медвед', 'name';
-    cmp_ok $t->key, '~~', 3, 'key';
-    cmp_ok $t->password, '~~', 'test2', 'password';
+    is $t->id, 2, 'id';
+    is $t->name, 'медвед', 'name';
+    is $t->key, 3, 'key';
+    is $t->password, 'test2', 'password';
 
 
     $t = $client->call_lua('box.select' =>
         [ 0, 0, pack 'L<' => 1 ], 'first_space');
     isa_ok $t => 'DR::Tarantool::Tuple', '* call tuple packed';
-    cmp_ok $t->id, '~~', 1, 'id';
-    cmp_ok $t->name, '~~', 'привет', 'name';
-    cmp_ok $t->key, '~~', 2, 'key';
-    cmp_ok $t->password, '~~', 'test', 'password';
+    is $t->id, 1, 'id';
+    is $t->name, 'привет', 'name';
+    is $t->key, 2, 'key';
+    is $t->password, 'test', 'password';
 
 
     $t = $client->select(first_space => 1);
     isa_ok $t => 'DR::Tarantool::Tuple', '* select tuple packed';
-    cmp_ok $t->id, '~~', 1, 'id';
-    cmp_ok $t->name, '~~', 'привет', 'name';
-    cmp_ok $t->key, '~~', 2, 'key';
-    cmp_ok $t->password, '~~', 'test', 'password';
+    is $t->id, 1, 'id';
+    is $t->name, 'привет', 'name';
+    is $t->key, 2, 'key';
+    is $t->password, 'test', 'password';
 
     $t = $client->select(first_space => 'привет', 'i1');
     isa_ok $t => 'DR::Tarantool::Tuple', 'select tuple packed (i1)';
-    cmp_ok $t->id, '~~', 1, 'id';
-    cmp_ok $t->name, '~~', 'привет', 'name';
-    cmp_ok $t->key, '~~', 2, 'key';
-    cmp_ok $t->password, '~~', 'test', 'password';
+    is $t->id, 1, 'id';
+    is $t->name, 'привет', 'name';
+    is $t->key, 2, 'key';
+    is $t->password, 'test', 'password';
 
     $t = $client->select(first_space => [[2, 'test']], 'i2');
     isa_ok $t => 'DR::Tarantool::Tuple', 'select tuple packed (i2)';
-    cmp_ok $t->id, '~~', 1, 'id';
-    cmp_ok $t->name, '~~', 'привет', 'name';
-    cmp_ok $t->key, '~~', 2, 'key';
-    cmp_ok $t->password, '~~', 'test', 'password';
+    is $t->id, 1, 'id';
+    is $t->name, 'привет', 'name';
+    is $t->key, 2, 'key';
+    is $t->password, 'test', 'password';
 
     $t = $client->update(first_space => 2 => [ name => set => 'привет1' ]);
-    cmp_ok $t, '~~', undef, '* update without flags';
+    is $t, undef, '* update without flags';
     $t = $client->update(
         first_space => 2 => [ name => set => 'привет медвед' ], TNT_FLAG_RETURN
     );
     isa_ok $t => 'DR::Tarantool::Tuple', 'update with flags';
-    cmp_ok $t->name, '~~', 'привет медвед', '$t->name';
+    is $t->name, 'привет медвед', '$t->name';
 
 
     $t = $client->insert(first_space => [1, 2, 3, 4, undef], TNT_FLAG_RETURN);
-    cmp_ok $t->json, '~~', undef, 'JSON insert: undef';
+    is $t->json, undef, 'JSON insert: undef';
 
     $t = $client->insert(first_space => [1, 2, 3, 4, 22], TNT_FLAG_RETURN);
-    cmp_ok $t->json, '~~', 22, 'JSON insert: scalar';
+    is $t->json, 22, 'JSON insert: scalar';
 
     $t = $client->insert(first_space => [1, 2, 3, 4, 'тест'], TNT_FLAG_RETURN);
-    cmp_ok $t->json, '~~', 'тест', 'JSON insert: utf8 scalar';
+    is $t->json, 'тест', 'JSON insert: utf8 scalar';
 
     $t = $client->insert(
         first_space => [ 1, 2, 3, 4, { a => 'b' } ], TNT_FLAG_RETURN
     );
     isa_ok $t->json => 'HASH', 'JSON insert: hash';
-    cmp_ok $t->json->{a}, '~~', 'b', 'JSON insert: hash value';
+    is $t->json->{a}, 'b', 'JSON insert: hash value';
 
     $t = $client->insert(
         first_space => [ 1, 2, 3, 4, { привет => 'медвед' } ], TNT_FLAG_RETURN
     );
     isa_ok $t->json => 'HASH', 'JSON insert: hash';
-    cmp_ok $t->json->{привет}, '~~', 'медвед', 'JSON insert: hash utf8 value';
+    is $t->json->{привет}, 'медвед', 'JSON insert: hash utf8 value';
 
     my $start = AnyEvent::now;
     my (@fibers, %tuples);
@@ -191,9 +191,9 @@ SKIP: {
     for my $n (123 .. 129) {
         ok exists $tuples{$n}, 'result exists';
         isa_ok $tuples{$n} => 'DR::Tarantool::Tuple';
-        cmp_ok $tuples{$n}->id, '~~', $n, 'id';
-        cmp_ok $tuples{$n}->name, '~~', "тест $n", 'name';
-        cmp_ok $tuples{$n}->key, '~~', $n, 'key';
-        cmp_ok $tuples{$n}->password, '~~', "password $n", 'password';
+        is $tuples{$n}->id, $n, 'id';
+        is $tuples{$n}->name, "тест $n", 'name';
+        is $tuples{$n}->key, $n, 'key';
+        is $tuples{$n}->password, "password $n", 'password';
     }
 }

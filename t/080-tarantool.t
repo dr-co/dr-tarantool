@@ -87,8 +87,8 @@ SKIP: {
         TNT_FLAG_RETURN
     );
     isa_ok $t => 'DR::Tarantool::Tuple';
-    cmp_ok $t->balance, '~~', '1.23', 'money(1.23)';
-    cmp_ok $t->key, '~~', 11, 'key(11)';
+    is $t->balance, '1.23', 'money(1.23)';
+    is $t->key, 11, 'key(11)';
 
     $t = $client->update(first_space => 1 =>
         [
@@ -99,8 +99,8 @@ SKIP: {
     );
 
     isa_ok $t => 'DR::Tarantool::Tuple';
-    cmp_ok $t->balance, '~~', '2.35', 'money(2.35)';
-    cmp_ok $t->key, '~~', 112, 'key(112)';
+    is $t->balance, '2.35', 'money(2.35)';
+    is $t->key, 112, 'key(112)';
     $t = $client->update(first_space => 1 =>
         [
             [ balance => add => '-3.17' ],
@@ -110,8 +110,8 @@ SKIP: {
     );
 
     isa_ok $t => 'DR::Tarantool::Tuple';
-    cmp_ok $t->balance, '~~', '-0.82', 'money(-0.82)';
-    cmp_ok $t->key, '~~', -110, 'key(-110)';
+    is $t->balance, '-0.82', 'money(-0.82)';
+    is $t->key, -110, 'key(-110)';
 
     # second key
     $t = $client->insert(
@@ -119,8 +119,8 @@ SKIP: {
         TNT_FLAG_RETURN
     );
     isa_ok $t => 'DR::Tarantool::Tuple';
-    cmp_ok $t->key, '~~', '-121', 'key(-121)';
-    cmp_ok $t->balance, '~~', '-2.34', 'money(-2.34)';
+    is $t->key, '-121', 'key(-121)';
+    is $t->balance, '-2.34', 'money(-2.34)';
     $t = $client->update(first_space => 2 =>
         [
             [ balance => add => '-1.12' ],
@@ -129,8 +129,8 @@ SKIP: {
         TNT_FLAG_RETURN
     );
     isa_ok $t => 'DR::Tarantool::Tuple';
-    cmp_ok $t->key, '~~', '-222', 'key(-222)';
-    cmp_ok $t->balance, '~~', '-3.46', 'money(-3.46)';
+    is $t->key, '-222', 'key(-222)';
+    is $t->balance, '-3.46', 'money(-3.46)';
     $t = $client->update(first_space => 2 =>
         [
             [ balance => add => '5.17' ],
@@ -139,8 +139,8 @@ SKIP: {
         TNT_FLAG_RETURN
     );
     isa_ok $t => 'DR::Tarantool::Tuple';
-    cmp_ok $t->key, '~~', '555', 'key(555)';
-    cmp_ok $t->balance, '~~', '1.71', 'money(1.71)';
+    is $t->key, '555', 'key(555)';
+    is $t->balance, '1.71', 'money(1.71)';
 
 
 
@@ -169,7 +169,7 @@ SKIP: {
         $client->ping(
             sub {
                 my ($status) = @_;
-                cmp_ok $status, '~~', 'ok', '* async_tarantool ping';
+                is $status, 'ok', '* async_tarantool ping';
                 $cv->send;
             }
         );

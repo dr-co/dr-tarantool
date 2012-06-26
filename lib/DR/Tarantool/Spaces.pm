@@ -216,14 +216,15 @@ constructor
 
 sub new {
     my ($class, $no, $space) = @_;
-    croak 'space number must conform the regexp qr{^\d+}' unless $no ~~ /^\d+$/;
+    croak 'space number must conform the regexp qr{^\d+}'
+        unless defined $no and $no =~ /^\d+$/;
     croak "'fields' not defined in space hash"
         unless 'ARRAY' eq ref $space->{fields};
     croak "wrong 'indexes' hash"
         if !$space->{indexes} or 'HASH' ne ref $space->{indexes};
 
     my $name = $space->{name};
-    croak 'wrong space name: ' . ($name // 'undef')
+    croak 'wrong space name: ' . (defined($name) ? $name : 'undef')
         unless $name and $name =~ /^[a-z_]\w*$/i;
 
 
@@ -253,11 +254,13 @@ sub new {
         }
 
         my $s = $fields[ -1 ];
-        croak 'unknown field type: ' . ($s->{type} // 'undef')
-            unless $s->{type} and $s->{type} =~ $fqr;
+        croak 'unknown field type: ' .
+            (defined($s->{type}) ? $s->{type} : 'undef')
+                unless $s->{type} and $s->{type} =~ $fqr;
 
-        croak 'wrong field name: ' . ($s->{name} // 'undef')
-            unless $s->{name} and $s->{name} =~ /^[a-z_]\w*$/i;
+        croak 'wrong field name: ' .
+            (defined($s->{name}) ? $s->{name} : 'undef')
+                unless $s->{name} and $s->{name} =~ /^[a-z_]\w*$/i;
 
         croak "Duplicate field name: $s->{name}" if exists $fast{ $s->{name} };
         $fast{ $s->{name} } = $no;
@@ -374,7 +377,7 @@ sub pack_field {
     if ($type eq 'MONEY' or $type eq 'BIGMONEY') {
         my ($r, $k) = split /\./, $v;
         for ($k) {
-            $_ //= '.00';
+            $_ = '.00' unless defined $_;
             s/^\.//;
             $_ .= '0' if length $_ < 2;
             $_ = substr $_, 0, 2;

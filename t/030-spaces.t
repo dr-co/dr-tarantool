@@ -81,63 +81,63 @@ my $s = MODEL->new({
 });
 
 my $v = unpack 'L<', $s->pack_field( test => a => '10' );
-cmp_ok $v, '~~', 10, 'pack_field NUM';
+is $v, 10, 'pack_field NUM';
 $v = unpack 'L<', $s->pack_field( test => 0 => 11 );
-cmp_ok $v, '~~', 11, 'pack_field NUM';
+is $v, 11, 'pack_field NUM';
 $v = unpack 'L<', $s->pack_field( 0 => 0 => 13 );
-cmp_ok $v, '~~', 13, 'pack_field NUM';
+is $v, 13, 'pack_field NUM';
 $v = unpack 'L<', $s->pack_field( test => a123 => 13 );
-cmp_ok $v, '~~', 13, 'pack_field NUM64';
+is $v, 13, 'pack_field NUM64';
 $v = $s->pack_field( test => d => 'test' );
-cmp_ok $v, '~~', 'test', 'pack_field STR';
+is $v, 'test', 'pack_field STR';
 $v = decode utf8 => $s->pack_field( test => d => 'привет' );
-cmp_ok $v, '~~', 'привет', 'pack_field STR';
+is $v, 'привет', 'pack_field STR';
 $v = unpack 'l<' => $s->pack_field( test => int => -10 );
-cmp_ok $v, '~~', -10, 'pack_field INT';
+is $v, -10, 'pack_field INT';
 $v = decode utf8 => $s->pack_field( test => d => encode utf8 => 'привет' );
-cmp_ok $v, '~~', 'привет', 'pack_field STR';
+is $v, 'привет', 'pack_field STR';
 
 # money
 $v = unpack 'l<' => $s->pack_field( test => money => '123');
-cmp_ok $v, '~~', 12300, 'pack_field MONEY(123)';
+is $v, 12300, 'pack_field MONEY(123)';
 $v = unpack 'l<' => $s->pack_field( test => money => '-123');
-cmp_ok $v, '~~', -12300, 'pack_field MONEY(-123)';
+is $v, -12300, 'pack_field MONEY(-123)';
 $v = unpack 'l<' => $s->pack_field( test => money => '.123');
-cmp_ok $v, '~~', 12, 'pack_field MONEY(.12)';
+is $v, 12, 'pack_field MONEY(.12)';
 $v = unpack 'l<' => $s->pack_field( test => money => '0');
-cmp_ok $v, '~~', 0, 'pack_field MONEY(0)';
+is $v, 0, 'pack_field MONEY(0)';
 $v = unpack 'l<' => $s->pack_field( test => money => '12345.21');
-cmp_ok $v, '~~', 1234521, 'pack_field MONEY(12345.21)';
+is $v, 1234521, 'pack_field MONEY(12345.21)';
 $v = unpack 'l<' => $s->pack_field( test => money => '12345.2');
-cmp_ok $v, '~~', 1234520, 'pack_field MONEY(12345.20)';
+is $v, 1234520, 'pack_field MONEY(12345.20)';
 $v = unpack 'l<' => $s->pack_field( test => money => '-12345.21');
-cmp_ok $v, '~~', -1234521, 'pack_field MONEY(-12345.21)';
+is $v, -1234521, 'pack_field MONEY(-12345.21)';
 
 
 
 $v = $s->unpack_field( test => a => pack 'L<' => 14);
-cmp_ok $v, '~~', 14, 'unpack_field NUM';
+is $v, 14, 'unpack_field NUM';
 $v = $s->unpack_field( test => int => pack 'l<' => -14);
-cmp_ok $v, '~~', -14, 'unpack_field INT';
+is $v, -14, 'unpack_field INT';
 $v = $s->unpack_field( test => 0 => pack 'L<' => 14);
-cmp_ok $v, '~~', 14, 'unpack_field NUM';
+is $v, 14, 'unpack_field NUM';
 $v = $s->unpack_field( 0 => 0 => pack 'L<' => 14);
-cmp_ok $v, '~~', 14, 'unpack_field NUM';
+is $v, 14, 'unpack_field NUM';
 $v = $s->unpack_field( 0 => 'abcd' => 'test');
-cmp_ok $v, '~~', 'test', 'unpack_field STR';
+is $v, 'test', 'unpack_field STR';
 $v = $s->unpack_field( 0 => 'abcd' => 'привет');
-cmp_ok $v, '~~', encode(utf8 => 'привет'), 'unpack_field STR';
+is $v, encode(utf8 => 'привет'), 'unpack_field STR';
 $v = $s->unpack_field( 0 => 'd' => 'привет');
-cmp_ok $v, '~~', 'привет', 'unpack_field STR';
+is $v, 'привет', 'unpack_field STR';
 
 $v = $s->unpack_field( test => money => pack 'l<' => 12345);
-cmp_ok $v, '~~', 123.45, 'unpack_field MONEY(123.45)';
+is $v, 123.45, 'unpack_field MONEY(123.45)';
 $v = $s->unpack_field( test => money => pack 'l<' => 0);
-cmp_ok $v, '~~', '0.00', 'unpack_field MONEY(0)';
+is $v, '0.00', 'unpack_field MONEY(0)';
 $v = $s->unpack_field( test => money => pack 'l<' => -1234);
-cmp_ok $v, '~~', '-12.34', 'unpack_field MONEY(-12.34)';
+is $v, '-12.34', 'unpack_field MONEY(-12.34)';
 $v = $s->unpack_field( test => money => pack 'l<' => 4);
-cmp_ok $v, '~~', '0.04', 'unpack_field MONEY(0.04)';
+is $v, '0.04', 'unpack_field MONEY(0.04)';
 
 
 my $tt = [0, 1, 2, 'медвед', 10, 'test'];
@@ -145,14 +145,14 @@ my $t = $s->pack_tuple(test => $tt);
 isa_ok $t => 'ARRAY';
 my $ut = $s->unpack_tuple(0 => $t);
 isa_ok $ut => 'ARRAY';
-ok @$tt ~~ @$ut, 'unpacked packed tuple';
+cmp_ok join(':', @$tt), 'eq', join(':', @$ut), 'unpacked packed tuple';
 
-cmp_ok unpack('L<', $t->[0]), '~~', 0, 'tuple[0]';
-cmp_ok unpack('L<', $t->[1]), '~~', 1, 'tuple[1]';
-cmp_ok unpack('L<', $t->[2]), '~~', 2, 'tuple[2]';
-cmp_ok $t->[3], '~~', encode(utf8 => 'медвед'), 'tuple[3]';
-cmp_ok unpack('L<', $t->[4]), '~~', 10, 'tuple[4]';
-cmp_ok $t->[5], '~~', 'test', 'tuple[5]';
+is unpack('L<', $t->[0]), 0, 'tuple[0]';
+is unpack('L<', $t->[1]), 1, 'tuple[1]';
+is unpack('L<', $t->[2]), 2, 'tuple[2]';
+is $t->[3], encode(utf8 => 'медвед'), 'tuple[3]';
+is unpack('L<', $t->[4]),  10, 'tuple[4]';
+is $t->[5], 'test', 'tuple[5]';
 
 # indexes
 {
@@ -160,41 +160,45 @@ cmp_ok $t->[5], '~~', 'test', 'tuple[5]';
     local $SIG{__WARN__} = sub { $w = $_[0] };
     $t = $s->space('test')->pack_keys([1, 2], 'i0');
     like $w => qr{Ambiguous keys list}, 'ambiguous keys warning';
-    ok @{ $t->[0] } ~~ @{[ pack('L<', 1), pack 'L<', 2 ]}, 'pack_keys';
+    cmp_ok join(':', @{ $t->[0] }), 'eq',
+        join(':', pack('L<', 1), pack 'L<', 2), 'pack_keys';
     undef $w;
     $t = $s->space('test')->pack_keys([[2, 3]], 'i0');
-    ok @{ $t->[0] } ~~ @{[ pack('L<', 2), pack 'L<', 3 ]}, 'pack_keys';
-    cmp_ok $w, '~~', undef, 'there was no ambiguous warning';
+    cmp_ok join(':', @{ $t->[0] }), 'eq',
+        join(':', pack('L<', 2), pack 'L<', 3), 'pack_keys';
+    is $w, undef, 'there was no ambiguous warning';
 }
 $t = eval { $s->space('test')->pack_keys([[1, 2, 3]], 'i0'); };
 like $@, qr{must have 2}, 'error message';
-cmp_ok $t, '~~', undef, 'wrong elements count';
+is $t, undef, 'wrong elements count';
 
 {
     my $w;
     local $SIG{__WARN__} = sub { $w = $_[0] };
     $t = $s->space('test')->pack_keys([2, 3], 0);
     like $w => qr{Ambiguous keys list}, 'ambiguous keys warning';
-    ok @{ $t->[0] } ~~ @{[ pack('L<', 2), pack 'L<', 3 ]}, 'pack_keys';
+    cmp_ok join(':', @{ $t->[0] }), 'eq',
+        join(':', pack('L<', 2), pack 'L<', 3), 'pack_keys';
     undef $w;
     $t = $s->space('test')->pack_keys([[2, 3]], 0);
-    ok @{ $t->[0] } ~~ @{[ pack('L<', 2), pack 'L<', 3 ]}, 'pack_keys';
-    cmp_ok $w, '~~', undef, 'there was no ambiguous warning';
+    cmp_ok join(':', @{ $t->[0] }), 'eq',
+        join(':', pack('L<', 2), pack 'L<', 3), 'pack_keys';
+    is $w, undef, 'there was no ambiguous warning';
 }
 $t = eval { $s->space('test')->pack_keys([[1,2,3]], 0); };
 like $@, qr{must have 2}, 'error message';
-cmp_ok $t, '~~', undef, 'wrong elements count';
+is $t, undef, 'wrong elements count';
 
 $t = $s->space('test')->pack_keys(4, 'i2');
-cmp_ok unpack('L<', $t->[0][0]), '~~', 4, 'pack_keys';
+is unpack('L<', $t->[0][0]), 4, 'pack_keys';
 $t = $s->space('test')->pack_keys([5], 'i2');
-cmp_ok unpack('L<', $t->[0][0]), '~~', 5, 'pack_keys';
+is unpack('L<', $t->[0][0]), 5, 'pack_keys';
 $t = $s->space('test')->pack_keys([[6]], 'i2');
-cmp_ok unpack('L<', $t->[0][0]), '~~', 6, 'pack_keys';
+is unpack('L<', $t->[0][0]), 6, 'pack_keys';
 $t = $s->space('test')->pack_keys([7,8,9], 'i2');
-cmp_ok unpack('L<', $t->[0][0]), '~~', 7, 'pack_keys';
-cmp_ok unpack('L<', $t->[1][0]), '~~', 8, 'pack_keys';
-cmp_ok unpack('L<', $t->[2][0]), '~~', 9, 'pack_keys';
+is unpack('L<', $t->[0][0]), 7, 'pack_keys';
+is unpack('L<', $t->[1][0]), 8, 'pack_keys';
+is unpack('L<', $t->[2][0]), 9, 'pack_keys';
 $t = eval { $s->space('test')->pack_keys([[7,8,9]], 'i2') };
 like $@, qr{must have 1}, 'error message';
 
@@ -203,87 +207,87 @@ like $@, qr{must have 1}, 'error message';
 
 # pack_operation
 my $op = $s->space('test')->pack_operation([d => 'delete']);
-cmp_ok $op->[0], '~~', 3, '* operation field';
-cmp_ok $op->[1], '~~', 'delete', 'operation name';
+is $op->[0], 3, '* operation field';
+is $op->[1], 'delete', 'operation name';
 
 for (qw(insert add and or xor set)) {
     my $n = int rand 100000;
     $op = $s->space('test')->pack_operation([a123 => $_ => $n]);
-    cmp_ok $op->[0], '~~', 4, "operation field: $_";
-    cmp_ok $op->[1], '~~', $_, 'operation name';
-    cmp_ok unpack('L<', $op->[2]), '~~', $n, 'operation argument';
+    is $op->[0], 4, "operation field: $_";
+    is $op->[1], $_, 'operation name';
+    is unpack('L<', $op->[2]), $n, 'operation argument';
 }
 
 $op = $s->space('test')->pack_operation([d => 'substr', 1, 2]);
-cmp_ok $op->[0], '~~', 3, 'operation field: substr';
-cmp_ok $op->[1], '~~', 'substr', 'operation name';
-cmp_ok $op->[2], '~~', 1, 'operation argument 1';
-cmp_ok $op->[3], '~~', 2, 'operation argument 2';
-cmp_ok $op->[4], '~~', undef, 'operation argument 3';
+is $op->[0], 3, 'operation field: substr';
+is $op->[1], 'substr', 'operation name';
+is $op->[2], 1, 'operation argument 1';
+is $op->[3], 2, 'operation argument 2';
+is $op->[4], undef, 'operation argument 3';
 
 $op = $s->space('test')->pack_operation([d => 'substr', 231, 232, 'привет']);
-cmp_ok $op->[0], '~~', 3, 'operation field: substr';
-cmp_ok $op->[1], '~~', 'substr', 'operation name';
-cmp_ok $op->[2], '~~', 231, 'operation argument 1';
-cmp_ok $op->[3], '~~', 232, 'operation argument 2';
-cmp_ok $op->[4], '~~', 'привет', 'operation argument 3';
+is $op->[0], 3, 'operation field: substr';
+is $op->[1], 'substr', 'operation name';
+is $op->[2], 231, 'operation argument 1';
+is $op->[3], 232, 'operation argument 2';
+is $op->[4], 'привет', 'operation argument 3';
 
 $op = $s->space('test')->pack_operations([ d => set => 'тест']);
-cmp_ok $op->[0][0], '~~', 3, "operation field: set";
-cmp_ok $op->[0][1], '~~', 'set', 'operation name';
-cmp_ok decode(utf8 => $op->[0][2]), '~~', 'тест', 'operation argument';
+is $op->[0][0], 3, "operation field: set";
+is $op->[0][1], 'set', 'operation name';
+is decode(utf8 => $op->[0][2]), 'тест', 'operation argument';
 $op = $s->space('test')->pack_operations([
     [ d => set => 'тест'], [1 => insert => 500]
 ]);
-cmp_ok $op->[0][0], '~~', 3, "operation field: set";
-cmp_ok $op->[0][1], '~~', 'set', 'operation name';
-cmp_ok decode(utf8 => $op->[0][2]), '~~', 'тест', 'operation argument';
+is $op->[0][0], 3, "operation field: set";
+is $op->[0][1], 'set', 'operation name';
+is decode(utf8 => $op->[0][2]), 'тест', 'operation argument';
 
-cmp_ok $op->[1][0], '~~', 1, "operation field: set";
-cmp_ok $op->[1][1], '~~', 'insert', 'operation name';
-cmp_ok unpack('L<', $op->[1][2]), '~~', 500, 'operation argument';
+is $op->[1][0], 1, "operation field: set";
+is $op->[1][1], 'insert', 'operation name';
+is unpack('L<', $op->[1][2]), 500, 'operation argument';
 
 
 $op = $s->pack_field(json => f => undef);
-cmp_ok $op, '~~', 'null', 'pack json: undef';
-cmp_ok $s->unpack_field(json => f => $op), '~~', undef, 'unpack json: undef';
+is $op, 'null', 'pack json: undef';
+is $s->unpack_field(json => f => $op), undef, 'unpack json: undef';
 
 $op = $s->pack_field(json => f => 123);
-cmp_ok $op, '~~', '123', 'pack json: scalar';
-cmp_ok $s->unpack_field(json => f => $op), '~~', 123, 'unpack json: scalar';
+is $op, '123', 'pack json: scalar';
+is $s->unpack_field(json => f => $op), 123, 'unpack json: scalar';
 
 $op = $s->pack_field(json => f => []);
-cmp_ok $op, '~~', '[]', 'pack json: empty array';
+is $op, '[]', 'pack json: empty array';
 isa_ok $s->unpack_field(json => f => $op) => 'ARRAY',
     'unpack json: empty array';
 
 $op = $s->pack_field(json => f => {});
-cmp_ok $op, '~~', '{}', 'pack json: empty hash';
+is $op, '{}', 'pack json: empty hash';
 isa_ok $s->unpack_field(json => f => $op) => 'HASH',
     'unpack json: empty hash';
 
 $op = $s->pack_field(json => f => [qw(hello world)]);
-cmp_ok decode(utf8 => $op), '~~', '["hello","world"]', 'pack json: array';
+is decode(utf8 => $op), '["hello","world"]', 'pack json: array';
 $op = $s->unpack_field(json => f => $op);
 isa_ok $op => 'ARRAY', 'unpack json: array';
-cmp_ok $op->[0], '~~', 'hello', 'first element';
-cmp_ok $op->[1], '~~', 'world', 'second element';
+is $op->[0], 'hello', 'first element';
+is $op->[1], 'world', 'second element';
 
 $op = $s->pack_field(json => f => [qw(привет медвед)]);
-cmp_ok decode(utf8 => $op), '~~', '["привет","медвед"]', 'pack json: array';
+is decode(utf8 => $op), '["привет","медвед"]', 'pack json: array';
 $op = $s->unpack_field(json => f => $op);
 isa_ok $op => 'ARRAY', 'unpack json: array';
-cmp_ok $op->[0], '~~', 'привет', 'first utf8 element';
-cmp_ok $op->[1], '~~', 'медвед', 'second utf8 element';
+is $op->[0], 'привет', 'first utf8 element';
+is $op->[1], 'медвед', 'second utf8 element';
 
 $op = $s->pack_field(json => f => {qw(hello world)});
-cmp_ok decode(utf8 => $op), '~~', '{"hello":"world"}', 'pack json: hash';
+is decode(utf8 => $op), '{"hello":"world"}', 'pack json: hash';
 $op = $s->unpack_field(json => f => $op);
 isa_ok $op => 'HASH', 'unpack json: hash';
-cmp_ok $op->{hello}, '~~', 'world', 'key element';
+is $op->{hello}, 'world', 'key element';
 
 $op = $s->pack_field(json => f => {qw(привет медвед)});
-cmp_ok decode(utf8 => $op), '~~', '{"привет":"медвед"}', 'pack json: hash';
+is decode(utf8 => $op), '{"привет":"медвед"}', 'pack json: hash';
 $op = $s->unpack_field(json => f => $op);
 isa_ok $op => 'HASH', 'unpack json: hash';
-cmp_ok $op->{привет}, '~~', 'медвед', 'key utf8 element';
+is $op->{привет}, 'медвед', 'key utf8 element';

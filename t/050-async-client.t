@@ -98,7 +98,7 @@ SKIP: {
         $client->ping(
             sub {
                 my ($status) = @_;
-                cmp_ok $status, '~~', 'ok', '* ping';
+                is $status, 'ok', '* ping';
                 $cv->send;
             }
         );
@@ -119,11 +119,11 @@ SKIP: {
             TNT_FLAG_RETURN,
             sub {
                 my ($status, $res) = @_;
-                cmp_ok $status, '~~', 'ok', '* insert status';
-                cmp_ok $res->id, '~~', 10, 'id';
-                cmp_ok $res->name, '~~', 'user', 'name';
-                cmp_ok $res->key, '~~', 11, 'key';
-                cmp_ok $res->password, '~~', 'password', 'password';
+                is $status, 'ok', '* insert status';
+                is $res->id, 10, 'id';
+                is $res->name, 'user', 'name';
+                is $res->key, 11, 'key';
+                is $res->password, 'password', 'password';
                 $cv->end;
             }
         );
@@ -140,11 +140,11 @@ SKIP: {
             TNT_FLAG_RETURN,
             sub {
                 my ($status, $res) = @_;
-                cmp_ok $status, '~~', 'ok', '* insert status';
-                cmp_ok $res->id, '~~', 111, 'id';
-                cmp_ok $res->name, '~~', 'user2', 'name';
-                cmp_ok $res->key, '~~', 13, 'key';
-                cmp_ok $res->password, '~~', 'password2', 'password';
+                is $status, 'ok', '* insert status';
+                is $res->id, 111, 'id';
+                is $res->name, 'user2', 'name';
+                is $res->key, 13, 'key';
+                is $res->password, 'password2', 'password';
                 $cv->end;
             }
         );
@@ -161,7 +161,7 @@ SKIP: {
             TNT_FLAG_RETURN | TNT_FLAG_ADD,
             sub {
                 my ($status, $code, $error) = @_;
-                cmp_ok $status, '~~', 'error', 'status';
+                is $status, 'error', 'status';
                 ok $code, 'code';
                 like $error, qr{exists}, 'tuple already exists';
                 $cv->end;
@@ -184,11 +184,11 @@ SKIP: {
             args    => [ 's', 'i', { type => 'NUM' } ],
             sub {
                 my ($status, $tuple) = @_;
-                cmp_ok $status, '~~', 'ok', '* call status';
+                is $status, 'ok', '* call status';
                 isa_ok $tuple => 'DR::Tarantool::Tuple', 'tuple packed';
-                cmp_ok $tuple->a, '~~', 10, 'id';
-                cmp_ok $tuple->b, '~~', 'user', 'name';
-                cmp_ok $tuple->c, '~~', 11, 'key';
+                is $tuple->a, 10, 'id';
+                is $tuple->b, 'user', 'name';
+                is $tuple->c, 11, 'key';
                 $cv->end;
             }
         );
@@ -200,12 +200,12 @@ SKIP: {
             args    => [ 's', 'i', { type => 'NUM' } ],
             sub {
                 my ($status, $tuple) = @_;
-                cmp_ok $status, '~~', 'ok', 'status';
+                is $status, 'ok', 'status';
                 isa_ok $tuple => 'DR::Tarantool::Tuple', 'tuple packed';
-                cmp_ok $tuple->id, '~~', 10, 'id';
-                cmp_ok $tuple->name, '~~', 'user', 'name';
-                cmp_ok $tuple->key, '~~', 11, 'key';
-                cmp_ok $tuple->password, '~~', 'password', 'password';
+                is $tuple->id, 10, 'id';
+                is $tuple->name, 'user', 'name';
+                is $tuple->key, 11, 'key';
+                is $tuple->password, 'password', 'password';
                 $cv->end;
             }
         );
@@ -216,14 +216,14 @@ SKIP: {
             args    => [ 's', 'i', { type => 'NUM' } ],
             sub {
                 my ($status, $tuple) = @_;
-                cmp_ok $status, '~~', 'ok', 'status';
+                is $status, 'ok', 'status';
                 isa_ok $tuple => 'DR::Tarantool::Tuple', 'tuple packed';
                 SKIP: {
                     skip 'there is no tuple', 4 unless $tuple;
-                    cmp_ok unpack('L<', $tuple->raw(0)), '~~', 10, 'id';
-                    cmp_ok $tuple->raw(1), '~~', 'user', 'name';
-                    cmp_ok unpack('L<', $tuple->raw(2)), '~~', 11, 'key';
-                    cmp_ok $tuple->raw(3), '~~', 'password', 'password';
+                    is unpack('L<', $tuple->raw(0)), 10, 'id';
+                    is $tuple->raw(1), 'user', 'name';
+                    is unpack('L<', $tuple->raw(2)), 11, 'key';
+                    is $tuple->raw(3), 'password', 'password';
                 }
                 $cv->end;
             }
@@ -235,12 +235,12 @@ SKIP: {
             'first_space',
             sub {
                 my ($status, $tuple) = @_;
-                cmp_ok $status, '~~', 'ok', 'status';
+                is $status, 'ok', 'status';
                 isa_ok $tuple => 'DR::Tarantool::Tuple', 'tuple packed';
-                cmp_ok $tuple->id, '~~', 10, 'id';
-                cmp_ok $tuple->name, '~~', 'user', 'name';
-                cmp_ok $tuple->key, '~~', 11, 'key';
-                cmp_ok $tuple->password, '~~', 'password', 'password';
+                is $tuple->id, 10, 'id';
+                is $tuple->name, 'user', 'name';
+                is $tuple->key, 11, 'key';
+                is $tuple->password, 'password', 'password';
                 $cv->end;
             }
         );
@@ -251,8 +251,8 @@ SKIP: {
             'first_space',
             sub {
                 my ($status, $tuple) = @_;
-                cmp_ok $status, '~~', 'ok', 'status';
-                cmp_ok $tuple, '~~', undef, 'there is no tuple';
+                is $status, 'ok', 'status';
+                is $tuple, undef, 'there is no tuple';
                 $cv->end;
             }
         );
@@ -263,7 +263,7 @@ SKIP: {
             'first_space',
             sub {
                 my ($status, $code, $errstr) = @_;
-                cmp_ok $status, '~~', 'error', 'status';
+                is $status, 'error', 'status';
                 cmp_ok $code, '>', 0, 'code';
                 like $errstr, qr{Partial key in}, 'errstr';
                 $cv->end;
@@ -278,13 +278,13 @@ SKIP: {
         $cv->begin;
         $client->select(first_space => [[10], [11], [111]], 'i0', sub {
             my ($status, $tuple) = @_;
-            cmp_ok $status, '~~', 'ok', '* select status';
+            is $status, 'ok', '* select status';
             my $iter = $tuple->iter;
-            cmp_ok $iter->count, '~~', 2, 'count of elements';
-            cmp_ok $tuple->id, '~~', 10, 'tuple(0)->id';
-            cmp_ok $iter->next->id, '~~', 10, 'tuple(0)->id';
-            cmp_ok $tuple->next->id, '~~', 111, 'tuple(1}->id';
-            cmp_ok $iter->next->id, '~~', 111, 'tuple(1)->id';
+            is $iter->count, 2, 'count of elements';
+            is $tuple->id, 10, 'tuple(0)->id';
+            is $iter->next->id, 10, 'tuple(0)->id';
+            is $tuple->next->id, 111, 'tuple(1}->id';
+            is $iter->next->id, 111, 'tuple(1)->id';
 
             $cv->end;
         });
@@ -296,11 +296,11 @@ SKIP: {
             index   => 'i0',
             sub {
                 my ($status, $tuple) = @_;
-                cmp_ok $status, '~~', 'ok', 'select (limit) status';
+                is $status, 'ok', 'select (limit) status';
                 my $iter = $tuple->iter;
-                cmp_ok $iter->count, '~~', 1, 'count of elements';
-                cmp_ok $tuple->id, '~~', 10, 'tuple(0)->id';
-                cmp_ok $iter->next->id, '~~', 10, 'tuple(0)->id';
+                is $iter->count, 1, 'count of elements';
+                is $tuple->id, 10, 'tuple(0)->id';
+                is $iter->next->id, 10, 'tuple(0)->id';
 
                 $cv->end;
             }
@@ -314,11 +314,11 @@ SKIP: {
             index   => 'i0',
             sub {
                 my ($status, $tuple) = @_;
-                cmp_ok $status, '~~', 'ok', 'select (limit) status';
+                is $status, 'ok', 'select (limit) status';
                 my $iter = $tuple->iter;
-                cmp_ok $iter->count, '~~', 1, 'count of elements';
-                cmp_ok $tuple->id, '~~', 111, 'tuple(0)->id';
-                cmp_ok $iter->next->id, '~~', 111, 'tuple(0)->id';
+                is $iter->count, 1, 'count of elements';
+                is $tuple->id, 111, 'tuple(0)->id';
+                is $iter->next->id, 111, 'tuple(0)->id';
 
                 $cv->end;
             }
@@ -327,10 +327,10 @@ SKIP: {
         $cv->begin;
         $client->select(first_space => [11, 'password'], 'tidx', sub {
             my ($status, $tuple) = @_;
-            cmp_ok $status, '~~', 'ok', 'select status (not primary index)';
+            is $status, 'ok', 'select status (not primary index)';
             my $iter = $tuple->iter;
-            cmp_ok $iter->count, '~~', 1, 'count of elements';
-            cmp_ok $tuple->id, '~~', 10, 'tuple(0)->id';
+            is $iter->count, 1, 'count of elements';
+            is $tuple->id, 10, 'tuple(0)->id';
             $cv->end;
         });
 
@@ -343,15 +343,15 @@ SKIP: {
         $cv->begin;
         $client->delete(first_space => 10, sub {
             my ($status, $tuple) = @_;
-            cmp_ok $status, '~~', 'ok', '* delete status';
+            is $status, 'ok', '* delete status';
             $cv->end;
         });
 
         $cv->begin;
         $client->select(first_space => 10, sub {
             my ($status, $tuple) = @_;
-            cmp_ok $status, '~~', 'ok', 'select deleted status';
-            cmp_ok $tuple, '~~', undef, 'there is no tuple';
+            is $status, 'ok', 'select deleted status';
+            is $tuple, undef, 'there is no tuple';
             $cv->end;
         });
 
@@ -363,8 +363,8 @@ SKIP: {
         $cv->begin;
         $client->update(first_space => 111, [ name => set => 'привет1' ], sub {
             my ($status, $tuple) = @_;
-            cmp_ok $status, '~~', 'ok', '* update status';
-            cmp_ok $tuple, '~~', undef, 'tuple';
+            is $status, 'ok', '* update status';
+            is $tuple, undef, 'tuple';
             $cv->end;
         });
 
@@ -372,18 +372,18 @@ SKIP: {
         $client->update(first_space =>
                         111, [ name => set => 'привет' ], TNT_FLAG_RETURN, sub {
             my ($status, $tuple) = @_;
-            cmp_ok $status, '~~', 'ok', '* update status';
+            is $status, 'ok', '* update status';
             isa_ok $tuple => 'DR::Tarantool::Tuple', 'tuple was selected';
-            cmp_ok $tuple->name, '~~', 'привет', 'field was updated';
+            is $tuple->name, 'привет', 'field was updated';
             $cv->end;
         });
 
         $cv->begin;
         $client->select(first_space => 111, sub {
             my ($status, $tuple) = @_;
-            cmp_ok $status, '~~', 'ok', 'select deleted status';
+            is $status, 'ok', 'select deleted status';
             isa_ok $tuple => 'DR::Tarantool::Tuple', 'tuple was selected';
-            cmp_ok $tuple->name, '~~', 'привет', 'field was updated';
+            is $tuple->name, 'привет', 'field was updated';
             $cv->end;
         });
 
