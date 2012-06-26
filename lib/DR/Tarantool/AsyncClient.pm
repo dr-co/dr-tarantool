@@ -48,7 +48,7 @@ DR::Tarantool::AsyncClient - async client for L<tarantool|http://tarantool.org>
                     }
                 }
             }
-        }
+        },
         sub {
             my ($client) = @_;
             ...
@@ -61,7 +61,7 @@ DR::Tarantool::AsyncClient - async client for L<tarantool|http://tarantool.org>
 
     $client->call_lua(foo => ['arg1', 'arg2'], sub {  });
 
-    client->select('space', 1, sub { ... });
+    $client->select('space', 1, sub { ... });
 
     $client->delete('space', 1, sub { ... });
 

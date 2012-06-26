@@ -52,8 +52,8 @@ DR::Tarantool::Spaces - spaces container
     });
 
     my $f = $s->pack_field('users', 'counter', 10);
-    my $f = $s->pack_field('users', 1, 10);             # the same
-    my $f = $s->pack_field(1, 1, 10);                   # the same
+    my $f = $s->pack_field('users', 3, 10);             # the same
+    my $f = $s->pack_field(1, 3, 10);                   # the same
 
     my $ts = $s->pack_keys([1,2,3] => 'my_idx');
     my $t = $s->pack_primary_key([1,2,3]);
