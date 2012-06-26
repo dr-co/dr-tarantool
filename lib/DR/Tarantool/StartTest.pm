@@ -103,8 +103,9 @@ sub _start_tarantool {
 
     return unless open my $fh, '>:encoding(UTF-8)', $self->{cfg};
 
-    print $fh "slab_alloc_arena = 0.1\n";
     print $fh "\n\n\n", $self->{cfg_data}, "\n\n\n";
+
+    print $fh "slab_alloc_arena = 1.1\n";
 
     for (qw(admin_port primary_port secondary_port)) {
         printf $fh "%s = %s\n", $_, $self->{$_};
