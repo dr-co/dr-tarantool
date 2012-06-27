@@ -9,6 +9,7 @@ use lib qw(lib ../lib);
 use Test::More tests    => 59;
 use Encode qw(decode encode);
 
+my $LE = $] > 5.01 ? '<' : '';
 
 BEGIN {
     # Подготовка объекта тестирования для работы с utf8
@@ -118,7 +119,7 @@ is $tp->next->raw(0), 'bb', 'tuple[0]';
 is $tp->next->next->raw(0), 'cc', 'tuple[0]';
 
 $tp = DR::Tarantool::Tuple->unpack(
-    [ pack('L<', 10), pack('L<', 20) ], $s->space('test')
+    [ pack("L$LE", 10), pack("L$LE", 20) ], $s->space('test')
 );
 isa_ok $tp => 'DR::Tarantool::Tuple';
 is $tp->raw(0), 10, 'raw(0)';

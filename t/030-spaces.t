@@ -9,6 +9,8 @@ use lib qw(lib ../lib);
 use Test::More tests    => 123;
 use Encode qw(decode encode);
 
+my $LE = $] > 5.01 ? '<' : '';
+
 
 BEGIN {
     # Подготовка объекта тестирования для работы с utf8
@@ -80,48 +82,48 @@ my $s = MODEL->new({
     }
 });
 
-my $v = unpack 'L<', $s->pack_field( test => a => '10' );
+my $v = unpack "L$LE", $s->pack_field( test => a => '10' );
 is $v, 10, 'pack_field NUM';
-$v = unpack 'L<', $s->pack_field( test => 0 => 11 );
+$v = unpack "L$LE", $s->pack_field( test => 0 => 11 );
 is $v, 11, 'pack_field NUM';
-$v = unpack 'L<', $s->pack_field( 0 => 0 => 13 );
+$v = unpack "L$LE", $s->pack_field( 0 => 0 => 13 );
 is $v, 13, 'pack_field NUM';
-$v = unpack 'L<', $s->pack_field( test => a123 => 13 );
+$v = unpack "L$LE", $s->pack_field( test => a123 => 13 );
 is $v, 13, 'pack_field NUM64';
 $v = $s->pack_field( test => d => 'test' );
 is $v, 'test', 'pack_field STR';
 $v = decode utf8 => $s->pack_field( test => d => 'привет' );
 is $v, 'привет', 'pack_field STR';
-$v = unpack 'l<' => $s->pack_field( test => int => -10 );
+$v = unpack "l$LE" => $s->pack_field( test => int => -10 );
 is $v, -10, 'pack_field INT';
 $v = decode utf8 => $s->pack_field( test => d => encode utf8 => 'привет' );
 is $v, 'привет', 'pack_field STR';
 
 # money
-$v = unpack 'l<' => $s->pack_field( test => money => '123');
+$v = unpack "l$LE" => $s->pack_field( test => money => '123');
 is $v, 12300, 'pack_field MONEY(123)';
-$v = unpack 'l<' => $s->pack_field( test => money => '-123');
+$v = unpack "l$LE" => $s->pack_field( test => money => '-123');
 is $v, -12300, 'pack_field MONEY(-123)';
-$v = unpack 'l<' => $s->pack_field( test => money => '.123');
+$v = unpack "l$LE" => $s->pack_field( test => money => '.123');
 is $v, 12, 'pack_field MONEY(.12)';
-$v = unpack 'l<' => $s->pack_field( test => money => '0');
+$v = unpack "l$LE" => $s->pack_field( test => money => '0');
 is $v, 0, 'pack_field MONEY(0)';
-$v = unpack 'l<' => $s->pack_field( test => money => '12345.21');
+$v = unpack "l$LE" => $s->pack_field( test => money => '12345.21');
 is $v, 1234521, 'pack_field MONEY(12345.21)';
-$v = unpack 'l<' => $s->pack_field( test => money => '12345.2');
+$v = unpack "l$LE" => $s->pack_field( test => money => '12345.2');
 is $v, 1234520, 'pack_field MONEY(12345.20)';
-$v = unpack 'l<' => $s->pack_field( test => money => '-12345.21');
+$v = unpack "l$LE" => $s->pack_field( test => money => '-12345.21');
 is $v, -1234521, 'pack_field MONEY(-12345.21)';
 
 
 
-$v = $s->unpack_field( test => a => pack 'L<' => 14);
+$v = $s->unpack_field( test => a => pack "L$LE" => 14);
 is $v, 14, 'unpack_field NUM';
-$v = $s->unpack_field( test => int => pack 'l<' => -14);
+$v = $s->unpack_field( test => int => pack "l$LE" => -14);
 is $v, -14, 'unpack_field INT';
-$v = $s->unpack_field( test => 0 => pack 'L<' => 14);
+$v = $s->unpack_field( test => 0 => pack "L$LE" => 14);
 is $v, 14, 'unpack_field NUM';
-$v = $s->unpack_field( 0 => 0 => pack 'L<' => 14);
+$v = $s->unpack_field( 0 => 0 => pack "L$LE" => 14);
 is $v, 14, 'unpack_field NUM';
 $v = $s->unpack_field( 0 => 'abcd' => 'test');
 is $v, 'test', 'unpack_field STR';
@@ -130,13 +132,13 @@ is $v, encode(utf8 => 'привет'), 'unpack_field STR';
 $v = $s->unpack_field( 0 => 'd' => 'привет');
 is $v, 'привет', 'unpack_field STR';
 
-$v = $s->unpack_field( test => money => pack 'l<' => 12345);
+$v = $s->unpack_field( test => money => pack "l$LE" => 12345);
 is $v, 123.45, 'unpack_field MONEY(123.45)';
-$v = $s->unpack_field( test => money => pack 'l<' => 0);
+$v = $s->unpack_field( test => money => pack "l$LE" => 0);
 is $v, '0.00', 'unpack_field MONEY(0)';
-$v = $s->unpack_field( test => money => pack 'l<' => -1234);
+$v = $s->unpack_field( test => money => pack "l$LE" => -1234);
 is $v, '-12.34', 'unpack_field MONEY(-12.34)';
-$v = $s->unpack_field( test => money => pack 'l<' => 4);
+$v = $s->unpack_field( test => money => pack "l$LE" => 4);
 is $v, '0.04', 'unpack_field MONEY(0.04)';
 
 
@@ -147,11 +149,11 @@ my $ut = $s->unpack_tuple(0 => $t);
 isa_ok $ut => 'ARRAY';
 cmp_ok join(':', @$tt), 'eq', join(':', @$ut), 'unpacked packed tuple';
 
-is unpack('L<', $t->[0]), 0, 'tuple[0]';
-is unpack('L<', $t->[1]), 1, 'tuple[1]';
-is unpack('L<', $t->[2]), 2, 'tuple[2]';
+is unpack("L$LE", $t->[0]), 0, 'tuple[0]';
+is unpack("L$LE", $t->[1]), 1, 'tuple[1]';
+is unpack("L$LE", $t->[2]), 2, 'tuple[2]';
 is $t->[3], encode(utf8 => 'медвед'), 'tuple[3]';
-is unpack('L<', $t->[4]),  10, 'tuple[4]';
+is unpack("L$LE", $t->[4]),  10, 'tuple[4]';
 is $t->[5], 'test', 'tuple[5]';
 
 # indexes
@@ -161,11 +163,11 @@ is $t->[5], 'test', 'tuple[5]';
     $t = $s->space('test')->pack_keys([1, 2], 'i0');
     like $w => qr{Ambiguous keys list}, 'ambiguous keys warning';
     cmp_ok join(':', @{ $t->[0] }), 'eq',
-        join(':', pack('L<', 1), pack 'L<', 2), 'pack_keys';
+        join(':', pack("L$LE", 1), pack "L$LE", 2), 'pack_keys';
     undef $w;
     $t = $s->space('test')->pack_keys([[2, 3]], 'i0');
     cmp_ok join(':', @{ $t->[0] }), 'eq',
-        join(':', pack('L<', 2), pack 'L<', 3), 'pack_keys';
+        join(':', pack("L$LE", 2), pack "L$LE", 3), 'pack_keys';
     is $w, undef, 'there was no ambiguous warning';
 }
 $t = eval { $s->space('test')->pack_keys([[1, 2, 3]], 'i0'); };
@@ -178,11 +180,11 @@ is $t, undef, 'wrong elements count';
     $t = $s->space('test')->pack_keys([2, 3], 0);
     like $w => qr{Ambiguous keys list}, 'ambiguous keys warning';
     cmp_ok join(':', @{ $t->[0] }), 'eq',
-        join(':', pack('L<', 2), pack 'L<', 3), 'pack_keys';
+        join(':', pack("L$LE", 2), pack "L$LE", 3), 'pack_keys';
     undef $w;
     $t = $s->space('test')->pack_keys([[2, 3]], 0);
     cmp_ok join(':', @{ $t->[0] }), 'eq',
-        join(':', pack('L<', 2), pack 'L<', 3), 'pack_keys';
+        join(':', pack("L$LE", 2), pack "L$LE", 3), 'pack_keys';
     is $w, undef, 'there was no ambiguous warning';
 }
 $t = eval { $s->space('test')->pack_keys([[1,2,3]], 0); };
@@ -190,15 +192,15 @@ like $@, qr{must have 2}, 'error message';
 is $t, undef, 'wrong elements count';
 
 $t = $s->space('test')->pack_keys(4, 'i2');
-is unpack('L<', $t->[0][0]), 4, 'pack_keys';
+is unpack("L$LE", $t->[0][0]), 4, 'pack_keys';
 $t = $s->space('test')->pack_keys([5], 'i2');
-is unpack('L<', $t->[0][0]), 5, 'pack_keys';
+is unpack("L$LE", $t->[0][0]), 5, 'pack_keys';
 $t = $s->space('test')->pack_keys([[6]], 'i2');
-is unpack('L<', $t->[0][0]), 6, 'pack_keys';
+is unpack("L$LE", $t->[0][0]), 6, 'pack_keys';
 $t = $s->space('test')->pack_keys([7,8,9], 'i2');
-is unpack('L<', $t->[0][0]), 7, 'pack_keys';
-is unpack('L<', $t->[1][0]), 8, 'pack_keys';
-is unpack('L<', $t->[2][0]), 9, 'pack_keys';
+is unpack("L$LE", $t->[0][0]), 7, 'pack_keys';
+is unpack("L$LE", $t->[1][0]), 8, 'pack_keys';
+is unpack("L$LE", $t->[2][0]), 9, 'pack_keys';
 $t = eval { $s->space('test')->pack_keys([[7,8,9]], 'i2') };
 like $@, qr{must have 1}, 'error message';
 
@@ -215,7 +217,7 @@ for (qw(insert add and or xor set)) {
     $op = $s->space('test')->pack_operation([a123 => $_ => $n]);
     is $op->[0], 4, "operation field: $_";
     is $op->[1], $_, 'operation name';
-    is unpack('L<', $op->[2]), $n, 'operation argument';
+    is unpack("L$LE", $op->[2]), $n, 'operation argument';
 }
 
 $op = $s->space('test')->pack_operation([d => 'substr', 1, 2]);
@@ -245,7 +247,7 @@ is decode(utf8 => $op->[0][2]), 'тест', 'operation argument';
 
 is $op->[1][0], 1, "operation field: set";
 is $op->[1][1], 'insert', 'operation name';
-is unpack('L<', $op->[1][2]), 500, 'operation argument';
+is unpack("L$LE", $op->[1][2]), 500, 'operation argument';
 
 
 $op = $s->pack_field(json => f => undef);

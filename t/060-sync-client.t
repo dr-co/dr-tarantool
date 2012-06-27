@@ -11,6 +11,7 @@ use constant PLAN       => 51;
 use Test::More tests    => PLAN;
 use Encode qw(decode encode);
 
+my $LE = $] > 5.01 ? '<' : '';
 
 BEGIN {
     # Подготовка объекта тестирования для работы с utf8
@@ -104,7 +105,7 @@ SKIP: {
 
 
     $t = $client->call_lua('box.select' =>
-        [ 0, 0, pack 'L<' => 1 ], 'first_space');
+        [ 0, 0, pack "L$LE" => 1 ], 'first_space');
     isa_ok $t => 'DR::Tarantool::Tuple', '* call tuple packed';
     is $t->id, 1, 'id';
     is $t->name, 'привет', 'name';

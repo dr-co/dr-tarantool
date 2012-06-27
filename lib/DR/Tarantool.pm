@@ -53,7 +53,7 @@ parsing responses.
 
 =cut
 
-use 5.010001;
+use 5.008008;
 use strict;
 use warnings;
 use Carp;

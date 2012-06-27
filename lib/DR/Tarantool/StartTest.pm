@@ -9,7 +9,6 @@ use File::Path 'rmtree';
 use File::Spec::Functions qw(catfile);
 use Cwd;
 use IO::Socket::INET;
-use feature 'state';
 
 =head1 NAME
 
@@ -193,20 +192,24 @@ sub DESTROY {
     rmtree $self->{temp} if $self->{temp};
 }
 
-sub _find_free_port {
-    state $start_port = 10000;
+{
+    my $start_port;
 
-    while( ++$start_port < 60000 ) {
-        return $start_port if IO::Socket::INET->new(
-            Listen    => 5,
-            LocalAddr => '127.0.0.1',
-            LocalPort => $start_port,
-            Proto     => 'tcp',
-            (($^O eq 'MSWin32') ? () : (ReuseAddr => 1)),
-        );
+    sub _find_free_port {
+        $start_port = 10000 unless defined $start_port;
+
+        while( ++$start_port < 60000 ) {
+            return $start_port if IO::Socket::INET->new(
+                Listen    => 5,
+                LocalAddr => '127.0.0.1',
+                LocalPort => $start_port,
+                Proto     => 'tcp',
+                (($^O eq 'MSWin32') ? () : (ReuseAddr => 1)),
+            );
+        }
+
+        croak "Can't find free port";
     }
-
-    croak "Can't find free port";
 }
 
 =head1 COPYRIGHT AND LICENSE

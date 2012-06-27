@@ -35,11 +35,14 @@ like TNT_FLAG_REPLACE,      qr{^\d+$}, 'TNT_FLAG_REPLACE';
 like TNT_FLAG_BOX_QUIET,    qr{^\d+$}, 'TNT_FLAG_BOX_QUIET';
 like TNT_FLAG_NOT_STORE,    qr{^\d+$}, 'TNT_FLAG_NOT_STORE';
 
+my $LE = $] > 5.01 ? '<' : '';
+
+
 # SELECT
 my $sbody = DR::Tarantool::_pkt_select( 9, 8, 7, 6, 5, [ [4], [3] ] );
 ok defined $sbody, '* select body';
 
-my @a = unpack '( L< )*', $sbody;
+my @a = unpack "( L$LE )*", $sbody;
 is $a[0], TNT_SELECT, 'select type';
 is $a[1], length($sbody) - 3 * 4, 'body length';
 is $a[2], 9, 'request id';
@@ -54,7 +57,7 @@ like $@ => qr{ARRAYREF of ARRAYREF}, 'error string';
 # PING
 $sbody = DR::Tarantool::_pkt_ping( 11 );
 ok defined $sbody, '* ping body';
-@a = unpack '( L< )*', $sbody;
+@a = unpack "( L$LE )*", $sbody;
 is $a[0], TNT_PING, 'ping type';
 is $a[1], length($sbody) - 3 * 4, 'body length';
 is $a[2], 11, 'request id';
@@ -63,7 +66,7 @@ is $a[2], 11, 'request id';
 # insert
 $sbody = DR::Tarantool::_pkt_insert( 12, 13, 14, [ 'a', 'b', 'c', 'd' ]);
 ok defined $sbody, '* insert body';
-@a = unpack '( L< )*', $sbody;
+@a = unpack "( L$LE )*", $sbody;
 is $a[0], TNT_INSERT, 'insert type';
 is $a[1], length($sbody) - 3 * 4, 'body length';
 is $a[2], 12, 'request id';
@@ -74,7 +77,7 @@ is $a[5], 4,  'tuple size';
 # delete
 $sbody = DR::Tarantool::_pkt_delete( 119, 120, 121, [ 122, 123 ] );
 ok defined $sbody, '* delete body';
-@a = unpack '( L< )*', $sbody;
+@a = unpack "( L$LE )*", $sbody;
 is $a[0], TNT_DELETE, 'delete type';
 is $a[1], length($sbody) - 3 * 4, 'body length';
 is $a[2], 119, 'request id';
@@ -92,7 +95,7 @@ if (TNT_DELETE == 20) {
 # call
 $sbody = DR::Tarantool::_pkt_call_lua( 124, 125, 'tproc', [ 126, 127 ]);
 ok defined $sbody, '* call body';
-@a = unpack 'L< L< L< L< w/Z* L< L<', $sbody;
+@a = unpack "L$LE L$LE L$LE L$LE w/Z* L$LE L$LE", $sbody;
 is $a[0], TNT_CALL, 'call type';
 is $a[1], length($sbody) - 3 * 4, 'body length';
 is $a[2], 124, 'request id';
@@ -105,7 +108,7 @@ my @ops = map { [ int rand 100, $_, int rand 100 ] }
     qw(add and or xor set delete insert);
 $sbody = DR::Tarantool::_pkt_update( 15, 16, 17, [ 18 ], \@ops);
 ok defined $sbody, '* update body';
-@a = unpack '( L< )*', $sbody;
+@a = unpack "( L$LE )*", $sbody;
 is $a[0], TNT_UPDATE, 'update type';
 is $a[1], length($sbody) - 3 * 4, 'body length';
 is $a[2], 15, 'request id';
@@ -126,7 +129,7 @@ is $res->{status}, 'buffer', 'status';
 my $data;
 for (TNT_INSERT, TNT_UPDATE, TNT_SELECT, TNT_DELETE, TNT_CALL, TNT_PING) {
     my $msg = "test message";
-    $data = pack 'L< L< L< L< Z*',
+    $data = pack "L$LE L$LE L$LE L$LE Z*",
         $_, 5 + length $msg, $_ + 100, 0x0101, $msg;
     $res = DR::Tarantool::_pkt_parse_response( $data );
     isa_ok $res => 'HASH', 'well input ' . $_;

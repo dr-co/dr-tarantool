@@ -11,6 +11,8 @@ use constant PLAN       => 76;
 use Test::More tests    => PLAN;
 use Encode qw(decode encode);
 
+my $LE = $] > 5.01 ? '<' : '';
+
 
 BEGIN {
     # Подготовка объекта тестирования для работы с utf8
@@ -79,7 +81,7 @@ SKIP: {
         my $cnt = 3;
         $client->insert(
             0,
-            [ pack('L<', 1), 'abc', pack 'L<', 1234 ],
+            [ pack("L$LE", 1), 'abc', pack "L$LE", 1234 ],
             TNT_FLAG_RETURN,
             sub {
                 my ($res) = @_;
@@ -87,7 +89,7 @@ SKIP: {
                 is $res->{status}, 'ok', 'status';
                 is $res->{type}, TNT_INSERT, 'type';
 
-                is $res->{tuples}[0][0], pack('L<', 1), 'key';
+                is $res->{tuples}[0][0], pack("L$LE", 1), 'key';
                 is $res->{tuples}[0][1], 'abc', 'f1';
 
                 $cv->send if --$cnt == 0;
@@ -97,7 +99,7 @@ SKIP: {
 
         $client->insert(
             0,
-            [ pack('L<', 2), 'cde', pack 'L<', 4567 ],
+            [ pack("L$LE", 2), 'cde', pack "L$LE", 4567 ],
             TNT_FLAG_RETURN,
             sub {
                 my ($res) = @_;
@@ -105,7 +107,7 @@ SKIP: {
                 is $res->{status}, 'ok', 'status';
                 is $res->{type}, TNT_INSERT, 'type';
 
-                is $res->{tuples}[0][0], pack('L<', 2), 'key';
+                is $res->{tuples}[0][0], pack("L$LE", 2), 'key';
                 is $res->{tuples}[0][1], 'cde', 'f1';
 
                 $cv->send if --$cnt == 0;
@@ -114,7 +116,7 @@ SKIP: {
         );
         $client->insert(
             0,
-            [ pack('L<', 1), 'aaa', pack 'L<', 1234 ],
+            [ pack("L$LE", 1), 'aaa', pack "L$LE", 1234 ],
             TNT_FLAG_RETURN | TNT_FLAG_ADD,
             sub {
                 my ($res) = @_;
@@ -136,7 +138,7 @@ SKIP: {
         $client->select(
             0, # ns
             0, # idx
-            [ [ pack 'L<', 1 ], [ pack 'L<', 2 ] ],
+            [ [ pack "L$LE", 1 ], [ pack "L$LE", 2 ] ],
             2, # limit
             0, # offset
             sub {
@@ -164,7 +166,7 @@ SKIP: {
         $client->select(
             0, #ns
             0, #idx
-            [ [ pack 'L<', 3 ], [ pack 'L<', 4 ] ],
+            [ [ pack "L$LE", 3 ], [ pack "L$LE", 4 ] ],
             sub {
                 my ($res) = @_;
                 is $res->{code}, 0, 'select reply code';
@@ -183,13 +185,13 @@ SKIP: {
         my $cnt = 2;
         $client->update(
             0, # ns
-            [ pack 'L<', 1 ], # keys
+            [ pack "L$LE", 1 ], # keys
             [
                 [ 1 => set      => 'abcdef' ],
                 [ 1 => substr   => 2, 2, ],
                 [ 1 => substr   => 100, 1, 'tail' ],
                 [ 2 => 'delete' ],
-                [ 2 => insert   => pack 'L<' => 123 ],
+                [ 2 => insert   => pack "L$LE" => 123 ],
                 [ 3 => insert   => 'third' ],
                 [ 4 => insert   => 'fourth' ],
             ],
@@ -202,7 +204,7 @@ SKIP: {
 
                 is $res->{tuples}[0][1], 'abeftail',
                     'updated tuple 1';
-                is $res->{tuples}[0][2], (pack 'L<', 123),
+                is $res->{tuples}[0][2], (pack "L$LE", 123),
                     'updated tuple 2';
                 is $res->{tuples}[0][3], 'third', 'updated tuple 3';
                 is $res->{tuples}[0][4], 'fourth', 'updated tuple 4';
@@ -212,12 +214,12 @@ SKIP: {
 
         $client->update(
             0, # ns
-            [ pack 'L<', 2 ], # keys
+            [ pack "L$LE", 2 ], # keys
             [
                 [ 1 => set      => 'abcdef' ],
-                [ 2 => or       => pack 'L<', 23 ],
-                [ 2 => and      => pack 'L<', 345 ],
-                [ 2 => xor      => pack 'L<', 744 ],
+                [ 2 => or       => pack "L$LE", 23 ],
+                [ 2 => and      => pack "L$LE", 345 ],
+                [ 2 => xor      => pack "L$LE", 744 ],
             ],
             TNT_FLAG_RETURN, # flags
             sub {
@@ -230,7 +232,7 @@ SKIP: {
                     'updated tuple 1';
                 is
                     $res->{tuples}[0][2],
-                    (pack 'L<', ( (4567 | 23) & 345 ) ^ 744 ),
+                    (pack "L$LE", ( (4567 | 23) & 345 ) ^ 744 ),
                     'updated tuple 2'
                 ;
                 $cv->send if --$cnt == 0;
@@ -248,7 +250,7 @@ SKIP: {
         my $cnt = 2;
         $client->delete(
             0, # ns
-            [ pack 'L<', 1 ], # keys
+            [ pack "L$LE", 1 ], # keys
             TNT_FLAG_RETURN, # flags
             sub {
                 my ($res) = @_;
@@ -260,7 +262,7 @@ SKIP: {
                     skip 'Old version of delete', 4 unless TNT_DELETE == 21;
                     is $res->{tuples}[0][1], 'abeftail',
                         'deleted tuple 1';
-                    is $res->{tuples}[0][2], (pack 'L<', 123),
+                    is $res->{tuples}[0][2], (pack "L$LE", 123),
                         'deleted tuple 2';
                     is $res->{tuples}[0][3], 'third',
                         'deleted tuple 3';
@@ -275,7 +277,7 @@ SKIP: {
         $client->select(
             0, # ns
             0, # idx
-            [ [ pack 'L<', 1 ], [ pack 'L<', 1 ] ],
+            [ [ pack "L$LE", 1 ], [ pack "L$LE", 1 ] ],
             sub {
                 my ($res) = @_;
                 is $res->{code}, 0, '* select reply code';
@@ -294,7 +296,7 @@ SKIP: {
     for my $cv (condvar AnyEvent) {
         my $cnt = 1;
         $client->call_lua(
-            'box.select' => [ 0, 0, pack 'L<', 2 ],
+            'box.select' => [ 0, 0, pack "L$LE", 2 ],
             0,
             sub {
                 my ($res) = @_;
@@ -306,7 +308,7 @@ SKIP: {
                     'updated tuple 1';
                 is
                     $res->{tuples}[0][2],
-                    (pack 'L<', ( (4567 | 23) & 345 ) ^ 744 ),
+                    (pack "L$LE", ( (4567 | 23) & 345 ) ^ 744 ),
                     'updated tuple 2'
                 ;
                 $cv->send if --$cnt == 0;
@@ -324,7 +326,7 @@ SKIP: {
             my $tmr;
             $tmr = AE::timer 0.0001, 0.0001 => sub {
                 $client->call_lua(
-                    'box.select' => [ 0, 0, pack 'L<', 2 ],
+                    'box.select' => [ 0, 0, pack "L$LE", 2 ],
                     0,
                     sub {
                         if (--$cnt == 0) {
@@ -364,7 +366,7 @@ SKIP: {
     for my $cv (condvar AnyEvent) {
         my $cnt = 1;
         $client->call_lua(
-            'box.select' => [ 0, 0, pack 'L<', 2 ],
+            'box.select' => [ 0, 0, pack "L$LE", 2 ],
             0,
             sub {
                 my ($res) = @_;
@@ -385,7 +387,7 @@ SKIP: {
     for my $cv (condvar AnyEvent) {
         my $cnt = 1;
         $client->call_lua(
-            'box.select' => [ 0, 0, pack 'L<', 2 ],
+            'box.select' => [ 0, 0, pack "L$LE", 2 ],
             0,
             sub {
                 my ($res) = @_;
@@ -402,7 +404,7 @@ SKIP: {
     for my $cv (condvar AnyEvent) {
         my $cnt = 1;
         $client->call_lua(
-            'box.select' => [ 0, 0, pack 'L<', 2 ],
+            'box.select' => [ 0, 0, pack "L$LE", 2 ],
             0,
             sub {
                 my ($res) = @_;

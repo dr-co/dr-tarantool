@@ -11,6 +11,7 @@ use constant PLAN       => 80;
 use Test::More tests    => PLAN;
 use Encode qw(decode encode);
 
+my $LE = $] > 5.01 ? '<' : '';
 
 BEGIN {
     # Подготовка объекта тестирования для работы с utf8
@@ -220,9 +221,9 @@ SKIP: {
                 isa_ok $tuple => 'DR::Tarantool::Tuple', 'tuple packed';
                 SKIP: {
                     skip 'there is no tuple', 4 unless $tuple;
-                    is unpack('L<', $tuple->raw(0)), 10, 'id';
+                    is unpack("L$LE", $tuple->raw(0)), 10, 'id';
                     is $tuple->raw(1), 'user', 'name';
-                    is unpack('L<', $tuple->raw(2)), 11, 'key';
+                    is unpack("L$LE", $tuple->raw(2)), 11, 'key';
                     is $tuple->raw(3), 'password', 'password';
                 }
                 $cv->end;
@@ -231,7 +232,7 @@ SKIP: {
 
         $cv->begin;
         $client->call_lua(
-            'box.select' => [ 0, 0, pack 'L<' => 10 ],
+            'box.select' => [ 0, 0, pack "L$LE" => 10 ],
             'first_space',
             sub {
                 my ($status, $tuple) = @_;
@@ -247,7 +248,7 @@ SKIP: {
 
         $cv->begin;
         $client->call_lua(
-            'box.select' => [ 0, 0, pack 'L<' => 11 ],
+            'box.select' => [ 0, 0, pack "L$LE" => 11 ],
             'first_space',
             sub {
                 my ($status, $tuple) = @_;
@@ -325,7 +326,7 @@ SKIP: {
         );
 
         $cv->begin;
-        $client->select(first_space => [11, 'password'], 'tidx', sub {
+        $client->select(first_space => [[11, 'password']], 'tidx', sub {
             my ($status, $tuple) = @_;
             is $status, 'ok', 'select status (not primary index)';
             my $iter = $tuple->iter;

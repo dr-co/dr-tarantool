@@ -6,6 +6,8 @@ package DR::Tarantool::Spaces;
 use Carp;
 $Carp::Internal{ (__PACKAGE__) }++;
 
+my $LE = $] > 5.01 ? '<' : '';
+
 =head1 NAME
 
 DR::Tarantool::Spaces - spaces container
@@ -369,10 +371,10 @@ sub pack_field {
     my $v = $value;
     utf8::encode( $v ) if utf8::is_utf8( $v );
     return $v if $type eq 'STR' or $type eq 'UTF8STR';
-    return pack 'L<' => $v if $type eq 'NUM';
-    return pack 'l<' => $v if $type eq 'INT';
-    return pack 'Q<' => $v if $type eq 'NUM64';
-    return pack 'q<' => $v if $type eq 'INT64';
+    return pack "L$LE" => $v if $type eq 'NUM';
+    return pack "l$LE" => $v if $type eq 'INT';
+    return pack "Q$LE" => $v if $type eq 'NUM64';
+    return pack "q$LE" => $v if $type eq 'INT64';
 
     if ($type eq 'MONEY' or $type eq 'BIGMONEY') {
         my ($r, $k) = split /\./, $v;
@@ -390,8 +392,8 @@ sub pack_field {
             $v = $r * 100 + $k;
         }
 
-        return pack 'l<', $v if $type eq 'MONEY';
-        return pack 'q<', $v;
+        return pack "l$LE", $v if $type eq 'MONEY';
+        return pack "q$LE", $v;
     }
 
 
@@ -423,14 +425,14 @@ sub unpack_field {
         return $v;
     }
 
-    $v = unpack 'L<' => $v  if $type eq 'NUM';
-    $v = unpack 'l<' => $v  if $type eq 'INT';
-    $v = unpack 'Q<' => $v  if $type eq 'NUM64';
-    $v = unpack 'q<' => $v  if $type eq 'INT64';
+    $v = unpack "L$LE" => $v  if $type eq 'NUM';
+    $v = unpack "l$LE" => $v  if $type eq 'INT';
+    $v = unpack "Q$LE" => $v  if $type eq 'NUM64';
+    $v = unpack "q$LE" => $v  if $type eq 'INT64';
     utf8::decode( $v )      if $type eq 'UTF8STR';
     if ($type eq 'MONEY' or $type eq 'BIGMONEY') {
-        $v = unpack 'l<' => $v if $type eq 'MONEY';
-        $v = unpack 'q<' => $v if $type eq 'BIGMONEY';
+        $v = unpack "l$LE" => $v if $type eq 'MONEY';
+        $v = unpack "q$LE" => $v if $type eq 'BIGMONEY';
         my $s = '';
         if ($v < 0) {
             $v = -$v;

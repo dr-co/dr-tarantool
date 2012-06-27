@@ -108,6 +108,8 @@ use Scalar::Util 'weaken';
 require DR::Tarantool;
 use Data::Dumper;
 
+my $LE = $] > 5.01 ? '<' : '';
+
 
 =head2 connect
 
@@ -505,7 +507,7 @@ sub _read_header {
     return sub {
         my (undef, $data) = @_;
         croak "Unexpected data length" unless $data and length $data == 12;
-        my (undef, $blen ) = unpack 'L< L<', $data;
+        my (undef, $blen ) = unpack "L$LE L$LE", $data;
 
         $self->{handle}->push_read( chunk => $blen, $self->_read_reply($data) );
     }

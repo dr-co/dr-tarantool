@@ -7,6 +7,7 @@ use open qw(:std :utf8);
 use lib qw(lib ../lib);
 use lib qw(blib/lib blib/arch ../blib/lib ../blib/arch);
 
+my $LE = $] > 5.01 ? '<' : '';
 
 use constant PLAN       => 94;
 use Test::More;
@@ -110,7 +111,7 @@ SKIP: {
 
 
     $t = $client->call_lua('box.select' =>
-        [ 0, 0, pack 'L<' => 1 ], 'first_space');
+        [ 0, 0, pack "L$LE" => 1 ], 'first_space');
     isa_ok $t => 'DR::Tarantool::Tuple', '* call tuple packed';
     is $t->id, 1, 'id';
     is $t->name, 'привет', 'name';
