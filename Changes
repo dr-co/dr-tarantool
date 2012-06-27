@@ -45,3 +45,6 @@ Revision history for Perl extension DR::Tarantool.
 
 0.16 Sat Jun 23 16:39:13 MSK 2012
         - add some functions to iterator.
+
+0.17 Wed Jun 27 11:49:40 MSK 2012
+	- backported to perl 5.8.8
