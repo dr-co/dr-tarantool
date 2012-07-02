@@ -48,3 +48,6 @@ Revision history for Perl extension DR::Tarantool.
 
 0.17 Wed Jun 27 11:49:40 MSK 2012
 	- backported to perl 5.8.8
+
+0.18 Mon Jul  2 10:29:05 MSK 2012
+        - add some functions to Space

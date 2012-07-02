@@ -143,11 +143,9 @@ for (TNT_INSERT, TNT_UPDATE, TNT_SELECT, TNT_DELETE, TNT_CALL, TNT_PING) {
     }
 }
 
-
 my $cfg_dir = catfile dirname(__FILE__), 'test-data';
 ok -d $cfg_dir, 'directory with test data';
 my @bins = glob catfile $cfg_dir, '*.bin';
-
 
 for my $bin (@bins) {
     my ($type, $err, $status) =

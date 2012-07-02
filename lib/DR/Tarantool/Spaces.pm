@@ -486,12 +486,39 @@ sub _index {
         for (values %{ $self->{indexes} }) {
             return $_ if $_->{no} == $index;
         }
-        croak "index $index is not defined";
+        croak "index $index is undefined";
     }
 
     return $self->{indexes}{$index} if exists $self->{indexes}{$index};
-    croak "index `$index' is not defined";
+    croak "index `$index' is undefined";
 }
+
+
+=head2 index_number
+
+returns index number by its name.
+
+=cut
+
+sub index_number {
+    my ($self, $idx) = @_;
+    croak "index name is undefined" unless defined $idx;
+    return $self->_index( $idx )->{no};
+}
+
+
+=head2 index_name
+
+returns index name by its number.
+
+=cut
+
+sub index_name {
+    my ($self, $idx) = @_;
+    croak "index number is undefined" unless defined $idx;
+    return $self->_index( $idx )->{name};
+}
+
 
 sub pack_keys {
     my ($self, $keys, $idx, $disable_warn) = @_;

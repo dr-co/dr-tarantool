@@ -1,3 +1,9 @@
+libdr-tarantool-perl (0.18-1) unstable; urgency=low
+
+  * HVs are created like perlxs: trying to be compatible with libcoro-perl.
+
+ -- Dmitry E. Oboukhov <unera@debian.org>  Mon, 02 Jul 2012 10:12:39 +0400
+
 libdr-tarantool-perl (0.17-2) unstable; urgency=low
 
   * Rebuilt for perl 5.14.

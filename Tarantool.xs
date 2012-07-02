@@ -161,7 +161,9 @@ static void hash_isave(HV *h, const char *k, uint32_t v) {
 static AV * extract_tuples(struct tnt_reply *r) {
 	struct tnt_iter it;
 	tnt_iter_list(&it, TNT_REPLY_LIST(r));
-	AV *res = (AV *)sv_2mortal((SV *)newAV());
+	AV *res = newAV();
+	sv_2mortal((SV *)res);
+
 	while (tnt_next(&it)) {
 		struct tnt_iter ifl;
 		struct tnt_tuple *tu = TNT_ILIST_TUPLE(&it);
@@ -318,11 +320,12 @@ SV * _pkt_call_lua( req_id, flags, proc, tuple )
 
 
 
-SV * _pkt_parse_response( response )
+HV * _pkt_parse_response( response )
 	SV *response
 
 	INIT:
-		HV *res = (HV *)sv_2mortal((SV *)newHV());
+		RETVAL = newHV();
+		sv_2mortal((SV *)RETVAL);
 
 	CODE:
 		if ( !SvOK(response) )
@@ -336,28 +339,28 @@ SV * _pkt_parse_response( response )
 		int i, j;
 
 		if ( cnt < 0 ) {
-			hash_ssave(res, "status", "fatal");
-			hash_ssave(res,
+			hash_ssave(RETVAL, "status", "fatal");
+			hash_ssave(RETVAL,
 			    "errstr", "Can't parse server response");
 		} else if ( cnt > 0 ) {
-			hash_ssave(res, "status", "buffer");
-			hash_ssave(res, "errstr", "Input data too short");
+			hash_ssave(RETVAL, "status", "buffer");
+			hash_ssave(RETVAL, "errstr", "Input data too short");
 		} else {
-			hash_isave(res, "code", reply.code );
-			hash_isave(res, "req_id", reply.reqid );
-        		hash_isave(res, "type", reply.op );
-        		hash_isave(res, "count", reply.count);
+			hash_isave(RETVAL, "code", reply.code );
+			hash_isave(RETVAL, "req_id", reply.reqid );
+        		hash_isave(RETVAL, "type", reply.op );
+        		hash_isave(RETVAL, "count", reply.count);
         		if (reply.code) {
-        		    hash_ssave( res, "errstr", reply.error );
-			    hash_ssave(res, "status", "error");
+        		    hash_ssave(RETVAL, "errstr", reply.error );
+			    hash_ssave(RETVAL, "status", "error");
 
                         } else {
-			    hash_ssave(res, "status", "ok");
+			    hash_ssave(RETVAL, "status", "ok");
                             AV *tuples = extract_tuples( &reply );
-                            hv_store(res, "tuples", 6, newRV((SV *)tuples), 0);
+                            hv_store(RETVAL, "tuples",
+                            	6, newRV((SV *)tuples), 0);
                         }
 		}
-		RETVAL = newRV((SV *)res);
 		tnt_reply_free( &reply );
 
 	OUTPUT:

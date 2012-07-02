@@ -6,7 +6,7 @@ use utf8;
 use open qw(:std :utf8);
 use lib qw(lib ../lib);
 
-use Test::More tests    => 123;
+use Test::More tests    => 131;
 use Encode qw(decode encode);
 
 my $LE = $] > 5.01 ? '<' : '';
@@ -81,6 +81,18 @@ my $s = MODEL->new({
         indexes => {}
     }
 });
+
+is eval { $s->space('test')->index_number}, undef, 'index_number: undefined';
+like $@, qr{name is undefined}, 'error string';
+is eval { $s->space('test')->index_number('aaaaa') }, undef,
+    'index_number: not found';
+like $@, qr{index.*is undefined}, 'error string';
+
+is $s->space('test')->index_number('i0'), 0, 'index_number: i0';
+is $s->space('test')->index_number('abc'), 3, 'index_number: i3';
+
+is $s->space('test')->index_name(0), 'i0', 'index_name: i0';
+is $s->space('test')->index_name(3), 'abc', 'index_name: i3';
 
 my $v = unpack "L$LE", $s->pack_field( test => a => '10' );
 is $v, 10, 'pack_field NUM';
