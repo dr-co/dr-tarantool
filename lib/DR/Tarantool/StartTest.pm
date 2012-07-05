@@ -6,7 +6,7 @@ package DR::Tarantool::StartTest;
 use Carp;
 use File::Temp qw(tempfile tempdir);
 use File::Path 'rmtree';
-use File::Spec::Functions qw(catfile);
+use File::Spec::Functions qw(catfile rel2abs);
 use Cwd;
 use IO::Socket::INET;
 
@@ -45,7 +45,7 @@ path to tarantool.cfg
 sub run {
     my ($module, %opts) = @_;
 
-    my $cfg_file = $opts{cfg} or croak "config file not defined";
+    my $cfg_file = delete $opts{cfg} or croak "config file not defined";
     croak "File not found" unless -r $cfg_file;
     open my $fh, '<:encoding(UTF-8)', $cfg_file or die "$@\n";
     local $/;
@@ -58,7 +58,10 @@ sub run {
         cfg_data        => $cfg,
         master          => $$,
         cwd             => getcwd,
+        add_opts        => \%opts,
     );
+
+    $opts{script_dir} = rel2abs $opts{script_dir} if $opts{script_dir};
 
     my $self = bless \%self => $module;
     $self->_start_tarantool;
@@ -100,29 +103,39 @@ sub _start_tarantool {
     $self->{log} = catfile $self->{temp}, 'tarantool.log';
     $self->{pid} = catfile $self->{temp}, 'tarantool.pid';
 
-    return unless open my $fh, '>:encoding(UTF-8)', $self->{cfg};
 
-    print $fh "\n\n\n", $self->{cfg_data}, "\n\n\n";
 
-    print $fh "slab_alloc_arena = 1.1\n";
+    $self->{config_body} = $self->{cfg_data};
+    $self->{config_body} .= "\n\n";
+    $self->{config_body} .= "slab_alloc_arena = 1.1\n";
+    $self->{config_body} .= sprintf "pid_file = %s\n", $self->{pid};
 
-    for (qw(admin_port primary_port secondary_port)) {
-        printf $fh "%s = %s\n", $_, $self->{$_};
+    $self->{config_body} .= sprintf "%s = %s\n", $_, $self->{$_}
+        for (qw(admin_port primary_port secondary_port));
+
+    $self->{config_body} .= sprintf qq{logger = "cat > %s"\n}, $self->{log};
+
+    for (keys %{ $self->{add_opts} }) {
+        my $v = $self->{add_opts}{ $_ };
+
+        if ($v =~ /^\d+$/) {
+            $self->{config_body} .= sprintf qq{%s = %s\n}, $_, $v;
+        } else {
+            $self->{config_body} .= sprintf qq{%s = "%s"\n}, $_, $v;
+        }
     }
 
-    printf $fh "pid_file = %s\n", $self->{pid};
-    printf $fh qq{logger = "cat > %s"\n"}, $self->{log};
-
+    return unless open my $fh, '>:raw', $self->{cfg};
+    print $fh $self->{config_body};
     close $fh;
 
     chdir $self->{temp};
 
     system "tarantool_box -c $self->{cfg} --check-config > $self->{log} 2>&1";
-    return if $?;
-
+    goto EXIT if $?;
 
     system "tarantool_box -c $self->{cfg} --init-storage >> $self->{log} 2>&1";
-    return if $?;
+    goto EXIT if $?;
 
     unless ($self->{child} = fork) {
         exec "tarantool_box -c $self->{cfg}";
@@ -131,7 +144,6 @@ sub _start_tarantool {
 
     $self->{started} = 1;
 
-    chdir $self->{cwd};
 
     # wait for starting tarantool
     for (my $i = 0; $i < 100; $i++) {
@@ -141,8 +153,10 @@ sub _start_tarantool {
 
         sleep 0.01;
     }
-}
 
+    EXIT:
+        chdir $self->{cwd};
+}
 
 =head2 primary_port
 

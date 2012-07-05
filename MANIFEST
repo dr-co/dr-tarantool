@@ -38,3 +38,4 @@ t/test-data/00022-000-ok.bin
 t/test-data/65280-000-ok.bin
 t/test-data/llc-easy2.cfg
 t/test-data/llc-easy.cfg
+t/090-parallel-requests.t

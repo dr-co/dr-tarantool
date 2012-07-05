@@ -509,7 +509,9 @@ sub _read_header {
         croak "Unexpected data length" unless $data and length $data == 12;
         my (undef, $blen ) = unpack "L$LE L$LE", $data;
 
-        $self->{handle}->push_read( chunk => $blen, $self->_read_reply($data) );
+        $self->{handle}->unshift_read(
+            chunk => $blen, $self->_read_reply($data)
+        );
     }
 }
 
