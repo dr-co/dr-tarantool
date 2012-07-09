@@ -125,7 +125,7 @@ sub _start_tarantool {
         }
     }
 
-    return unless open my $fh, '>:raw', $self->{cfg};
+    return unless open my $fh, '>:encoding(UTF-8)', $self->{cfg};
     print $fh $self->{config_body};
     close $fh;
 
