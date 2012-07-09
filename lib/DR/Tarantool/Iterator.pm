@@ -1,3 +1,27 @@
+=head1 NAME
+
+DR::Tarantool::Iterator - iterator/container class for L<DR::Tarantool>
+
+=head1 SYNOPSIS
+
+    use DR::Tarantool::Iterator;
+
+    my $iter = DR::Tarantool::Iterator->new([1, 2, 3]);
+
+    my $item0 = $iter->item(0);
+
+    my @all = $iter->all;
+    my $all = $iter->all;
+
+    while(my $item = $iter->next) {
+        do_something_with_item( $item );
+    }
+
+
+=head1 METHODS
+
+=cut
+
 use utf8;
 use strict;
 use warnings;
@@ -5,6 +29,64 @@ use warnings;
 package DR::Tarantool::Iterator;
 use Carp;
 use Data::Dumper;
+
+
+=head1 new
+
+Constructor.
+
+=head3 Arguments
+
+=over
+
+=item *
+
+Array of items.
+
+=item *
+
+List of named arguments, that can be:
+
+=over
+
+=item item_class
+
+Name of class to bless/construct item. If the field is 'B<ARRAYREF>'
+then the first element of the array is B<item_class>, and the second
+element is B<item_constructor>.
+
+=item item_constructor
+
+Name of constructor for item. If the value is undefined
+and B<item_class> is defined, iterator will bless value instead construct.
+
+If B<item_constructor> is used, constructor method will be receive three
+arguments: B<item>, B<item_index> and B<iterator>.
+
+
+    my $iter = DR::Tarantool::Iterator->new(
+        [ [1], [2], [3] ],
+        item_class => 'MyClass',
+        item_constructor => 'new'
+    );
+
+    my $iter = DR::Tarantool::Iterator->new(    # the same
+        [ [1], [2], [3] ],
+        item_class => [ 'MyClass', 'new' ]
+    );
+
+
+    my $item = $iter->item(0);
+    my $item = MyClass->new( [1], 0, $iter );  # the same
+
+    my $item = $iter->item(2);
+    my $item = MyClass->new( [3], 2, $iter );  # the same
+
+=back
+
+=back
+
+=cut
 
 sub new {
     my ($class, $items, %opts) = @_;
@@ -68,9 +150,11 @@ returns one item from iterator by its number
 
 sub item {
     my ($self, $no) = @_;
-    croak 'undefined item number' unless defined $no;
-    croak 'wrong item number format (must be /^-?\d+$/)'
-        unless $no =~ /^-?\d+$/;
+
+    my $exists = $self->exists($no);
+    croak "wrong item number format: " . (defined($no) ? $no : 'undef')
+        unless defined $exists;
+    croak 'wrong item number: ' . $no unless $exists;
 
     if ($no >= 0) {
         croak "iterator doesn't contain item with number $no"
@@ -96,6 +180,34 @@ sub item {
 
 }
 
+
+=head2 get
+
+The same as L<item> method.
+
+=cut
+
+sub get {
+    goto \&item;
+}
+
+
+=head2 exists
+
+Returns B<true> if iterator contains element with noticed index.
+
+    my $item = $iter->exists(10) ? $iter->get(10) : somethig_else();
+
+=cut
+
+sub exists : method{
+    my ($self, $no) = @_;
+    return undef unless defined $no;
+    return undef unless $no =~ /^-?\d+$/;
+    return 0 if $no >= $self->count;
+    return 0 if $no <  -$self->count;
+    return 1;
+}
 
 
 =head2 next

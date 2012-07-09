@@ -6,7 +6,7 @@ use utf8;
 use open qw(:std :utf8);
 use lib qw(lib ../lib);
 
-use Test::More tests    => 38;
+use Test::More tests    => 42;
 use Encode qw(decode encode);
 
 
@@ -39,9 +39,13 @@ is $iter->item(-2), 2, '$iter->item(-2)';
 is $iter->item(-3), 1, '$iter->item(-3)';
 
 is eval { $iter->item(3) }, undef, '$iter->item(3) (out of bound)';
-like $@, qr{iterator doesn't contain item}, 'error message';
+like $@, qr{wrong item number: 3}, 'error message';
 is eval { $iter->item(-4) }, undef, '$iter->item(-4) (out of bound)';
-like $@, qr{iterator doesn't contain item}, 'error message';
+like $@, qr{wrong item number: -4}, 'error message';
+is eval { $iter->item('abc') }, undef, '$iter->item("abc")';
+like $@, qr{wrong item number format: abc}, 'error message';
+is eval { $iter->item(undef) }, undef, '$iter->item(undef)';
+like $@, qr{wrong item number format: undef}, 'error message';
 
 my @res;
 while(my $o = $iter->next) { push @res => $o }

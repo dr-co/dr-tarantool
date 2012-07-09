@@ -8,6 +8,7 @@ use lib qw(lib ../lib);
 
 use Test::More tests    => 65;
 use Encode qw(decode encode);
+use Carp;
 
 my $LE = $] > 5.01 ? '<' : '';
 
@@ -20,7 +21,9 @@ BEGIN {
 
     use_ok 'DR::Tarantool::Spaces';
     use_ok 'DR::Tarantool::Tuple';
+
 }
+
 
 my $s = DR::Tarantool::Spaces->new({
     0 => {
