@@ -51,3 +51,7 @@ Revision history for Perl extension DR::Tarantool.
 
 0.18 Mon Jul  2 10:29:05 MSK 2012
         - add some functions to Space
+
+0.19 Mon Jul  9 12:55:38 MSK 2012
+        - optimization for parallel requests.
+        - reduce stack requirements for tuple destructors (for Coro).

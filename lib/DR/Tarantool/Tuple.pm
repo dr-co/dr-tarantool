@@ -34,6 +34,7 @@ So If You extract more than one tuple, You can access them.
 =cut
 
 package DR::Tarantool::Tuple;
+use DR::Tarantool::Iterator;
 use Scalar::Util 'weaken', 'blessed';
 use Carp;
 $Carp::Internal{ (__PACKAGE__) }++;
@@ -51,27 +52,23 @@ Constructor.
 sub new :method {
     my ($class, $tuple, $space) = @_;
 
-    if (defined $space) {
-        croak 'wrong space' unless blessed $space;
-    }
+    $class = ref $class if ref $class;
+
+    croak 'wrong space' if defined $space and !blessed $space;
 
     croak 'tuple must be ARRAYREF [of ARRAYREF]' unless 'ARRAY' eq ref $tuple;
     croak "tuple can't be empty" unless @$tuple;
-    if ('ARRAY' eq ref $tuple->[0]) {
-        my $self = $class->new( $tuple->[0], $space );
 
-        for (my $i = 1; $i < @$tuple; $i++) {
-            $self->next( $tuple->[ $i ] );
-        }
-        return $self;
-    }
 
-    my $self = bless {
-        tuple   => [ @$tuple ],
-        space   => $space,
-    } => ref($class) || $class;
-#     weaken $self->{space} if defined $self->{space};
-    return $self;
+    $tuple = [ $tuple ] unless 'ARRAY' eq ref $tuple->[0];
+
+    my $iterator = DR::Tarantool::Iterator->new($tuple);
+
+    return bless {
+        idx         => 0,
+        iterator    => $iterator,
+        space       => $space
+    };
 }
 
 
@@ -113,11 +110,17 @@ Returns raw data from tuple.
 
 sub raw :method {
     my ($self, $fno) = @_;
-    return $self->{tuple} unless @_ > 1;
-    croak 'wrong field_no: ' . (defined($fno) ? $fno : 'undef')
-        unless defined $fno and $fno =~ /^\d+$/;
-    return undef if $fno > $#{ $self->{tuple} };
-    return $self->{tuple}[ $fno ];
+
+    my $item = $self->{iterator}->item( $self->{idx} );
+    return $item unless defined $fno;
+
+    croak 'wrong field number' unless $fno =~ /^-?\d+$/;
+
+
+
+    return undef if $fno < -@$item;
+    return undef if $fno >= @$item;
+    return $item->[ $fno ];
 }
 
 
@@ -132,13 +135,25 @@ Appends or returns the following tuple.
 sub next :method {
 
     my ($self, $tuple) = @_;
-    return $self->{tail} if @_ == 1;
 
-    $tuple = $self->new($tuple, $self->{space});
-    my $o = $self;
-    $o = $o->{tail} while defined $o->{tail};
-    $o->{tail} = $tuple;
-    $tuple;
+    my $iterator = $self->{iterator};
+    my $idx = $self->{idx} + 1;
+
+    # if tuple is exists next works like 'iterator->push'
+    if ('ARRAY' eq ref $tuple) {
+        $iterator->push( $tuple );
+        $idx = $iterator->count - 1;
+    }
+
+    return undef unless $idx < $iterator->count;
+
+    my $next = bless {
+        idx         => $idx,
+        iterator    => $iterator,
+        space       => $self->{space},
+    } => ref($self);
+
+    return $next;
 }
 
 
@@ -164,10 +179,13 @@ Returns iterator linked with the tuple.
 
 =item package (optional)
 
-=item method (optional, default: B<new>)
+=item method (optional)
 
 if 'package' and 'method' are present, $iterator->L<next> method will
 construct objects using C<< $package->$method( $next_tuple ) >>
+
+if 'method' is not present and 'package' is present, iterator will
+bless raw array into 'package'
 
 =back
 
@@ -175,7 +193,50 @@ construct objects using C<< $package->$method( $next_tuple ) >>
 
 sub iter :method {
     my ($self, $class, $method) = @_;
-    return DR::Tarantool::Tuple::Iterator->new( $self, $class, $method );
+
+    my $iterator = $self->{iterator};
+
+    if ($class) {
+        return $self->{iterator}->clone(
+            item_class =>
+            [
+                $class,
+                sub {
+                    my ($c, $item, $idx) = @_;
+
+                    if ($method) {
+                        my $bitem = bless {
+                            idx => $idx,
+                            iterator => $iterator,
+                            space => $self->{space}
+                        } => ref($self);
+
+
+                        return $c->$method( $bitem );
+                    }
+                    return bless [ @$item ] => ref($c) || $c;
+                }
+            ]
+        );
+    }
+
+    return $self->{iterator}->clone(
+        item_class =>
+        [
+            ref($self),
+            sub {
+                my ($c, $item, $idx) = @_;
+
+                my $bitem = bless {
+                    idx => $idx,
+                    iterator => $iterator,
+                    space => $self->{space}
+                } => ref($self);
+
+                return $bitem;
+            }
+        ]
+    );
 }
 
 
@@ -201,154 +262,6 @@ sub AUTOLOAD :method {
 
 sub DESTROY {  }
 
-package DR::Tarantool::Tuple::Iterator;
-use Carp;
-$Carp::Internal{ (__PACKAGE__) }++;
-use Scalar::Util 'weaken', 'blessed';
-
-=head1 tuple iterators
-
-=head2 new
-
-    my $iter = DR::Tarantool::Tuple::Iterator->new( $tuple );
-
-    my $iter = $tuple->iter;    # the same
-
-=head3 Arguments
-
-=over
-
-=item tuple
-
-=item package (optional)
-
-=item method (optional, default: new)
-
-
-if 'package' and 'method' are present, L<next> method will construct
-objects using C<< $package->$method( $next_tuple ) >>
-
-=back
-
-=cut
-
-sub new {
-    my ($class, $t, $iclass, $imethod) = @_;
-
-    if ($iclass) {
-        $imethod ||= 'new';
-        croak "Can't locate method '$imethod' via package '$iclass'"
-            unless $iclass->can($imethod);
-    }
-    return bless {
-        head => $t,
-        class   => $iclass,
-        method  => $imethod
-    } => ref($class) || $class;
-}
-
-
-=head2 count
-
-Returns count of tuples in the iterator.
-
-    my $count = $iter->count;
-
-=cut
-
-sub count {
-    my ($self) = @_;
-    unless (exists $self->{count}) {
-        my $o = $self->{head};
-        $self->{count} = 0;
-        return $self->{count} unless $o;
-
-        $self->{count}++;
-
-        while($o->{tail}) {
-            $o = $o->{tail};
-            $self->{count}++;
-        }
-    }
-    $self->{count};
-}
-
-
-=head2 reset
-
-Resets iterator (see L<next> method).
-
-    $iter->reset;
-
-=cut
-
-sub reset {
-    my ($self) = @_;
-    delete $self->{cur};
-}
-
-
-=head2 next
-
-Returns next element from the iterator.
-
-    my $iter = $tuple->iter;
-
-    while(my $tuple = $iter->next) {
-        ...
-    }
-
-=cut
-
-sub next :method {
-    my ($self) = @_;
-    if (defined $self->{cur}) {
-        $self->{cur} = $self->{cur}->next;
-    } else {
-        $self->{cur} = $self->{head}
-    }
-
-    return undef unless defined $self->{cur};
-    weaken $self->{cur};
-
-
-    if ($self->{class}) {
-        my ($c, $m) = ($self->{class}, $self->{method});
-        $m ||= 'new';
-        return $c->$m( $self->{cur} );
-    }
-    return $self->{cur};
-}
-
-
-=head2 all
-
-Returns all elements (or fields of elements) from the iterator.
-
-    my @list = $iter->all;                  # all tuples
-
-    my @list = map { $_->id } $iter->all;
-    my @list = $iter->all('id');            # the same
-
-=cut
-
-sub all {
-    my ($self, $m) = @_;
-
-    $self->reset;
-    my @res;
-
-    while(my $item = $self->next) {
-        if (@_ > 1) {
-            push @res => $item->$m;
-            next;
-        }
-
-        push @res => $item;
-    }
-
-    return @res;
-}
 
 =head1 COPYRIGHT AND LICENSE
 

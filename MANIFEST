@@ -8,6 +8,7 @@ debian/source/format
 debian/watch
 lib/DR/Tarantool/AsyncClient.pm
 lib/DR/Tarantool/CoroClient.pm
+lib/DR/Tarantool/Iterator.pm
 lib/DR/Tarantool/LLClient.pm
 lib/DR/Tarantool.pm
 lib/DR/Tarantool/Spaces.pm
@@ -20,11 +21,13 @@ t/000-use.t
 t/010-xs.t
 t/020-low_level_client.t
 t/030-spaces.t
+t/033-iterator.t
 t/040-tuple.t
 t/050-async-client.t
 t/060-sync-client.t
 t/070-coro-client.t
 t/080-tarantool.t
+t/090-parallel-requests.t
 t/900-podspell.t
 t/910-pod.t
 t/920-critic.xt
@@ -36,6 +39,6 @@ t/test-data/00019-000-ok.bin
 t/test-data/00020-000-ok.bin
 t/test-data/00022-000-ok.bin
 t/test-data/65280-000-ok.bin
+t/test-data/init.lua
 t/test-data/llc-easy2.cfg
 t/test-data/llc-easy.cfg
-t/090-parallel-requests.t

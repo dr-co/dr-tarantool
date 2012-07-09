@@ -6,7 +6,7 @@ use utf8;
 use open qw(:std :utf8);
 use lib qw(lib ../lib);
 
-use Test::More tests    => 59;
+use Test::More tests    => 65;
 use Encode qw(decode encode);
 
 my $LE = $] > 5.01 ? '<' : '';
@@ -74,7 +74,7 @@ is $tp3->raw(0), 'ff', 'tp3->raw(0)';
 is $tp3->raw(1), 'gg', 'tp3->raw(1)';
 
 my $it = $tp->iter;
-isa_ok $it => 'DR::Tarantool::Tuple::Iterator';
+isa_ok $it => 'DR::Tarantool::Iterator';
 is $it->count, 3, 'count';
 
 $tp = $it->next;
@@ -130,11 +130,11 @@ isa_ok $tp => 'DR::Tarantool::Tuple';
 is $tp->iter->count, 2, 'create tuple list';
 
 my $iter = $tp->iter;
-isa_ok $iter => 'DR::Tarantool::Tuple::Iterator', 'iterator';
+isa_ok $iter => 'DR::Tarantool::Iterator', 'iterator';
 isa_ok $iter->next => 'DR::Tarantool::Tuple', 'no iterator class';
 
-$iter = $tp->iter('TestItem');
-isa_ok $iter => 'DR::Tarantool::Tuple::Iterator', 'iterator with TestItem';
+$iter = $tp->iter('TestItem', 'new1');
+isa_ok $iter => 'DR::Tarantool::Iterator', 'iterator with TestItem';
 $tp = $iter->next;
 isa_ok $tp => 'TestItem';
 isa_ok $tp->{tuple} => 'DR::Tarantool::Tuple';
@@ -149,12 +149,27 @@ is $iter->count, 2, 'iterator saves tuple ref';
 # You have to use external tool to watch memory
 while($ENV{LEAK_TEST}) {
     $tp = DR::Tarantool::Tuple->new([ [ 'aa' ], [ 'bb' ], ], $s->space('test'));
-    $tp = $tp->iter('TestItem')->next;
+    $tp = $tp->iter('TestItem', 'new1')->next;
 }
+
+$tp = DR::Tarantool::Tuple->new([ [ 'bb' ], [ 'cc' ], ], $s->space('test'));
+$iter = $tp->iter('TestItem');
+
+is_deeply $iter->next, bless([ 'bb' ] => 'TestItem'),
+    'iter without constructor name';
+is_deeply $iter->next, bless([ 'cc' ] => 'TestItem'),
+    'iter without constructor name';
+is_deeply $iter->item(1), bless([ 'cc' ] => 'TestItem'),
+    'iter without constructor name';
+is_deeply $iter->item(-1), bless([ 'cc' ] => 'TestItem'),
+    'iter without constructor name';
+
+isa_ok $iter->{items}[0] => 'ARRAY', "item[0] isn't blessed";
+isa_ok $iter->{items}[1] => 'ARRAY', "item[1] isn't blessed";
 
 package TestItem;
 
-sub new {
+sub new1 {
     my ($class, $tuple) = @_;
     return bless { tuple => $tuple } => $class;
 }
