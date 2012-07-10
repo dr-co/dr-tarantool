@@ -117,6 +117,7 @@ is eval { ${ $iter->next } }, 9, '$iter->item(1) usually blessed';
 
 
 package Test::Iterator::Class;
+use Test::More;
 
 sub constructor {
     my ($class, $v) = @_;

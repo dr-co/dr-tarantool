@@ -169,7 +169,7 @@ sub item {
     if (my $class = $self->item_class) {
 
         if (my $m = $self->item_constructor) {
-            return $class->$m( $item, $no );
+            return $class->$m( $item, $no, $self );
         }
 
         return bless $item => $class if ref $item;
