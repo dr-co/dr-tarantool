@@ -56,6 +56,7 @@ my $tp = new DR::Tarantool::Tuple( [ 'aa', 'bb', 'cc' ], $s->space('test') );
 isa_ok $tp => 'DR::Tarantool::Tuple';
 
 is $tp->raw(0), 'aa', 'raw(0)';
+note 1;
 is $tp->a, 'aa', 'raw(0)';
 is $tp->raw(1), 'bb', 'raw(1)';
 is $tp->b, 'bb', 'raw(1)';

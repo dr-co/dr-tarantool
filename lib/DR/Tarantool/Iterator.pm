@@ -82,6 +82,10 @@ arguments: B<item>, B<item_index> and B<iterator>.
     my $item = $iter->item(2);
     my $item = MyClass->new( [3], 2, $iter );  # the same
 
+=item data
+
+Any Your data You want to assign to iterator.
+
 =back
 
 =back
@@ -96,7 +100,16 @@ sub new {
 
 
     my $self = bless { items   => $items } => ref($class) || $class;
-    $self->_process_opts( %opts );
+
+    $self->item_class(
+        ('ARRAY' eq ref $opts{item_class}) ?
+            @{ $opts{item_class} } : $opts{item_class}
+    ) if exists $opts{item_class};
+
+    $self->item_constructor($opts{item_constructor})
+        if exists $opts{item_constructor};
+
+    $self->data( $opts{data} ) if exists $opts{data};
     $self;
 }
 
@@ -111,21 +124,8 @@ and (or) B<item_constructor>.
 
 sub clone {
     my ($self, %opts) = @_;
-    $self = $self->new( $self->{items}, %opts );
+    $self = $self->new( $self->{items}, data => $self->data, %opts );
     $self;
-}
-
-
-sub _process_opts {
-    my ($self, %opts) = @_;
-    $self->item_class(
-        ('ARRAY' eq ref $opts{item_class}) ?
-            @{ $opts{item_class} } : $opts{item_class}
-    ) if exists $opts{item_class};
-
-    $self->item_constructor($opts{item_constructor})
-        if exists $opts{item_constructor};
-    return $self;
 }
 
 
@@ -151,6 +151,34 @@ returns one item from iterator by its number
 sub item {
     my ($self, $no) = @_;
 
+    my $item = $self->raw_item( $no );
+
+    if (my $class = $self->item_class) {
+
+        if (my $m = $self->item_constructor) {
+            return $class->$m( $item, $no, $self );
+        }
+
+        return bless $item => $class if ref $item;
+        return bless \$item => $class;
+    }
+
+    return $self->{items}[ $no ];
+}
+
+
+=head2 raw_item
+
+returns one raw item from iterator by its number
+(or croaks error for wrong numbers).
+
+The function differ from L<item>: it doesn't know about 'B<item_class>'.
+
+=cut
+
+sub raw_item {
+    my ($self, $no) = @_;
+
     my $exists = $self->exists($no);
     croak "wrong item number format: " . (defined($no) ? $no : 'undef')
         unless defined $exists;
@@ -164,20 +192,7 @@ sub item {
             unless $no >= -$self->count;
     }
 
-    my $item = $self->{items}[ $no ];
-
-    if (my $class = $self->item_class) {
-
-        if (my $m = $self->item_constructor) {
-            return $class->$m( $item, $no, $self );
-        }
-
-        return bless $item => $class if ref $item;
-        return bless \$item => $class;
-    }
-
     return $self->{items}[ $no ];
-
 }
 
 
@@ -187,9 +202,7 @@ The same as L<item> method.
 
 =cut
 
-sub get {
-    goto \&item;
-}
+sub get { goto \&item; }
 
 
 =head2 exists
@@ -356,5 +369,17 @@ sub push :method {
     return $self;
 }
 
+
+=head2 data
+
+returns/set user's data assigned to the iterator
+
+=cut
+
+sub data {
+    my ($self, $data) = @_;
+    $self->{data} = $data if @_ > 1;
+    return $self->{data};
+}
 
 1;

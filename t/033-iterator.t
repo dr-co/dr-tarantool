@@ -6,7 +6,7 @@ use utf8;
 use open qw(:std :utf8);
 use lib qw(lib ../lib);
 
-use Test::More tests    => 42;
+use Test::More tests    => 45;
 use Encode qw(decode encode);
 
 
@@ -111,10 +111,16 @@ $iter = MODEL->new([ 5, 6, 7 ],
 isa_ok $iter->next, 'Test::Iterator::Class';
 is eval { $iter->next->value }, 6, '$iter->item(1)->value';
 
-$iter = MODEL->new([ 8, 9, 10 ], item_class => 'Test::Iterator::Class');
+$iter = MODEL->new(
+    [ 8, 9, 10 ],
+    item_class => 'Test::Iterator::Class',
+    data => { 1 => [ 2, 3] }
+);
 isa_ok $iter->next, 'Test::Iterator::Class';
 is eval { ${ $iter->next } }, 9, '$iter->item(1) usually blessed';
-
+is_deeply $iter->data, { 1 => [ 2, 3] }, '$iter->data (get)';
+is_deeply $iter->data([ 4, { 5 => 6} ]), [ 4, { 5 => 6 } ], '$iter->data (set)';
+is_deeply $iter->data, [ 4, { 5 => 6 } ], '$iter->data (get)';
 
 package Test::Iterator::Class;
 use Test::More;

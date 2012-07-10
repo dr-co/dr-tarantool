@@ -1,3 +1,9 @@
+libdr-tarantool-perl (0.20-1) unstable; urgency=low
+
+  * Some optimizations in iterators.
+
+ -- Dmitry E. Oboukhov <unera@debian.org>  Tue, 10 Jul 2012 10:45:35 +0400
+
 libdr-tarantool-perl (0.19-1) unstable; urgency=low
 
   * New upstream version: it is optimized for parallel requests.

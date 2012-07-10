@@ -59,16 +59,28 @@ sub new :method {
     croak 'tuple must be ARRAYREF [of ARRAYREF]' unless 'ARRAY' eq ref $tuple;
     croak "tuple can't be empty" unless @$tuple;
 
-
     $tuple = [ $tuple ] unless 'ARRAY' eq ref $tuple->[0];
 
-    my $iterator = DR::Tarantool::Iterator->new($tuple);
+    my $iterator = DR::Tarantool::Iterator->new(
+        $tuple,
+        data                => $space,
+        item_class          => ref($class) || $class,
+        item_constructor    => '_new'
+    );
 
     return bless {
         idx         => 0,
         iterator    => $iterator,
-        space       => $space
-    };
+    } => ref($class) || $class;
+}
+
+
+sub _new {
+    my ($class, $item, $idx, $iterator) = @_;
+    return bless {
+        idx         => $idx,
+        iterator    => $iterator,
+    } => ref($class) || $class;
 }
 
 
@@ -111,12 +123,11 @@ Returns raw data from tuple.
 sub raw :method {
     my ($self, $fno) = @_;
 
-    my $item = $self->{iterator}->item( $self->{idx} );
+    my $item = $self->{iterator}->raw_item( $self->{idx} );
+
     return $item unless defined $fno;
 
     croak 'wrong field number' unless $fno =~ /^-?\d+$/;
-
-
 
     return undef if $fno < -@$item;
     return undef if $fno >= @$item;
@@ -150,13 +161,10 @@ sub next :method {
     my $next = bless {
         idx         => $idx,
         iterator    => $iterator,
-        space       => $self->{space},
     } => ref($self);
 
     return $next;
 }
-
-
 
 
 =head2 iter
@@ -208,7 +216,6 @@ sub iter :method {
                         my $bitem = bless {
                             idx => $idx,
                             iterator => $iterator,
-                            space => $self->{space}
                         } => ref($self);
 
 
@@ -220,23 +227,7 @@ sub iter :method {
         );
     }
 
-    return $self->{iterator}->clone(
-        item_class =>
-        [
-            ref($self),
-            sub {
-                my ($c, $item, $idx) = @_;
-
-                my $bitem = bless {
-                    idx => $idx,
-                    iterator => $iterator,
-                    space => $self->{space}
-                } => ref($self);
-
-                return $bitem;
-            }
-        ]
-    );
+    return $self->{iterator};
 }
 
 
@@ -256,8 +247,9 @@ sub AUTOLOAD :method {
     return if $foo eq 'DESTROY';
 
     my ($self) = @_;
-    croak "Can't find field '$foo' in the tuple" unless $self->{space};
-    return $self->raw( $self->{space}->_field( $foo )->{idx} );
+    my $space = $self->{iterator}->data;
+    croak "Can't find field '$foo' in the tuple" unless $space;
+    return $self->raw( $space->_field( $foo )->{idx} );
 }
 
 sub DESTROY {  }
