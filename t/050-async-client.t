@@ -260,13 +260,13 @@ SKIP: {
 
         $cv->begin;
         $client->call_lua(
-            'box.select' => [ ],
+            'unknown_function_name' => [ ],
             'first_space',
             sub {
                 my ($status, $code, $errstr) = @_;
                 is $status, 'error', 'status';
                 cmp_ok $code, '>', 0, 'code';
-                like $errstr, qr{Partial key in}, 'errstr';
+                like $errstr, qr{Procedure .* is not defined}, 'errstr';
                 $cv->end;
             }
         );

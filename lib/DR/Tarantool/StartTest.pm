@@ -9,6 +9,7 @@ use File::Path 'rmtree';
 use File::Spec::Functions qw(catfile rel2abs);
 use Cwd;
 use IO::Socket::INET;
+use POSIX ();
 
 =head1 NAME
 
@@ -138,6 +139,7 @@ sub _start_tarantool {
     goto EXIT if $?;
 
     unless ($self->{child} = fork) {
+        POSIX::setsid();
         exec "tarantool_box -c $self->{cfg}";
         die "Can't start tarantool_box: $!\n";
     }
