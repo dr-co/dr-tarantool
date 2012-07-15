@@ -31,7 +31,7 @@ use Carp;
 use Data::Dumper;
 
 
-=head1 new
+=head2 new
 
 Constructor.
 
@@ -114,17 +114,43 @@ sub new {
 }
 
 
-=head2 clone
+=head2 clone(%opt)
 
 clone iterator object (doesn't clone items).
 It is usable if You want to have iterator that have the other B<item_class>
 and (or) B<item_constructor>.
 
+If B<clone_items> argument is true, the function will clone itemlist, too.
+
+    my $iter1 = $old_iter->clone(item_class => [ 'MyClass', 'new' ]);
+    my $iter2 = $old_iter->clone(item_class => [ 'MyClass', 'new' ],
+        clone_items => 1);
+
+    $old_iter->sort(sub { $_[0]->name cmp $_[1]->name });
+    # $iter1 will be resorted, too, but $iter2 will not be
+
 =cut
 
 sub clone {
-    my ($self, %opts) = @_;
-    $self = $self->new( $self->{items}, data => $self->data, %opts );
+
+    my $self = shift;
+    my %opts;
+    if (@_ == 1) {
+        %opts = (clone_items => shift);
+    } else {
+        %opts = @_;
+    }
+
+    my %pre = (
+        data                => $self->data,
+        item_class          => $self->item_class,
+        item_constructor    => $self->item_constructor
+    );
+
+    my $clone_items = delete $opts{clone_items};
+
+    my $items = $clone_items ? [ @{ $self->{items} } ] : $self->{items};
+    $self = $self->new( $items, %pre, %opts );
     $self;
 }
 
@@ -193,6 +219,89 @@ sub raw_item {
     }
 
     return $self->{items}[ $no ];
+}
+
+
+=head2 raw_sort(&)
+
+resorts iterator (changes current object). Compare function receives two B<raw>
+objects:
+
+    $iter->raw_sort(sub { $_[0]->field cmp $_[1]->field });
+
+=cut
+
+sub raw_sort {
+    my ($self, $cb) = @_;
+    my $items = $self->{items};
+    @$items = sort { &$cb($a, $b) } @$items;
+    return $self;
+}
+
+
+=head2 sort(&)
+
+resorts iterator (changes current object). Compare function receives
+two objects:
+
+    $iter->sort(sub { $_[0]->field <=> $_[1]->field });
+
+=cut
+
+sub sort : method {
+    my ($self, $cb) = @_;
+    my $items = $self->{items};
+    my @bitems = map { $self->item( $_ )  } 0 .. $#$items;
+    my @isorted = sort { &$cb( $bitems[$a], $bitems[$b] )  } 0 .. $#$items;
+
+    @$items = @$items[ @isorted ];
+    return $self;
+}
+
+
+=head2 grep(&)
+
+greps iterator (returns new iterator).
+
+    my $admins = $users->grep(sub { $_[0]->is_admin });
+
+=cut
+
+sub grep :method {
+    my ($self, $cb) = @_;
+    my $items = $self->{items};
+    my @bitems = map { $self->item( $_ ) } 0 .. $#$items;
+    my @igrepped = grep { &$cb( $bitems[$_] )  } 0 .. $#$items;
+    @igrepped = @$items[ @igrepped ];
+
+    return $self->new(
+        \@igrepped,
+        item_class => $self->item_class,
+        item_constructor => $self->item_constructor,
+        data => $self->data
+    );
+}
+
+
+=head2 raw_grep(&)
+
+greps iterator (returns new iterator). grep function receives raw item.
+
+    my $admins = $users->grep(sub { $_[0]->is_admin });
+
+=cut
+
+sub raw_grep :method {
+    my ($self, $cb) = @_;
+    my $items = $self->{items};
+    my @igrepped = grep { &$cb($_) } @$items;
+
+    return $self->new(
+        \@igrepped,
+        item_class => $self->item_class,
+        item_constructor => $self->item_constructor,
+        data => $self->data
+    );
 }
 
 
@@ -308,15 +417,15 @@ sub all {
     if (@items == 1) {
         my $m = shift @items;
 
-        while (my $i = $self->next) {
+        while (defined(my $i = $self->next)) {
             push @res => $i->$m;
         }
     } elsif (@items) {
-        while (my $i = $self->next) {
+        while (defined(my $i = $self->next)) {
             push @res => [ map { $i->$_ } @items ];
         }
     } else {
-        while (my $i = $self->next) {
+        while (defined(my $i = $self->next)) {
             push @res => $i;
         }
     }

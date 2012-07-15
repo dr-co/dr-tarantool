@@ -6,7 +6,7 @@ use utf8;
 use open qw(:std :utf8);
 use lib qw(lib ../lib);
 
-use Test::More tests    => 45;
+use Test::More tests    => 53;
 use Encode qw(decode encode);
 
 
@@ -121,6 +121,33 @@ is eval { ${ $iter->next } }, 9, '$iter->item(1) usually blessed';
 is_deeply $iter->data, { 1 => [ 2, 3] }, '$iter->data (get)';
 is_deeply $iter->data([ 4, { 5 => 6} ]), [ 4, { 5 => 6 } ], '$iter->data (set)';
 is_deeply $iter->data, [ 4, { 5 => 6 } ], '$iter->data (get)';
+
+
+$iter = MODEL->new([3, 2, 1, 102, 0, -10]);
+my $iter2 = $iter->clone(1);
+my $iter3 = $iter->clone;
+$iter->raw_sort(sub { $_[0] <=> $_[1] });
+is_deeply [ $iter->all ], [ -10, 0, 1, 2, 3, 102 ], 'raw_sort';
+is_deeply [ $iter3->all ], [ $iter->all ], '->clone(0)->raw_sort';
+is_deeply [ $iter2->all ], [ 3, 2, 1, 102, 0, -10 ], '->clone(1)->raw_sort';
+
+$iter->item_class('Test::Iterator::Class', 'constructor');
+$iter->sort(sub { $_[1]->value <=> $_[0]->value });
+$iter->item_class(undef, undef);
+is_deeply scalar $iter->all, [ 102, 3, 2, 1, 0, -10 ], '->sort';
+
+$iter2 = $iter->grep(sub { $_[0] > 2 });
+is_deeply scalar $iter2->all, [ 102, 3 ], '->grep';
+$iter2 = $iter->grep(sub { $_[0] > 200 });
+is_deeply scalar $iter2->all, [  ], '->grep';
+$iter->item_class('Test::Iterator::Class', 'constructor');
+$iter->data(\123);
+$iter2 = $iter->grep(sub { $_[0]->value < 10 });
+$iter3 = $iter->raw_grep(sub { $_[0] < 10 });
+$iter2->item_class(undef, undef);
+$iter3->item_class(undef, undef);
+is_deeply scalar $iter2->all, [ 3, 2, 1, 0, -10 ], '->grep';
+is_deeply scalar $iter2->all, scalar $iter3->all, 'raw_grep';
 
 package Test::Iterator::Class;
 use Test::More;

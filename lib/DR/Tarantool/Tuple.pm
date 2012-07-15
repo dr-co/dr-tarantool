@@ -206,24 +206,21 @@ sub iter :method {
 
     if ($class) {
         return $self->{iterator}->clone(
-            item_class =>
-            [
-                $class,
-                sub {
-                    my ($c, $item, $idx) = @_;
+            item_class => $class,
+            item_constructor => sub {
+                my ($c, $item, $idx) = @_;
 
-                    if ($method) {
-                        my $bitem = bless {
-                            idx => $idx,
-                            iterator => $iterator,
-                        } => ref($self);
+                if ($method) {
+                    my $bitem = bless {
+                        idx => $idx,
+                        iterator => $iterator,
+                    } => ref($self);
 
 
-                        return $c->$method( $bitem );
-                    }
-                    return bless [ @$item ] => ref($c) || $c;
+                    return $c->$method( $bitem );
                 }
-            ]
+                return bless [ @$item ] => ref($c) || $c;
+            }
         );
     }
 
