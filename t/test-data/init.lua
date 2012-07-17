@@ -4,6 +4,11 @@ function test_parallel(delay, id)
 end
 
 
+function test_return_one()
+    return { 'one' }
+end
+
 function test_return(...)
     return { ... }
 end
+

@@ -7,7 +7,7 @@ use open qw(:std :utf8);
 use lib qw(lib ../lib);
 use lib qw(blib/lib blib/arch ../blib/lib ../blib/arch);
 
-use Test::More tests    => 10;
+use Test::More tests    => 11;
 use Encode qw(decode encode);
 
 
@@ -75,5 +75,9 @@ my $t = tarantool
 is_deeply $t->call_lua(test_return => [ 1, 2, 3])->raw, [ 1, 2, 3 ],
     'return one tuple';
 
-is_deeply $t->call_lua(test_return => [])->raw, [],
-    'return empty tuple';
+is_deeply $t->call_lua(test_return_one => [])->raw, [ 'one' ],
+    'return one tuple';
+
+diag $tnt->log unless
+    is_deeply $t->call_lua(test_return => [])->raw, [],
+        'return empty tuple';

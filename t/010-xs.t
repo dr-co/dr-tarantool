@@ -7,7 +7,7 @@ use open qw(:std :utf8);
 use lib qw(lib ../lib);
 use lib qw(blib/lib blib/arch ../blib/lib ../blib/arch);
 
-use Test::More tests    => 144;
+use Test::More tests    => 151;
 use Encode qw(decode encode);
 
 
@@ -151,6 +151,7 @@ for my $bin (@bins) {
     my ($type, $err, $status) =
         $bin =~ /(?>0*)?(\d+?)-0*(\d+)-(\w+)\.bin$/;
     next unless defined $bin;
+    next unless $type;
     ok -r $bin, "$bin is readable";
 
     ok open(my $fh, '<:raw', $bin), "open $bin";
