@@ -520,6 +520,19 @@ sub _read_reply {
 
     return sub {
         my (undef, $data) = @_;
+        # write responses as binfile for tests
+#         {
+#             my ($type, $blen, $id, $code, $body) =
+#                 unpack 'L< L< L< L< A*', $hdr . $data;
+
+#             my $sname = sprintf 't/test-data/%05d-%03d-%s.bin',
+#                 $type || 0, $code, $code ? 'fail' : 'ok';
+#             open my $fh, '>:raw', $sname;
+#             print $fh $hdr;
+#             print $fh $data;
+#             warn "$sname saved (body length: $blen)";
+#         }
+
         my $res = DR::Tarantool::_pkt_parse_response( $hdr . $data );
 
 
@@ -528,14 +541,6 @@ sub _read_reply {
             return;
         }
 
-#       write responses as binfile for tests
-#         {
-#             my $sname = sprintf 't/test-data/%05d-%03d-%s.bin',
-#                 $res->{type} || 0, $res->{code}, $res->{status};
-#             open my $fh, '>:raw', $sname;
-#             print $fh $hdr;
-#             print $fh $data;
-#         }
 
 
         my $id = $res->{req_id};
