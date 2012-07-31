@@ -6,7 +6,7 @@ use utf8;
 use open qw(:std :utf8);
 use lib qw(lib ../lib);
 
-use Test::More tests    => 131;
+use Test::More tests    => 135;
 use Encode qw(decode encode);
 
 my $LE = $] > 5.01 ? '<' : '';
@@ -87,6 +87,11 @@ like $@, qr{name is undefined}, 'error string';
 is eval { $s->space('test')->index_number('aaaaa') }, undef,
     'index_number: not found';
 like $@, qr{index.*is undefined}, 'error string';
+
+is $s->space_number('test'), 0, 'space_number(test)';
+is $s->space_number('json'), 1, 'space_number(json)';
+is eval { $s->space_number; 1}, undef, 'space_number()';
+like $@, qr{space name or number is not defined}, 'error string';
 
 is $s->space('test')->index_number('i0'), 0, 'index_number: i0';
 is $s->space('test')->index_number('abc'), 3, 'index_number: i3';

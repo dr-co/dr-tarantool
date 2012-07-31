@@ -138,6 +138,18 @@ sub space {
 }
 
 
+=head2 space_number
+
+Returns space number by its name.
+
+=cut
+
+sub space_number {
+    my ($self, $space) = @_;
+    return $self->space($space)->number;
+}
+
+
 =head2 pack_field
 
 packs one field before making database request
