@@ -54,6 +54,9 @@ sub new :method {
 
     $class = ref $class if ref $class;
 
+    # hack to replace default autoload
+    $class = $space->tuple_class if $space and $class eq __PACKAGE__;
+
     croak 'wrong space' if defined $space and !blessed $space;
 
     croak 'tuple must be ARRAYREF [of ARRAYREF]' unless 'ARRAY' eq ref $tuple;
@@ -228,26 +231,23 @@ sub iter :method {
 }
 
 
-=head2 AUTOLOAD
+=head2 tail
 
-Each tuple autoloads fields by their names that defined in space.
-
-    my $name = $tuple->password; # space contains field with name 'password'
-    my $name = $tuple->login;
-    ...
+Returns tail of tuple (array of unnamed fields). The function always
+return B<ARRAYREF> (as L<raw>).
 
 =cut
 
-sub AUTOLOAD :method {
-    our $AUTOLOAD;
-    my ($foo) = $AUTOLOAD =~ /.*::(.*)$/;
-    return if $foo eq 'DESTROY';
-
+sub tail {
     my ($self) = @_;
     my $space = $self->{iterator}->data;
-    croak "Can't find field '$foo' in the tuple" unless $space;
-    return $self->raw( $space->_field( $foo )->{idx} );
+    my $raw = $self->raw;
+
+    return [ @$raw[ $space->tail_index .. $#$raw ] ] if $space;
+    return $raw;
 }
+
+
 
 sub DESTROY {  }
 

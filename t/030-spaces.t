@@ -6,7 +6,7 @@ use utf8;
 use open qw(:std :utf8);
 use lib qw(lib ../lib);
 
-use Test::More tests    => 135;
+use Test::More tests    => 146;
 use Encode qw(decode encode);
 
 my $LE = $] > 5.01 ? '<' : '';
@@ -98,6 +98,27 @@ is $s->space('test')->index_number('abc'), 3, 'index_number: i3';
 
 is $s->space('test')->index_name(0), 'i0', 'index_name: i0';
 is $s->space('test')->index_name(3), 'abc', 'index_name: i3';
+
+is $s->space('test')->field_number('a'), 0, 'field_number(a)';
+is $s->space('test')->field_number('b'), 1, 'field_number(b)';
+is $s->space('test')->field_number('c'), 2, 'field_number(c)';
+is eval { $s->space('test')->field_number('unknown'); 1 },
+    undef, 'field_number(unknown)';
+like $@, qr{Can't find field 'unknown' in this space}, 'error message';
+
+
+is $s->space('test')->tail_index, 8, 'space0->tail_index';
+is $s->space('json')->tail_index, 1, 'space1->tail_index';
+
+
+my $class = $s->space('test')->tuple_class;
+can_ok $class, qw(a b c d a123 abcd int money);
+$class = $s->space('test')->tuple_class;
+can_ok $class, qw(a b c d a123 abcd int money);
+$class = $s->space('json')->tuple_class;
+can_ok $class, qw(f);
+$class = $s->space('json')->tuple_class;
+can_ok $class, qw(f);
 
 my $v = unpack "L$LE", $s->pack_field( test => a => '10' );
 is $v, 10, 'pack_field NUM';

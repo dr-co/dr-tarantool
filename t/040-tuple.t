@@ -6,7 +6,7 @@ use utf8;
 use open qw(:std :utf8);
 use lib qw(lib ../lib);
 
-use Test::More tests    => 65;
+use Test::More tests    => 67;
 use Encode qw(decode encode);
 use Carp;
 
@@ -56,7 +56,6 @@ my $tp = new DR::Tarantool::Tuple( [ 'aa', 'bb', 'cc' ], $s->space('test') );
 isa_ok $tp => 'DR::Tarantool::Tuple';
 
 is $tp->raw(0), 'aa', 'raw(0)';
-note 1;
 is $tp->a, 'aa', 'raw(0)';
 is $tp->raw(1), 'bb', 'raw(1)';
 is $tp->b, 'bb', 'raw(1)';
@@ -170,6 +169,10 @@ is_deeply $iter->item(-1), bless([ 'cc' ] => 'TestItem'),
 
 isa_ok $iter->{items}[0] => 'ARRAY', "item[0] isn't blessed";
 isa_ok $iter->{items}[1] => 'ARRAY', "item[1] isn't blessed";
+
+$tp = DR::Tarantool::Tuple->new([ qw(a b c d e f g h i) ], $s->space('test'));
+is_deeply $tp->raw, [ qw(a b c d e f g h i) ], 'tuple->raw';
+is_deeply $tp->tail, [ qw(g h i) ], 'tuple->tail';
 
 package TestItem;
 

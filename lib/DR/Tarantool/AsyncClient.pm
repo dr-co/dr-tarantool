@@ -204,7 +204,7 @@ sub _cb_default {
     }
 
     if ($s) {
-        $cb->( ok => DR::Tarantool::Tuple->unpack( $res->{tuples}, $s ) );
+        $cb->( ok => $s->tuple_class->unpack( $res->{tuples}, $s ) );
     } else {
         $cb->( 'ok' );
     }

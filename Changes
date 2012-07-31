@@ -58,3 +58,6 @@ Revision history for Perl extension DR::Tarantool.
 
 0.20 Tue Jul 10 10:46:36 MSK 2012
 	- some optimizations in iterator.
+
+0.22 Tue Jul 31 14:39:10 MSK 2012
+        - prebuild tuple packages in space (so Tuple doesn't use AUTOLOAD)
