@@ -170,7 +170,6 @@ sub connect {
     );
 
     return;
-
 }
 
 =head1 Attributes
@@ -204,9 +203,11 @@ sub _cb_default {
     }
 
     if ($s) {
-        $cb->( ok => $s->tuple_class->unpack( $res->{tuples}, $s ) );
+        $cb->( ok => $s->tuple_class->unpack( $res->{tuples}, $s ),
+            $res->{code}
+        );
     } else {
-        $cb->( 'ok' );
+        $cb->( 'ok', $res->{tuples}, $res->{code} );
     }
     return;
 }
@@ -608,6 +609,25 @@ sub update {
         sub { _cb_default($_[0], $s, $cb) }
     );
 }
+
+
+=head2 last_code
+
+Returns code of last operation (see L<DR::Tarantool::LLClient/last_code>).
+
+=cut
+
+sub last_code { $_[0]->_llc->last_code }
+
+
+=head2 last_error_string
+
+Returns error message of last operation
+(see L<DR::Tarantool::LLClient/last_error_string>)
+
+=cut
+
+sub last_error_string { $_[0]->_llc->last_error_string }
 
 
 =head1 COPYRIGHT AND LICENSE

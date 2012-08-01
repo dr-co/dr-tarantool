@@ -98,8 +98,8 @@ after extracting from database.
 
 sub new {
     my ($class, $spaces) = @_;
+    $spaces = {} unless defined $spaces;
     croak 'spaces must be a HASHREF' unless 'HASH' eq ref $spaces;
-    croak "'spaces' is empty" unless %$spaces;
 
     my (%spaces, %fast);
     for (keys %$spaces) {

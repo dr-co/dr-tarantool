@@ -6,7 +6,7 @@ use utf8;
 use open qw(:std :utf8);
 use lib qw(lib ../lib);
 
-use Test::More tests    => 146;
+use Test::More tests    => 144;
 use Encode qw(decode encode);
 
 my $LE = $] > 5.01 ? '<' : '';
@@ -25,13 +25,11 @@ BEGIN {
 use constant MODEL => 'DR::Tarantool::Spaces';
 
 
-ok !eval { MODEL->new }, 'no arguments';
-like $@, qr{HASHREF}, 'error message';
 ok !eval { MODEL->new('abc') }, 'wrong arguments';
 like $@, qr{HASHREF}, 'error message';
 ok !eval { MODEL->new({a => 1}) }, 'wrong arguments';
 like $@, qr{space number}, 'error message';
-ok !eval { MODEL->new({}) }, 'empty spaces';
+ok MODEL->new(), 'empty spaces';
 
 my $s = MODEL->new({
     0 => {

@@ -7,7 +7,7 @@ use open qw(:std :utf8);
 use lib qw(lib ../lib);
 use lib qw(blib/lib blib/arch ../blib/lib ../blib/arch);
 
-use constant PLAN       => 51;
+use constant PLAN       => 53;
 use Test::More tests    => PLAN;
 use Encode qw(decode encode);
 
@@ -81,6 +81,9 @@ SKIP: {
     );
 
     isa_ok $client => 'DR::Tarantool::SyncClient';
+    is $client->last_code, undef, 'last_code';
+    is $client->last_error_string, undef, 'last_error_string';
+
     ok $client->ping, '* ping';
 
     my $t = $client->insert(

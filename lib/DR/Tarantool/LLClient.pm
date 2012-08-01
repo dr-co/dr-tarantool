@@ -502,6 +502,31 @@ sub call_lua :method {
 }
 
 
+=head2 last_code
+
+Returns code of last operation (B<undef> if there was no operation done).
+
+=cut
+
+sub last_code {
+    my ($self) = @_;
+    return $self->{last_code} if exists $self->{last_code};
+    return undef;
+}
+
+
+=head2 last_error_string
+
+Returns error string of last operation (B<undef> if there was no error).
+
+=cut
+
+sub last_error_string {
+    my ($self) = @_;
+    return $self->{last_error_string} if exists $self->{last_error_string};
+    return undef;
+}
+
 sub _read_header {
     my ($self) = @_;
     return sub {
@@ -535,6 +560,12 @@ sub _read_reply {
 
         my $res = DR::Tarantool::_pkt_parse_response( $hdr . $data );
 
+        $self->{last_code} = $res->{code};
+        if (exists $res->{errstr}) {
+            $self->{last_error_string} = $res->{errstr};
+        } else {
+            delete $self->{last_error_string};
+        }
 
         if ($res->{status} =~ /^(fatal|buffer)$/) {
             $self->_fatal_error( $res->{errstr} );
@@ -560,9 +591,11 @@ sub _request {
     my ($self, $id, $pkt, $cb ) = @_;
 
     unless($self->{handle}) {
+        $self->{last_code} = -1;
+        $self->{last_error_string} = "Connection isn't established";
         $cb->({
             status  => 'fatal',
-            errstr  => "Connection isn't established"
+            errstr  => $self->{last_error_string},
         });
         return;
     }
@@ -582,6 +615,9 @@ sub _req_id {
 
 sub _fatal_error {
     my ($self, $msg) = @_;
+    $self->{last_code} ||= -1;
+    $self->{last_error_string} ||= $msg;
+
     for (keys %{ $self->{ wait } }) {
         my $cb = delete $self->{ wait }{ $_ };
         $cb->({ status  => 'fatal',  errstr  => $msg, req_id => $_ });

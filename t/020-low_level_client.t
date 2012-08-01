@@ -7,7 +7,7 @@ use open qw(:std :utf8);
 use lib qw(lib ../lib);
 use lib qw(blib/lib blib/arch ../blib/lib ../blib/arch);
 
-use constant PLAN       => 76;
+use constant PLAN       => 102;
 use Test::More tests    => PLAN;
 use Encode qw(decode encode);
 
@@ -70,6 +70,8 @@ SKIP: {
                 is $res->{code}, 0, '* ping reply code';
                 is $res->{status}, 'ok', 'status';
                 is $res->{type}, TNT_PING, 'type';
+                is $client->last_code, 0, 'operation code';
+                is $client->last_error_string, undef, 'operation errstr';
                 $cv->send;
             }
         );
@@ -87,6 +89,8 @@ SKIP: {
                 my ($res) = @_;
                 is $res->{code}, 0, '* insert reply code';
                 is $res->{status}, 'ok', 'status';
+                is $client->last_code, 0, 'operation code';
+                is $client->last_error_string, undef, 'operation errstr';
                 is $res->{type}, TNT_INSERT, 'type';
 
                 is $res->{tuples}[0][0], pack("L$LE", 1), 'key';
@@ -104,6 +108,8 @@ SKIP: {
             sub {
                 my ($res) = @_;
                 is $res->{code}, 0, 'insert reply code';
+                is $client->last_code, 0, 'operation code';
+                is $client->last_error_string, undef, 'operation code';
                 is $res->{status}, 'ok', 'status';
                 is $res->{type}, TNT_INSERT, 'type';
 
@@ -122,6 +128,10 @@ SKIP: {
                 my ($res) = @_;
                 is $res->{code} & 0x00002002, 0x00002002,
                     'insert reply code (already exists)';
+                is $client->last_code, $res->{code}, 'operation code';
+                is $client->last_error_string, $res->{errstr},
+                    'operation errstr';
+                
                 is $res->{status}, 'error', 'status';
                 is $res->{type}, TNT_INSERT, 'type';
                 like $res->{errstr}, qr{already exists}, 'errstr';
@@ -146,6 +156,9 @@ SKIP: {
                 is $res->{code}, 0, '* select reply code';
                 is $res->{status}, 'ok', 'status';
                 is $res->{type}, TNT_SELECT, 'type';
+                is $client->last_code, $res->{code}, 'operation code';
+                is $client->last_error_string, $res->{errstr},
+                    'operation errstr';
 
                 is
                     scalar(grep { $_->[1] and $_->[1] eq 'abc' }
@@ -172,6 +185,9 @@ SKIP: {
                 is $res->{code}, 0, 'select reply code';
                 is $res->{status}, 'ok', 'status';
                 is $res->{type}, TNT_SELECT, 'type';
+                is $client->last_code, $res->{code}, 'operation code';
+                is $client->last_error_string, $res->{errstr},
+                    'operation errstr';
 
                 ok !@{ $res->{tuples} }, 'empty response';
                 $cv->send if --$cnt == 0;
@@ -201,6 +217,9 @@ SKIP: {
                 is $res->{code}, 0, '* update reply code';
                 is $res->{status}, 'ok', 'status';
                 is $res->{type}, TNT_UPDATE, 'type';
+                is $client->last_code, $res->{code}, 'operation code';
+                is $client->last_error_string, $res->{errstr},
+                    'operation errstr';
 
                 is $res->{tuples}[0][1], 'abeftail',
                     'updated tuple 1';
@@ -227,6 +246,9 @@ SKIP: {
                 is $res->{code}, 0, '* update reply code';
                 is $res->{status}, 'ok', 'status';
                 is $res->{type}, TNT_UPDATE, 'type';
+                is $client->last_code, $res->{code}, 'operation code';
+                is $client->last_error_string, $res->{errstr},
+                    'operation errstr';
 
                 is $res->{tuples}[0][1], 'abcdef',
                     'updated tuple 1';
@@ -257,6 +279,9 @@ SKIP: {
                 is $res->{code}, 0, '* delete reply code';
                 is $res->{status}, 'ok', 'status';
                 is $res->{type}, TNT_DELETE, 'type';
+                is $client->last_code, $res->{code}, 'operation code';
+                is $client->last_error_string, $res->{errstr},
+                    'operation errstr';
 
                 SKIP: {
                     skip 'Old version of delete', 4 unless TNT_DELETE == 21;
@@ -283,6 +308,9 @@ SKIP: {
                 is $res->{code}, 0, '* select reply code';
                 is $res->{status}, 'ok', 'status';
                 is $res->{type}, TNT_SELECT, 'type';
+                is $client->last_code, $res->{code}, 'operation code';
+                is $client->last_error_string, $res->{errstr},
+                    'operation errstr';
 
                 ok !@{ $res->{tuples} }, 'really removed';
                 $cv->send if --$cnt == 0;
@@ -306,6 +334,9 @@ SKIP: {
                 is $res->{type}, TNT_CALL, 'type';
                 is $res->{tuples}[0][1], 'abcdef',
                     'updated tuple 1';
+                is $client->last_code, $res->{code}, 'operation code';
+                is $client->last_error_string, $res->{errstr},
+                    'operation errstr';
                 is
                     $res->{tuples}[0][2],
                     (pack "L$LE", ( (4567 | 23) & 345 ) ^ 744 ),
@@ -394,6 +425,10 @@ SKIP: {
 
                 is $res->{status}, 'fatal', '* fatal status';
                 like $res->{errstr} => qr{Socket error}, 'Error string';
+
+                is $res->{errstr}, $client->last_error_string,
+                    'last_error_string';
+                ok $client->last_code, 'last_code';
                 $cv->send if --$cnt == 0;
             }
         );
@@ -412,6 +447,9 @@ SKIP: {
                 is $res->{status}, 'fatal', '* fatal status';
                 like $res->{errstr} => qr{Connection isn't established},
                     'Error string';
+                is $res->{errstr}, $client->last_error_string,
+                    'last_error_string';
+                ok $client->last_code, 'last_code';
                 $cv->send if --$cnt == 0;
             }
         );
