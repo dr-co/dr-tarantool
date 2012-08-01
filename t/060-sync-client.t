@@ -7,7 +7,7 @@ use open qw(:std :utf8);
 use lib qw(lib ../lib);
 use lib qw(blib/lib blib/arch ../blib/lib ../blib/arch);
 
-use constant PLAN       => 53;
+use constant PLAN       => 57;
 use Test::More tests    => PLAN;
 use Encode qw(decode encode);
 
@@ -160,6 +160,26 @@ SKIP: {
     );
     isa_ok $t->json => 'HASH', 'JSON insert: hash';
     is $t->json->{a}, 'b', 'JSON insert: hash value';
+
+    ok !eval {
+        $client->insert(
+            first_space => [ 1 ], TNT_FLAG_RETURN | TNT_FLAG_ADD
+        );
+        1
+    }, 'raise error';
+    like $@, qr{Tuple already exists}, 'error message';
+
+    {
+        local $client->{raise_error};
+        ok eval {
+            $client->insert(
+                first_space => [ 1 ], TNT_FLAG_RETURN | TNT_FLAG_ADD
+            );
+            1
+        }, 'no raise error';
+        like $client->last_error_string, qr{Tuple already exists},
+            'error message';
+    }
 
     $t = $client->insert(
         first_space => [ 1, 2, 3, 4, { привет => 'медвед' } ], TNT_FLAG_RETURN

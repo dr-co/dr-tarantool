@@ -43,17 +43,34 @@ The same as L<DR::Tarantool::AsyncClient/connect> exclude callback.
 
 Returns a connector or croaks error.
 
+=head3 Additional arguments
+
+=over
+
+=item raise_error
+
+If B<true> (default behaviour) the driver will throw exception for each error.
+
+=back
+
 =cut
 
 sub connect {
     my ($class, %opts) = @_;
-    my $cv = condvar AnyEvent;
-
+    
+    my $raise_error = 1;
+    $raise_error = delete $opts{raise_error} if exists $opts{raise_error};
+    
     my $cb = Coro::rouse_cb;
     $class->SUPER::connect(%opts, $cb);
 
     my ($self) = Coro::rouse_wait;
-    croak $self unless ref $self;
+    unless (ref $self) {
+        croak $self if $raise_error;
+        $! = $self;
+        return undef;
+    }
+    $self->{raise_error} = $raise_error ? 1 : 0;
     $self;
 }
 
@@ -68,35 +85,35 @@ Returns B<TRUE> or B<FALSE> if an error.
 The same as L<DR::Tarantool::AsyncClient/insert> exclude callback.
 
 Returns tuples that were extracted from database or undef.
-Croaks error if an error was happened.
+Croaks error if an error was happened (if B<raise_error> is true).
 
 =head2 select
 
 The same as L<DR::Tarantool::AsyncClient/select> exclude callback.
 
 Returns tuples that were extracted from database or undef.
-Croaks error if an error was happened.
+Croaks error if an error was happened (if B<raise_error> is true).
 
 =head2 update
 
 The same as L<DR::Tarantool::AsyncClient/update> exclude callback.
 
 Returns tuples that were extracted from database or undef.
-Croaks error if an error was happened.
+Croaks error if an error was happened (if B<raise_error> is true).
 
 =head2 delete
 
 The same as L<DR::Tarantool::AsyncClient/delete> exclude callback.
 
 Returns tuples that were extracted from database or undef.
-Croaks error if an error was happened.
+Croaks error if an error was happened (if B<raise_error> is true).
 
 =head2 call_lua
 
 The same as L<DR::Tarantool::AsyncClient/call_lua> exclude callback.
 
 Returns tuples that were extracted from database or undef.
-Croaks error if an error was happened.
+Croaks error if an error was happened (if B<raise_error> is true).
 
 =cut
 
@@ -117,7 +134,8 @@ for my $method (qw(ping insert select update delete call_lua)) {
             return $res[1];
         }
         return 0 if $method eq 'ping';
-        croak  "$res[1]: $res[2]";
+        croak  "$res[1]: $res[2]" if $self->{raise_error};
+        return undef;
     };
 }
 
