@@ -57,10 +57,10 @@ If B<true> (default behaviour) the driver will throw exception for each error.
 
 sub connect {
     my ($class, %opts) = @_;
-    
+
     my $raise_error = 1;
     $raise_error = delete $opts{raise_error} if exists $opts{raise_error};
-    
+
     my $cb = Coro::rouse_cb;
     $class->SUPER::connect(%opts, $cb);
 
@@ -134,8 +134,11 @@ for my $method (qw(ping insert select update delete call_lua)) {
             return $res[1];
         }
         return 0 if $method eq 'ping';
-        croak  "$res[1]: $res[2]" if $self->{raise_error};
-        return undef;
+        return undef unless $self->{raise_error};
+        croak  sprintf "%s: %s",
+            defined($res[1])? $res[1] : 'unknown',
+            $res[2]
+        ;
     };
 }
 
