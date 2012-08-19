@@ -145,8 +145,11 @@ for my $method (qw(ping insert select update delete call_lua)) {
             return $res[1];
         }
         return 0 if $method eq 'ping';
-        croak  "$res[1]: $res[2]" if $self->{raise_error};
-        return undef;
+        return undef unless $self->{raise_error};
+        croak  sprintf "%s: %s",
+            defined($res[1])? $res[1] : 'unknown',
+            $res[2]
+        ;
     };
 }
 
