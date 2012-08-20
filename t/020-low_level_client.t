@@ -414,6 +414,16 @@ SKIP: {
 
     $tnt->kill;
 
+    for my $cv (condvar AnyEvent) {
+        my $timer;
+        $timer = AE::timer 0, .5, sub {
+            undef $timer;
+            $cv->send;
+        };
+        $cv->recv;
+    }
+
+
     # socket error
     for my $cv (condvar AnyEvent) {
         my $cnt = 1;
@@ -422,7 +432,6 @@ SKIP: {
             0,
             sub {
                 my ($res) = @_;
-
                 is $res->{status}, 'fatal', '* fatal status';
                 like $res->{errstr} => qr{Socket error}, 'Error string';
 

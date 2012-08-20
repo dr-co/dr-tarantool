@@ -141,7 +141,7 @@ sub _start_tarantool {
 
     unless ($self->{child} = fork) {
         POSIX::setsid();
-        exec "ulimit -c unlimited; tarantool_box -c $self->{cfg}";
+        exec "ulimit -c unlimited; exec tarantool_box -c $self->{cfg}";
         die "Can't start tarantool_box: $!\n";
     }
 
