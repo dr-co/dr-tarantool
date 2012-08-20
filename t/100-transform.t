@@ -7,7 +7,7 @@ use open qw(:std :utf8);
 use lib qw(lib ../lib);
 use lib qw(blib/lib blib/arch ../blib/lib ../blib/arch);
 
-use constant PLAN       => 17;
+use constant PLAN       => 18;
 use Test::More tests    => PLAN;
 use Encode qw(decode encode);
 
@@ -89,7 +89,7 @@ SKIP: {
             "local tuple = box.select(1, 0, '1'); return tuple"
         ] => 'test_space'
     );
-    is_deeply $tuple->raw, [ 1 .. 10 ], 'tuple was read by dostring';
+    is_deeply [$tuple->raw], [[ 1 .. 10 ]], 'tuple was read by dostring';
 
     $tuple = $client->call_lua('box.dostring', [
             q^
@@ -106,24 +106,27 @@ SKIP: {
     );
 
     diag explain $tuple->raw unless
-    is_deeply $tuple->raw, [ 1, 3 .. 14 ], 'tuple was read by dostring';
+    is_deeply [$tuple->raw], [[ 1, 3 .. 14 ]], 'tuple was read by dostring';
 
-    $tuple = $client->call_lua('box.dostring', [
-            q^
-                local tuple = box.select(1, 0, '1')
-                tuple = tuple:transform( #tuple, 0, ... )
-                tuple = tuple:transform( 1, 1 )
-                return tuple
-            ^,
-            11,
-            12,
-            13,
-            14
-        ] => 'test_space'
-    );
+    $tuple = eval { $client->call_lua('box.dostring', [
+                q^
+                    local tuple = box.select(1, 0, '1')
+                    tuple = tuple:transform( #tuple, 0, ... )
+                    tuple = tuple:transform( 1, 1 )
+                    return tuple
+                ^,
+                11,
+                12,
+                13,
+                14
+            ] => 'test_space'
+        );
+    };
 
-    diag explain $tuple->raw unless
-    is_deeply $tuple->raw, [ 1, 3 .. 14 ], 'tuple was read by dostring';
+    diag explain eval { $tuple->raw } unless
+    is_deeply [eval { $tuple->raw }], [[ 1, 3 .. 14 ]], 'tuple was read';
+
+    ok !$tnt->is_dead, 'Tarantool is still working';
 }
 
 

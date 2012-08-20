@@ -103,6 +103,7 @@ sub _start_tarantool {
     $self->{cfg} = catfile $self->{temp}, 'tarantool.cfg';
     $self->{log} = catfile $self->{temp}, 'tarantool.log';
     $self->{pid} = catfile $self->{temp}, 'tarantool.pid';
+    $self->{core} = catfile $self->{temp}, 'core';
 
 
 
@@ -140,7 +141,7 @@ sub _start_tarantool {
 
     unless ($self->{child} = fork) {
         POSIX::setsid();
-        exec "tarantool_box -c $self->{cfg}";
+        exec "ulimit -c unlimited; tarantool_box -c $self->{cfg}";
         die "Can't start tarantool_box: $!\n";
     }
 
@@ -194,6 +195,20 @@ sub kill :method {
     }
 }
 
+
+=head2 is_dead
+
+Returns true if child tarantool process is dead
+
+=cut
+
+sub is_dead {
+    my ($self) = @_;
+    return 1 unless $self->{child};
+    return 0 if 0 < kill 0 => $self->{child};
+    return 1;
+}
+
 =head2 DESTROY
 
 Destructor. Kills tarantool, removes temporary files.
@@ -204,6 +219,12 @@ sub DESTROY {
     my ($self) = @_;
     chdir $self->{cwd};
     return unless $self->{master} == $$;
+
+    if (-r $self->{core}) {
+        warn "Tarantool was coredumped\n" if -r $self->{core};
+        system "echo bt|gdb tarantool_box $self->{core}";
+    }
+
     $self->kill;
     rmtree $self->{temp} if $self->{temp};
 }
