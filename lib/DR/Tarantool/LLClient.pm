@@ -102,11 +102,13 @@ use AnyEvent::Socket;
 use AnyEvent::Handle;
 use Carp;
 use Devel::GlobalDestruction;
+use File::Spec::Functions 'catfile';
 $Carp::Internal{ (__PACKAGE__) }++;
 
 use Scalar::Util 'weaken';
 require DR::Tarantool;
 use Data::Dumper;
+use Time::HiRes ();
 
 my $LE = $] > 5.01 ? '<' : '';
 
@@ -558,7 +560,9 @@ sub _read_reply {
 #             warn "$sname saved (body length: $blen)";
 #         }
 
-        my $res = DR::Tarantool::_pkt_parse_response( $hdr . $data );
+        my $pkt = $hdr . $data;
+
+        my $res = DR::Tarantool::_pkt_parse_response( $pkt );
 
         $self->{last_code} = $res->{code};
         if (exists $res->{errstr}) {
@@ -568,7 +572,7 @@ sub _read_reply {
         }
 
         if ($res->{status} =~ /^(fatal|buffer)$/) {
-            $self->_fatal_error( $res->{errstr} );
+            $self->_fatal_error( $res->{errstr}, $pkt );
             return;
         }
 
@@ -577,7 +581,7 @@ sub _read_reply {
         my $id = $res->{req_id};
         my $cb = delete $self->{ wait }{ $id };
         if ('CODE' eq ref $cb) {
-            $cb->( $res );
+            $cb->( $res, $pkt );
         } else {
             warn "Unexpected reply from tarantool with id = $id";
         }
@@ -587,19 +591,80 @@ sub _read_reply {
 }
 
 
+sub _log_transaction {
+    my ($self, $id, $pkt, $response, $res_pkt) = @_;
+
+    my $logdir = $ENV{TNT_LOG_DIR};
+    goto DOLOG if $logdir;
+    $logdir = $ENV{TNT_LOG_ERRDIR};
+    goto DOLOG if $logdir and $response->{status} ne 'ok';
+    return;
+
+    DOLOG:
+    eval {
+        die "Directory $logdir was not found, transaction wasn't logged\n"
+            unless -d $logdir;
+
+        my $now = Time::HiRes::time;
+
+        my $logdirname = catfile $logdir,
+            sprintf '%s-%s', $now, $response->{status};
+
+        die "Object $logdirname is already exists, transaction wasn't logged\n"
+            if -e $logdirname or -d $logdirname;
+        
+        die $! unless mkdir $logdirname;
+       
+        my $rrname = catfile $logdirname, 
+            sprintf 'rawrequest-%04d.bin', $id;
+        open my $fh, '>:raw', $rrname or die "Can't open $rrname: $!\n";
+        print $fh $pkt;
+        close $fh;
+
+        my $respname = catfile $logdirname,
+            sprintf 'dumpresponse-%04d.txt', $id;
+
+        open $fh, '>:raw', $respname or die "Can't open $respname: $!\n";
+        
+        local $Data::Dumper::Indent = 1;
+        local $Data::Dumper::Terse = 1;
+        local $Data::Dumper::Useqq = 1;
+        local $Data::Dumper::Deepcopy = 1;
+        local $Data::Dumper::Maxdepth = 0;
+        print $fh Dumper($response);
+        close $fh;
+
+        if (defined $res_pkt) {
+            $respname = catfile $logdirname,
+                sprintf 'rawresponse-%04d.bin', $id;
+            open $fh, '>:raw', $respname or die "Can't open $respname: $!\n";
+            print $fh $res_pkt;
+            close $fh;
+        }
+    };
+    warn $@ if $@;
+}
+
+
 sub _request {
     my ($self, $id, $pkt, $cb ) = @_;
+    
+    my $cbres = $cb;
+    $cbres = sub { $self->_log_transaction($id, $pkt, @_); &$cb }
+        if $ENV{TNT_LOG_ERRDIR} or $ENV{TNT_LOG_DIR};
 
     unless($self->{handle}) {
         $self->{last_code} = -1;
-        $self->{last_error_string} = "Connection isn't established";
-        $cb->({
+        $self->{last_error_string} =
+            "Socket error: Connection isn't established";
+        $cbres->({
             status  => 'fatal',
             errstr  => $self->{last_error_string},
         });
         return;
     }
-    $self->{ wait }{ $id } = $cb;
+
+    $self->{ wait }{ $id } = $cbres;
     $self->{handle}->push_write( $pkt );
 }
 
@@ -614,13 +679,13 @@ sub _req_id {
 }
 
 sub _fatal_error {
-    my ($self, $msg) = @_;
+    my ($self, $msg, $raw) = @_;
     $self->{last_code} ||= -1;
     $self->{last_error_string} ||= $msg;
 
     for (keys %{ $self->{ wait } }) {
         my $cb = delete $self->{ wait }{ $_ };
-        $cb->({ status  => 'fatal',  errstr  => $msg, req_id => $_ });
+        $cb->({ status  => 'fatal',  errstr  => $msg, req_id => $_ }, $raw);
     }
 
     undef $self->{handle};
@@ -685,7 +750,6 @@ sub _socket_error {
     return sub {
         my (undef, $fatal, $msg) = @_;
         $self->_fatal_error("Socket error: $msg");
-
     }
 }
 
