@@ -591,6 +591,28 @@ sub _read_reply {
 }
 
 
+
+=head1 Logging
+
+The module can log requests/responses. You can turn logging on by environment
+variables:
+
+=over
+
+=item TNT_LOG_DIR
+
+LLClient will record all requests/responses into the directory.
+
+=item TNT_LOG_ERRDIR
+
+LLClient will record requests/responses into the directory if an error was
+happened.
+
+=back
+
+=cut
+
+
 sub _log_transaction {
     my ($self, $id, $pkt, $response, $res_pkt) = @_;
 

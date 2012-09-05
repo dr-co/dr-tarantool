@@ -63,3 +63,6 @@ Revision history for Perl extension DR::Tarantool.
         - prebuild tuple packages in space (so Tuple doesn't use AUTOLOAD)
         - you can use connector without any spaces
           (for example for only lua calls)
+
+0.23 Wed Sep  5 13:43:25 MSK 2012
+        - add logging request/responses.
