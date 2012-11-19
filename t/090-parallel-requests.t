@@ -7,7 +7,7 @@ use open qw(:std :utf8);
 use lib qw(lib ../lib);
 use lib qw(blib/lib blib/arch ../blib/lib ../blib/arch);
 
-use constant PLAN       => 36;
+use constant PLAN       => 49;
 use Test::More tests    => PLAN;
 use Encode qw(decode encode);
 
@@ -118,6 +118,7 @@ SKIP: {
 
     for my $cv (AE::cv) {
         my $started = AnyEvent::now;
+        my $max = 0;
         for my $i ( 0 .. 10 ) {
             my $period = rand;
             $period = substr $period, 0, 5 unless length($period) < 5;
@@ -130,14 +131,18 @@ SKIP: {
 
                 my $res = $tuple->raw(0);
                 is $i, $res, 'id: ' . $res;
-                cmp_ok $done_time, '>', $period, 'delay';
+                cmp_ok $done_time, '>=', $period, 'delay minimum';
+                cmp_ok $done_time, '<', $period + .1, 'delay maximum';
+                $max = $done_time if $max < $done_time;
                 $cv->end;
             });
 
         }
         $cv->recv;
+        my $total_time = AnyEvent::now() - $started;
+        cmp_ok $max, '<=', $total_time, 'total time';
+        cmp_ok $total_time, '<=', 1, 'total time less than 1 second';
     }
-
 }
 
 

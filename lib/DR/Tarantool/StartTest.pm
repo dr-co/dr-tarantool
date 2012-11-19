@@ -111,6 +111,7 @@ sub _start_tarantool {
     $self->{config_body} .= "\n\n";
     $self->{config_body} .= "slab_alloc_arena = 1.1\n";
     $self->{config_body} .= sprintf "pid_file = %s\n", $self->{pid};
+    $self->{box} = $ENV{TARANTOOL_BOX} || 'tarantool_box';
 
     $self->{config_body} .= sprintf "%s = %s\n", $_, $self->{$_}
         for (qw(admin_port primary_port secondary_port));
@@ -133,16 +134,16 @@ sub _start_tarantool {
 
     chdir $self->{temp};
 
-    system "tarantool_box -c $self->{cfg} --check-config > $self->{log} 2>&1";
+    system "$self->{box} -c $self->{cfg} --check-config > $self->{log} 2>&1";
     goto EXIT if $?;
 
-    system "tarantool_box -c $self->{cfg} --init-storage >> $self->{log} 2>&1";
+    system "$self->{box} -c $self->{cfg} --init-storage >> $self->{log} 2>&1";
     goto EXIT if $?;
 
     unless ($self->{child} = fork) {
         POSIX::setsid();
-        exec "ulimit -c unlimited; exec tarantool_box -c $self->{cfg}";
-        die "Can't start tarantool_box: $!\n";
+        exec "ulimit -c unlimited; exec $self->{box} -c $self->{cfg}";
+        die "Can't start $self->{box}: $!\n";
     }
 
     $self->{started} = 1;
@@ -222,7 +223,7 @@ sub DESTROY {
 
     if (-r $self->{core}) {
         warn "Tarantool was coredumped\n" if -r $self->{core};
-        system "echo bt|gdb tarantool_box $self->{core}";
+        system "echo bt|gdb $self->{box} $self->{core}";
     }
 
     $self->kill;
