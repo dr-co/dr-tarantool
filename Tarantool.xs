@@ -175,7 +175,11 @@ static AV * extract_tuples(struct tnt_reply *r) {
 			av_push(t, newSVpvn(data, size));
 		}
 		av_push(res, newRV_noinc((SV *) t));
+
+		tnt_iter_free(&ifl);
 	}
+
+	tnt_iter_free(&it);
 	return res;
 }
 

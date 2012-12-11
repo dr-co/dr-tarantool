@@ -66,3 +66,7 @@ Revision history for Perl extension DR::Tarantool.
 
 0.23 Wed Sep  5 13:43:25 MSK 2012
         - add logging request/responses.
+
+0.24 Tue Dec 11 23:29:53 MSK 2012
+  	- Fix possibly memory leak
+  	- closes Debian FTBFS (fix tests)

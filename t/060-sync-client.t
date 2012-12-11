@@ -163,7 +163,7 @@ SKIP: {
 
     ok !eval {
         $client->insert(
-            first_space => [ 1 ], TNT_FLAG_RETURN | TNT_FLAG_ADD
+            first_space => [ 1 .. 10 ], TNT_FLAG_RETURN | TNT_FLAG_ADD
         );
         1
     }, 'raise error';
@@ -173,7 +173,7 @@ SKIP: {
         local $client->{raise_error};
         ok eval {
             $client->insert(
-                first_space => [ 1 ], TNT_FLAG_RETURN | TNT_FLAG_ADD
+                first_space => [ 1 .. 10 ], TNT_FLAG_RETURN | TNT_FLAG_ADD
             );
             1
         }, 'no raise error';
