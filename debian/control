@@ -12,7 +12,7 @@ Build-Depends: debhelper (>= 7), cdbs,
  libtest-spelling-perl
 Standards-Version: 3.9.3
 Priority: extra
-VCS-Browser: https://github.com/unera/dr-tarantool
+VCS-Browser: https://github.com/dr-co/dr-tarantool
 
 Package: libdr-tarantool-perl
 Depends: ${perl:Depends}, ${misc:Depends}, ${shlibs:Depends},
