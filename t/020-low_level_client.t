@@ -134,7 +134,7 @@ SKIP: {
                 
                 is $res->{status}, 'error', 'status';
                 is $res->{type}, TNT_INSERT, 'type';
-                like $res->{errstr}, qr{already exists}, 'errstr';
+                like $res->{errstr}, qr{Duplicate key exists}, 'errstr';
                 $cv->send if --$cnt == 0;
             }
         );
