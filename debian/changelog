@@ -1,3 +1,9 @@
+libdr-tarantool-perl (0.26-1) unstable; urgency=low
+
+  * Update homepage/vcs information.
+
+ -- Dmitry E. Oboukhov <unera@debian.org>  Mon, 07 Jan 2013 03:01:47 +0400
+
 libdr-tarantool-perl (0.25-1) unstable; urgency=low
 
   * Uses AE::io instead AE::Handle (benchmarks, benchmarks... :)).

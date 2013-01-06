@@ -18,8 +18,8 @@ WriteMakefile(
     }, # e.g., Module::Name => 1.1
     META_MERGE => {
         resources => {
-            homepage   => 'https://github.com/unera/dr-tarantool',
-            bugtracker => 'https://github.com/unera/dr-tarantool/issues',
+            homepage   => 'https://github.com/dr-co/dr-tarantool',
+            bugtracker => 'https://github.com/dr-co/dr-tarantool/issues',
         }
     },
     ABSTRACT_FROM  => 'lib/DR/Tarantool.pm', # retrieve abstract from module
