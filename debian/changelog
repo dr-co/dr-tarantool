@@ -1,3 +1,9 @@
+libdr-tarantool-perl (0.25-1) unstable; urgency=low
+
+  * Uses AE::io instead AE::Handle (benchmarks, benchmarks... :)).
+
+ -- Dmitry E. Oboukhov <unera@debian.org>  Sun, 06 Jan 2013 19:18:46 +0400
+
 libdr-tarantool-perl (0.24-1) unstable; urgency=low
 
   * Fix possibly memory leak, closes Debian FTBFS (fix tests),
