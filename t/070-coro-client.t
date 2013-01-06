@@ -178,7 +178,7 @@ SKIP: {
         );
         1
     }, 'raise error';
-    like $@, qr{Tuple already exists}, 'error message';
+    like $@, qr{Duplicate key exists}, 'error message';
 
     {
         local $client->{raise_error};
@@ -188,7 +188,7 @@ SKIP: {
             );
             1
         }, 'no raise error';
-        like $client->last_error_string, qr{Tuple already exists},
+        like $client->last_error_string, qr{Duplicate key exists},
             'error message';
     }
 
