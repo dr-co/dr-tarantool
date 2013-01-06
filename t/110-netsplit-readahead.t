@@ -120,7 +120,7 @@ SKIP: {
         my $started = AnyEvent::now;
         my $max = 0;
         for my $i ( 0 .. 1 ) {
-            my $period = rand;
+            my $period = 0.5 * rand;
             $period = substr $period, 0, 5 unless length($period) < 5;
             $cv->begin;
 

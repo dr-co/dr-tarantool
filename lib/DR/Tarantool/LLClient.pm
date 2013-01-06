@@ -99,7 +99,6 @@ requests and unpack them after response by hand. This is low-level driver :).
 package DR::Tarantool::LLClient;
 use AnyEvent;
 use AnyEvent::Socket;
-use AnyEvent::Handle;
 use Carp;
 use Devel::GlobalDestruction;
 use File::Spec::Functions 'catfile';
@@ -198,10 +197,9 @@ sub disconnect {
     delete $self->{reconnect_timer};
     delete $self->{connecting};
     if ($self->is_connected) {
-        $self->{handle}->on_error( sub {  } );
-        $self->{handle}->on_error( sub {  } );
-        $self->{handle}->destroy;
-        delete $self->{handle};
+        delete $self->{rhandle};
+        delete $self->{whandle};
+        delete $self->{fh};
     }
     $cb->( 'ok' );
 }
@@ -210,10 +208,9 @@ sub DESTROY {
     return if in_global_destruction;
     my ($self) = @_;
     if ($self->is_connected) {
-        $self->{handle}->on_error( sub {  });
-        $self->{handle}->on_eof( sub {  });
-        $self->{handle}->destroy;
-        delete $self->{handle};
+        delete $self->{rhandle};
+        delete $self->{whandle};
+        delete $self->{fh};
     }
 }
 
@@ -225,7 +222,7 @@ Returns B<TRUE> if driver and server are connected with.
 
 sub is_connected {
     my ($self) = @_;
-    return $self->{handle} ? 1 : 0;
+    return $self->fh ? 1 : 0;
 }
 
 =head2 connection_status
@@ -529,67 +526,6 @@ sub last_error_string {
     return undef;
 }
 
-sub _read_header {
-    my ($self) = @_;
-    return sub {
-        my (undef, $data) = @_;
-        croak "Unexpected data length" unless $data and length $data == 12;
-        my (undef, $blen ) = unpack "L$LE L$LE", $data;
-
-        $self->{handle}->unshift_read(
-            chunk => $blen, $self->_read_reply($data)
-        );
-    }
-}
-
-sub _read_reply {
-    my ($self, $hdr) = @_;
-
-    return sub {
-        my (undef, $data) = @_;
-        # write responses as binfile for tests
-#         {
-#             my ($type, $blen, $id, $code, $body) =
-#                 unpack 'L< L< L< L< A*', $hdr . $data;
-
-#             my $sname = sprintf 't/test-data/%05d-%03d-%s.bin',
-#                 $type || 0, $code, $code ? 'fail' : 'ok';
-#             open my $fh, '>:raw', $sname;
-#             print $fh $hdr;
-#             print $fh $data;
-#             warn "$sname saved (body length: $blen)";
-#         }
-
-        my $pkt = $hdr . $data;
-
-        my $res = DR::Tarantool::_pkt_parse_response( $pkt );
-
-        $self->{last_code} = $res->{code};
-        if (exists $res->{errstr}) {
-            $self->{last_error_string} = $res->{errstr};
-        } else {
-            delete $self->{last_error_string};
-        }
-
-        if ($res->{status} =~ /^(fatal|buffer)$/) {
-            $self->_fatal_error( $res->{errstr}, $pkt );
-            return;
-        }
-
-
-
-        my $id = $res->{req_id};
-        my $cb = delete $self->{ wait }{ $id };
-        if ('CODE' eq ref $cb) {
-            $cb->( $res, $pkt );
-        } else {
-            warn "Unexpected reply from tarantool with id = $id";
-        }
-
-        $self->{handle}->push_read(chunk => 12, $self->_read_header);
-    }
-}
-
 
 
 =head1 Logging
@@ -675,7 +611,7 @@ sub _request {
     $cbres = sub { $self->_log_transaction($id, $pkt, @_); &$cb }
         if $ENV{TNT_LOG_ERRDIR} or $ENV{TNT_LOG_DIR};
 
-    unless($self->{handle}) {
+    unless($self->fh) {
         $self->{last_code} = -1;
         $self->{last_error_string} =
             "Socket error: Connection isn't established";
@@ -687,9 +623,25 @@ sub _request {
     }
 
     $self->{ wait }{ $id } = $cbres;
-    $self->{handle}->push_write( $pkt );
+    # TODO: use watcher
+    $self->{wbuf} .= $pkt;
+    return if $self->{whandle};
+    $self->{whandle} = AE::io $self->fh, 1, $self->_on_write;
 }
 
+sub _on_write {
+    my ($self) = @_;
+    sub {
+        my $wb = syswrite $self->fh, $self->{wbuf};
+        unless(defined $wb) {
+            $self->_socket_error->($self->fh, 1, $!);
+            return;
+        }
+        return unless $wb;
+        substr $self->{wbuf}, 0, $wb, '';
+        delete $self->{whandle} unless length $self->{wbuf};
+    }
+}
 sub _req_id {
     my ($self) = @_;
     for (my $id = $self->{req_id} || 0;; $id++) {
@@ -710,7 +662,9 @@ sub _fatal_error {
         $cb->({ status  => 'fatal',  errstr  => $msg, req_id => $_ }, $raw);
     }
 
-    undef $self->{handle};
+    delete $self->{rhandle};
+    delete $self->{whandle};
+    delete $self->{fh};
     $self->{connection_status} = 'not_connected',
     $self->_connect_reconnect;
 }
@@ -733,18 +687,16 @@ sub _connect_reconnect {
 
             $self->{connection_status} = 'connecting';
 
+
             tcp_connect $self->{host}, $self->{port}, sub {
                 my ($fh) = @_;
                 delete $self->{connecting};
                 if ($fh) {
-                    $self->{handle} = AnyEvent::Handle->new(
-                        fh          => $fh,
-                        on_error    => $self->_socket_error,
-                        on_eof      => $self->_socket_eof,
-                    );
-                    $self->{handle}->push_read(
-                        chunk => 12, $self->_read_header
-                    );
+                    $self->{fh} = $fh;
+                    $self->{rbuf} = '';
+                    $self->{wbuf} = '';
+                    $self->{rhandle} = AE::io $self->fh, 0, $self->on_read;
+
 
                     delete $self->{reconnect_timer};
                     delete $self->{first_connect};
@@ -766,6 +718,75 @@ sub _connect_reconnect {
     ;
 }
 
+sub _check_rbuf {{
+    my ($self) = @_;
+    return unless length $self->{rbuf} >= 12;
+    my (undef, $blen) = unpack "L$LE L$LE", $self->{rbuf};
+    return unless length $self->{rbuf} >= 12 + $blen;
+    
+
+    my $pkt = substr $self->{rbuf}, 0, 12 + $blen, '';
+
+    my $res = DR::Tarantool::_pkt_parse_response( $pkt );
+
+    $self->{last_code} = $res->{code};
+    if (exists $res->{errstr}) {
+        $self->{last_error_string} = $res->{errstr};
+    } else {
+        delete $self->{last_error_string};
+    }
+
+    if ($res->{status} =~ /^(fatal|buffer)$/) {
+        $self->_fatal_error( $res->{errstr}, $pkt );
+        return;
+    }
+
+    my $id = $res->{req_id};
+    my $cb = delete $self->{ wait }{ $id };
+    if ('CODE' eq ref $cb) {
+        $cb->( $res, $pkt );
+    } else {
+        warn "Unexpected reply from tarantool with id = $id";
+    }
+    redo;
+}}
+
+
+sub on_read {
+    my ($self) = @_;
+    sub {
+        my $rd = sysread $self->fh, my $buf, 4096;
+        unless(defined $rd) {
+            $self->_socket_error->($self->fh, 1, $!);
+            return;
+        }
+
+        unless($rd) {
+            $self->_socket_eof->($self->fh, 1);
+            return;
+        }
+        $self->{rbuf} .= $buf;
+        $self->_check_rbuf;
+    }
+        # write responses as binfile for tests
+#         {
+#             my ($type, $blen, $id, $code, $body) =
+#                 unpack 'L< L< L< L< A*', $hdr . $data;
+
+#             my $sname = sprintf 't/test-data/%05d-%03d-%s.bin',
+#                 $type || 0, $code, $code ? 'fail' : 'ok';
+#             open my $fh, '>:raw', $sname;
+#             print $fh $hdr;
+#             print $fh $data;
+#             warn "$sname saved (body length: $blen)";
+#         }
+}
+
+
+sub fh {
+    my ($self) = @_;
+    return $self->{fh};
+}
 
 sub _socket_error {
     my ($self) = @_;
