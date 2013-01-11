@@ -187,10 +187,11 @@ Kills tarantool
 =cut
 
 sub kill :method {
-    my ($self) = @_;
+    my ($self, $signame) = @_;
 
+    $signame ||= 'TERM';
     if ($self->{child}) {
-        kill 'TERM' => $self->{child};
+        kill $signame => $self->{child};
         waitpid $self->{child}, 0;
         delete $self->{child};
     }

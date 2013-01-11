@@ -7,7 +7,7 @@ use open qw(:std :utf8);
 use lib qw(lib ../lib);
 use lib qw(blib/lib blib/arch ../blib/lib ../blib/arch);
 
-use Test::More tests    => 151;
+use Test::More tests    => 216;
 use Encode qw(decode encode);
 
 
@@ -33,13 +33,13 @@ like TNT_FLAG_RETURN,       qr{^\d+$}, 'TNT_FLAG_RETURN';
 like TNT_FLAG_ADD,          qr{^\d+$}, 'TNT_FLAG_ADD';
 like TNT_FLAG_REPLACE,      qr{^\d+$}, 'TNT_FLAG_REPLACE';
 like TNT_FLAG_BOX_QUIET,    qr{^\d+$}, 'TNT_FLAG_BOX_QUIET';
-like TNT_FLAG_NOT_STORE,    qr{^\d+$}, 'TNT_FLAG_NOT_STORE';
+# like TNT_FLAG_NOT_STORE,    qr{^\d+$}, 'TNT_FLAG_NOT_STORE';
 
 my $LE = $] > 5.01 ? '<' : '';
 
 
 # SELECT
-my $sbody = DR::Tarantool::_pkt_select( 9, 8, 7, 6, 5, [ [4], [3] ] );
+my $sbody = DR::Tarantool::_pkt_select( 9, 8, 7, 6, 5, [ ['abc'], ['cde'] ] );
 ok defined $sbody, '* select body';
 
 my @a = unpack "( L$LE )*", $sbody;
@@ -103,9 +103,17 @@ is $a[3], 125, 'flags';
 is $a[4], 'tproc',  'proc name';
 is $a[5], 2, 'tuple size';
 
+
+eval {
+    DR::Tarantool::_pkt_update( 15, 16, 17, [ 18 ], [[ 10, 'abc cde', 20 ]])
+};
+
+like $@, qr{unknown update operation: `abc cde'}, 'wrong update operation';
+
 # update
 my @ops = map { [ int rand 100, $_, int rand 100 ] }
     qw(add and or xor set delete insert);
+push @ops => [ 10, 'substr', 1, 2 ];
 $sbody = DR::Tarantool::_pkt_update( 15, 16, 17, [ 18 ], \@ops);
 ok defined $sbody, '* update body';
 @a = unpack "( L$LE )*", $sbody;
@@ -115,6 +123,8 @@ is $a[2], 15, 'request id';
 is $a[3], 16, 'space no';
 is $a[4], 17, 'flags';
 is $a[5], 1,  'tuple size';
+
+
 
 
 $sbody = DR::Tarantool::_pkt_call_lua( 124, 125, 'tproc', [  ]);
@@ -132,6 +142,17 @@ for (TNT_INSERT, TNT_UPDATE, TNT_SELECT, TNT_DELETE, TNT_CALL, TNT_PING) {
     $data = pack "L$LE L$LE L$LE L$LE Z*",
         $_, 5 + length $msg, $_ + 100, 0x0101, $msg;
     $res = DR::Tarantool::_pkt_parse_response( $data );
+    isa_ok $res => 'HASH', 'well input ' . $_;
+    is $res->{req_id}, $_ + 100, 'request id';
+    is $res->{type}, $_, 'request type';
+
+    unless($res->{type} == TNT_PING) {
+        is $res->{status}, 'error', "status $_";
+        is $res->{code}, 0x101, 'code';
+        is $res->{errstr}, $msg, 'errstr';
+    }
+    
+    $res = DR::Tarantool::_pkt_parse_response( $data . 'aaaa' );
     isa_ok $res => 'HASH', 'well input ' . $_;
     is $res->{req_id}, $_ + 100, 'request id';
     is $res->{type}, $_, 'request type';
@@ -160,6 +181,15 @@ for my $bin (@bins) {
     ok $pkt, 'response body was read';
 
     my $res = DR::Tarantool::_pkt_parse_response( $pkt );
+    SKIP: {
+        skip 'legacy delete packet', 4 if $type == 20 and TNT_DELETE != 20;
+        is $res->{status}, $status, 'status';
+        is $res->{type}, $type, 'status';
+        is $res->{code}, $err, 'error code';
+        ok ( !($res->{code} xor $res->{errstr}), 'errstr' );
+    }
+    
+    my $res = DR::Tarantool::_pkt_parse_response( $pkt . 'aaaaa');
     SKIP: {
         skip 'legacy delete packet', 4 if $type == 20 and TNT_DELETE != 20;
         is $res->{status}, $status, 'status';

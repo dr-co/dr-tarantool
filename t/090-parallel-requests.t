@@ -120,7 +120,7 @@ SKIP: {
         my $started = AnyEvent::now;
         my $max = 0;
         for my $i ( 0 .. 10 ) {
-            my $period = rand;
+            my $period = .8 * rand;
             $period = substr $period, 0, 5 unless length($period) < 5;
             $cv->begin;
             $client->call_lua(test_parallel => [ $period, $i ], sub {

@@ -76,7 +76,7 @@ our %EXPORT_TAGS = (
 our @EXPORT_OK = ( map { @$_ } values %EXPORT_TAGS );
 $EXPORT_TAGS{all} = \@EXPORT_OK;
 our @EXPORT = @{ $EXPORT_TAGS{client} };
-our $VERSION = '0.26';
+our $VERSION = '0.27';
 
 
 =head1 EXPORT
@@ -160,19 +160,6 @@ Try to replace tuple. Return error if tuple isn't exists.
 require XSLoader;
 XSLoader::load('DR::Tarantool', $VERSION);
 
-
-*TNT_PING           = \&DR::Tarantool::_op_ping;
-*TNT_CALL           = \&DR::Tarantool::_op_call;
-*TNT_INSERT         = \&DR::Tarantool::_op_insert;
-*TNT_UPDATE         = \&DR::Tarantool::_op_update;
-*TNT_DELETE         = \&DR::Tarantool::_op_delete;
-*TNT_SELECT         = \&DR::Tarantool::_op_select;
-
-*TNT_FLAG_RETURN    = \&DR::Tarantool::_flag_return;
-*TNT_FLAG_ADD       = \&DR::Tarantool::_flag_add;
-*TNT_FLAG_REPLACE   = \&DR::Tarantool::_flag_replace;
-*TNT_FLAG_BOX_QUIET = \&DR::Tarantool::_flag_box_quiet;
-*TNT_FLAG_NOT_STORE = \&DR::Tarantool::_flag_not_store;
 
 
 =head2 :all
