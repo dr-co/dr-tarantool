@@ -43,3 +43,4 @@ t/test-data/init.lua
 t/test-data/llc-easy2.cfg
 t/test-data/llc-easy.cfg
 t/100-transform.t
+tp.h
