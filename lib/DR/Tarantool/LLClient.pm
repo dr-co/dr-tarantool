@@ -192,7 +192,8 @@ sub connect {
 
 sub disconnect {
     my ($self, $cb) = @_;
-    $self->_check_cb( $cb || sub {  });
+    $cb ||= sub {  };
+    $self->_check_cb( $cb );
 
     delete $self->{reconnect_timer};
     delete $self->{connecting};
