@@ -189,7 +189,7 @@ for my $bin (@bins) {
         ok ( !($res->{code} xor $res->{errstr}), 'errstr' );
     }
     
-    my $res = DR::Tarantool::_pkt_parse_response( $pkt . 'aaaaa');
+    $res = DR::Tarantool::_pkt_parse_response( $pkt . 'aaaaa');
     SKIP: {
         skip 'legacy delete packet', 4 if $type == 20 and TNT_DELETE != 20;
         is $res->{status}, $status, 'status';
