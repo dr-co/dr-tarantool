@@ -6,9 +6,10 @@
  * (http://tarantool.org)
  *
  * protocol description:
- * https://github.com/mailru/tarantool/blob/master/doc/box-protocol.txt
+ * (https://github.com/mailru/tarantool/blob/master/doc/box-protocol.txt)
  *
- * Copyright (c) 2012-2013 Mail.Ru Group 
+ * Copyright (c) 2012-2013 Tarantool/Box AUTHORS
+ * (https://github.com/mailru/tarantool/blob/master/AUTHORS)
  *
  * Redistribution and use in source and binary forms, with or
  * without modification, are permitted provided that the following
@@ -37,6 +38,10 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
@@ -46,6 +51,7 @@
 #define tp_packed __attribute__((packed))
 #define tp_inline __attribute__((forceinline))
 #define tp_noinline __attribute__((noinline))
+#define tp_hot __attribute__((hot))
 
 #define tp_likely(expr)   __builtin_expect(!! (expr), 1)
 #define tp_unlikely(expr) __builtin_expect(!! (expr), 0)
@@ -192,7 +198,7 @@ tp_use(struct tp *p, size_t size) {
 }
 
 static inline ssize_t
-tp_append(struct tp *p, void *data, size_t size) {
+tp_append(struct tp *p, const void *data, size_t size) {
 	if (tp_unlikely(tp_ensure(p, size) == -1))
 		return -1;
 	memcpy(p->p, data, size);
@@ -240,7 +246,7 @@ tp_leb128sizeof(uint32_t value) {
 	       (tp_unlikely(value < (1 << 28))) ? 4 : 5;
 }
 
-static tp_noinline void
+static tp_noinline void tp_hot
 tp_leb128save_slowpath(struct tp *p, uint32_t value) {
 	if (tp_unlikely(value >= (1 << 21))) {
 		if (tp_unlikely(value >= (1 << 28)))
@@ -253,7 +259,7 @@ tp_leb128save_slowpath(struct tp *p, uint32_t value) {
 	p->p += 3;
 }
 
-static inline void
+static inline void tp_hot
 tp_leb128save(struct tp *p, uint32_t value) {
 	if (tp_unlikely(value >= (1 << 14))) {
 		tp_leb128save_slowpath(p, value);
@@ -264,7 +270,7 @@ tp_leb128save(struct tp *p, uint32_t value) {
 	*(p->p++) = ((value) & 0x7F);
 }
 
-static tp_noinline int
+static tp_noinline int tp_hot
 tp_leb128load_slowpath(struct tp *p, uint32_t *value) {
 	if (tp_likely(! (p->f[2] & 0x80))) {
 		*value = (p->f[0] & 0x7f) << 14 |
@@ -291,7 +297,7 @@ tp_leb128load_slowpath(struct tp *p, uint32_t *value) {
 	return 0;
 }
 
-static inline int
+static inline int tp_hot
 tp_leb128load(struct tp *p, uint32_t *value) {
 	if (tp_likely(! (p->f[0] & 0x80))) {
 		*value = *(p->f++) & 0x7f;
@@ -305,7 +311,7 @@ tp_leb128load(struct tp *p, uint32_t *value) {
 }
 
 static inline ssize_t
-tp_field(struct tp *p, char *data, size_t size) {
+tp_field(struct tp *p, const char *data, size_t size) {
 	assert(p->h != NULL);
 	assert(p->t != NULL);
 	register int esz = tp_leb128sizeof(size);
@@ -367,7 +373,7 @@ tp_delete(struct tp *p, uint32_t space, uint32_t flags) {
 }
 
 static inline ssize_t
-tp_call(struct tp *p, uint32_t flags, char *name, size_t size) {
+tp_call(struct tp *p, uint32_t flags, const char *name, size_t size) {
 	struct {
 		struct tp_h h;
 		struct tp_hcall c;
@@ -433,7 +439,7 @@ tp_updatebegin(struct tp *p) {
 }
 
 static inline ssize_t
-tp_op(struct tp *p, uint32_t field, uint8_t op, char *data,
+tp_op(struct tp *p, uint32_t field, uint8_t op, const char *data,
       size_t size) {
 	assert(p->h != NULL);
 	assert(p->u != NULL);
@@ -459,8 +465,8 @@ tp_op(struct tp *p, uint32_t field, uint8_t op, char *data,
 }
 
 static inline ssize_t
-tp_opsplice(struct tp *p, uint32_t field, uint32_t off,
-            uint32_t len, char *data, size_t size) {
+tp_opsplice(struct tp *p, uint32_t field, uint32_t off, uint32_t len,
+            const char *data, size_t size) {
 	uint32_t olen = tp_leb128sizeof(sizeof(off)),
 	         llen = tp_leb128sizeof(sizeof(len)),
 	         dlen = tp_leb128sizeof(size);
@@ -483,12 +489,12 @@ tp_opsplice(struct tp *p, uint32_t field, uint32_t off,
 }
 
 static inline ssize_t
-tp_sz(struct tp *p, char *sz) {
+tp_sz(struct tp *p, const char *sz) {
 	return tp_field(p, sz, strlen(sz));
 }
 
 static inline ssize_t
-tp_reqbuf(char *buf, size_t size) {
+tp_reqbuf(const char *buf, size_t size) {
 	if (tp_unlikely(size < sizeof(struct tp_h)))
 		return sizeof(struct tp_h) - size;
 	register int sz =
@@ -632,7 +638,7 @@ static inline int
 tp_next(struct tp *p) {
 	if (tp_unlikely(p->t == NULL)) {
 		if (tp_unlikely(! tp_hasdata(p)))
-				return 0;
+			return 0;
 		p->t = p->c + 4;
 		goto fetch;
 	}
@@ -649,6 +655,8 @@ static inline int
 tp_nextfield(struct tp *p) {
 	assert(p->t != NULL);
 	if (tp_unlikely(p->f == NULL)) {
+		if (tp_unlikely(! tp_hasnextfield(p)))
+			return 0;
 		p->f = p->t + 4;
 		goto fetch;
 	}
@@ -661,5 +669,9 @@ fetch:;
 		return -1;
 	return 1;
 }
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
 
 #endif /* TP_H_INCLUDED */

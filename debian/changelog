@@ -1,3 +1,9 @@
+libdr-tarantool-perl (0.30-1) unstable; urgency=low
+
+  * Fixed empty tuple list in tp.h.
+
+ -- Dmitry E. Oboukhov <unera@debian.org>  Sat, 19 Jan 2013 00:30:24 +0400
+
 libdr-tarantool-perl (0.29-1) unstable; urgency=low
 
   * Fixed some warnings in tests.
