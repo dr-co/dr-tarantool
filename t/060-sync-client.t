@@ -167,7 +167,7 @@ SKIP: {
         );
         1
     }, 'raise error';
-    like $@, qr{Duplicate key exists}, 'error message';
+    like $@, qr{Duplicate key exists|Tuple already exists}, 'error message';
 
     {
         local $client->{raise_error};
@@ -177,8 +177,8 @@ SKIP: {
             );
             1
         }, 'no raise error';
-        like $client->last_error_string, qr{Duplicate key exists},
-            'error message';
+        like $client->last_error_string,
+            qr{Duplicate key exists|Tuple already exists}, 'error message';
     }
 
     $t = $client->insert(
