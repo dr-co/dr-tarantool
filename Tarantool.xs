@@ -15,11 +15,11 @@
 
 #define PREALLOC_SCALAR_SIZE		0
 
-static void hash_ssave(HV *h, const char *k, const char *v) {
+inline static void hash_ssave(HV *h, const char *k, const char *v) {
 	hv_store( h, k, strlen(k), newSVpvn( v, strlen(v) ), 0 );
 }
 
-static void hash_isave(HV *h, const char *k, uint32_t v) {
+inline static void hash_isave(HV *h, const char *k, uint32_t v) {
 	hv_store( h, k, strlen(k), newSViv( v ), 0 );
 }
 
@@ -46,6 +46,23 @@ inline static void tp_av_tuple(struct tp *req, AV *tuple) {
 		tp_field(req, fd, fl);
 	}
 }
+
+
+inline static void fetch_tuples( HV * ret, struct tp * rep ) {
+    AV * tuples = newAV();
+    hv_store( ret, "tuples", 6, newRV_noinc( ( SV * ) tuples ), 0 );
+
+    while ( tp_next(rep) ) {
+        AV * t = newAV();
+        av_push( tuples, newRV_noinc( ( SV * ) t ) );
+
+        while(tp_nextfield(rep)) {
+            SV * f = newSVpvn( tp_getfield(rep), tp_getfieldsize(rep) );
+            av_push( t, f );
+        }
+    }
+}
+
 
 #define ALLOC_RET_SV(__name, __ptr, __len, __size)		\
 	SV *__name = newSVpvn("", 0); 			\
@@ -331,22 +348,9 @@ HV * _pkt_parse_response( response )
 			hash_isave(RETVAL, "type", type );
 			hash_isave(RETVAL, "count", tp_replycount(&rep) );
 			if (code == 0) {
-				AV *tuples = newAV();
-				hv_store(RETVAL, "tuples", 6,
-					 newRV_noinc((SV *)tuples), 0);
-
-				while(tp_next(&rep)) {
-					AV *t = newAV();
-					av_push(tuples, newRV_noinc((SV *)t));
-					while (tp_nextfield(&rep)) {
-						SV *f = newSVpvn(
-							tp_getfield(&rep),
-							tp_getfieldsize(&rep)
-						);
-						av_push(t, f);
-					}
-				}
-				hash_ssave(RETVAL, "status", "ok");
+			    if (type != TP_PING)
+			        fetch_tuples(RETVAL, &rep);
+                            hash_ssave(RETVAL, "status", "ok");
 			} else {
 				hash_ssave(RETVAL, "status", "error");
 				size_t el = tp_replyerrorlen(&rep);
