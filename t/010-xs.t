@@ -152,7 +152,7 @@ for (TNT_INSERT, TNT_UPDATE, TNT_SELECT, TNT_DELETE, TNT_CALL, TNT_PING) {
         is $res->{errstr}, $msg, 'errstr';
     }
     
-#     $res = DR::Tarantool::_pkt_parse_response( $data . 'aaaa' );
+    $res = DR::Tarantool::_pkt_parse_response( $data . 'aaaa' );
     isa_ok $res => 'HASH', 'well input ' . $_;
     is $res->{req_id}, $_ + 100, 'request id';
     is $res->{type}, $_, 'request type';
@@ -178,7 +178,8 @@ for my $bin (sort @bins) {
     ok open(my $fh, '<:raw', $bin), "open $bin";
     my $pkt;
     { local $/; $pkt = <$fh>; }
-    ok $pkt, 'response body was read ' . $type;
+    ok $pkt, "response body was read ($type): " .
+        join '', map { sprintf '.%02x', $_ } unpack 'C*', $pkt;
 
     my $res = DR::Tarantool::_pkt_parse_response( $pkt );
     SKIP: {
@@ -189,7 +190,7 @@ for my $bin (sort @bins) {
         ok ( !($res->{code} xor $res->{errstr}), 'errstr ' . $type );
     }
     
-#     $res = DR::Tarantool::_pkt_parse_response( $pkt . 'aaaaa');
+    $res = DR::Tarantool::_pkt_parse_response( $pkt . 'aaaaa');
     SKIP: {
         skip 'legacy delete packet', 4 if $type == 20 and TNT_DELETE != 20;
         is $res->{status}, $status, 'status(trash) ' . $type;
