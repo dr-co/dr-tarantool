@@ -7,7 +7,7 @@ use open qw(:std :utf8);
 use lib qw(lib ../lib);
 use lib qw(blib/lib blib/arch ../blib/lib ../blib/arch);
 
-use constant PLAN       => 102;
+use constant PLAN       => 101;
 use Test::More tests    => PLAN;
 use Encode qw(decode encode);
 
@@ -383,7 +383,6 @@ SKIP: {
         }
     }
 
-
     $client->_fatal_error('abc');
     ok !$client->is_connected, 'disconnected';
     for my $cv (condvar AnyEvent) {
@@ -413,7 +412,6 @@ SKIP: {
         $cv->recv;
     }
 
-    $tnt->kill;
 
     for my $cv (condvar AnyEvent) {
         my $timer;
@@ -424,6 +422,8 @@ SKIP: {
         $cv->recv;
     }
 
+
+    $tnt->kill;
 
     # socket error
     for my $cv (condvar AnyEvent) {
@@ -445,7 +445,9 @@ SKIP: {
 
         $cv->recv;
     }
-
+    
+    $tnt->restart;
+    
     for my $cv (condvar AnyEvent) {
         my $cnt = 1;
         $client->call_lua(
@@ -453,19 +455,17 @@ SKIP: {
             0,
             sub {
                 my ($res) = @_;
-
-                is $res->{status}, 'fatal', '* fatal status';
-                like $res->{errstr} => qr{Connection isn't established},
-                    'Error string';
-                is $res->{errstr}, $client->last_error_string,
-                    'last_error_string';
-                ok $client->last_code, 'last_code';
+                is $res->{status}, 'ok', 'request after reconnect was ok';
+                is $res->{tuples}[0][1], 'abcdef', 'tuple 1';
+                is $client->last_code, 0, 'last_code';
                 $cv->send if --$cnt == 0;
             }
         );
 
         $cv->recv;
     }
+
+    $tnt->kill;
 
 
     # connect to shotdowned tarantool
@@ -519,4 +519,6 @@ SKIP: {
         }
         ok !$done_reconnect, 'reconnect_always option';
     }
+
+#     note $tnt->log;
 }

@@ -116,7 +116,7 @@ sub _start_tarantool {
     $self->{config_body} .= sprintf "%s = %s\n", $_, $self->{$_}
         for (qw(admin_port primary_port secondary_port));
 
-    $self->{config_body} .= sprintf qq{logger = "cat > %s"\n}, $self->{log};
+    $self->{config_body} .= sprintf qq{logger = "cat >> %s"\n}, $self->{log};
 
     for (keys %{ $self->{add_opts} }) {
         my $v = $self->{add_opts}{ $_ };
@@ -134,15 +134,25 @@ sub _start_tarantool {
 
     chdir $self->{temp};
 
-    system "$self->{box} -c $self->{cfg} --check-config > $self->{log} 2>&1";
+    system "$self->{box} -c $self->{cfg} --check-config >> $self->{log} 2>&1";
     goto EXIT if $?;
 
-    system "$self->{box} -c $self->{cfg} --init-storage >> $self->{log} 2>&1";
+    system "$self->{box} -c $self->{cfg} --init-storage ".
+        ">> $self->{log} 2>&1";
     goto EXIT if $?;
+    return $self->_restart;
+    EXIT:
+        chdir $self->{cwd};
 
+}
+
+sub _restart {
+    my ($self) = @_;
     unless ($self->{child} = fork) {
+        die "Can't fork: $!" unless defined $self->{child};
         POSIX::setsid();
-        exec "ulimit -c unlimited; exec $self->{box} -c $self->{cfg}";
+        exec "ulimit -c unlimited; ".
+            "exec $self->{box} -c $self->{cfg} >> $self->{log} 2>&1";
         die "Can't start $self->{box}: $!\n";
     }
 
@@ -158,8 +168,12 @@ sub _start_tarantool {
         sleep 0.01;
     }
 
-    EXIT:
-        chdir $self->{cwd};
+}
+
+sub restart {
+    my ($self) = @_;
+    $self->kill('KILL');
+    $self->_restart;
 }
 
 =head2 primary_port
@@ -195,6 +209,7 @@ sub kill :method {
         waitpid $self->{child}, 0;
         delete $self->{child};
     }
+    $self->{started} = 0;
 }
 
 

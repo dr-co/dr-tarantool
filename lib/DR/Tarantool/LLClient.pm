@@ -183,6 +183,8 @@ sub connect {
         reconnect_always    => $reconnect_always,
         first_connect       => 1,
         connection_status   => 'not_connected',
+        wbuf                => '',
+        rbuf                => '',
     } => ref($class) || $class;
 
     $self->_connect_reconnect( $cb );
@@ -612,22 +614,14 @@ sub _request {
     $cbres = sub { $self->_log_transaction($id, $pkt, @_); &$cb }
         if $ENV{TNT_LOG_ERRDIR} or $ENV{TNT_LOG_DIR};
 
-    unless($self->fh) {
-        $self->{last_code} = -1;
-        $self->{last_error_string} =
-            "Socket error: Connection isn't established";
-        $cbres->({
-            status  => 'fatal',
-            errstr  => $self->{last_error_string},
-        });
-        return;
-    }
-
     $self->{ wait }{ $id } = $cbres;
     # TODO: use watcher
     $self->{wbuf} .= $pkt;
-    return if $self->{whandle};
-    $self->{whandle} = AE::io $self->fh, 1, $self->_on_write;
+
+    if ($self->fh) {
+        return if $self->{whandle};
+        $self->{whandle} = AE::io $self->fh, 1, $self->_on_write;
+    }
 }
 
 sub _on_write {
@@ -658,15 +652,19 @@ sub _fatal_error {
     $self->{last_code} ||= -1;
     $self->{last_error_string} ||= $msg;
 
-    for (keys %{ $self->{ wait } }) {
-        my $cb = delete $self->{ wait }{ $_ };
-        $cb->({ status  => 'fatal',  errstr  => $msg, req_id => $_ }, $raw);
-    }
-
     delete $self->{rhandle};
     delete $self->{whandle};
     delete $self->{fh};
+    $self->{wbuf} = '';
     $self->{connection_status} = 'not_connected',
+
+    my $wait = delete $self->{wait};
+    $self->{wait} = {};
+    for (keys %$wait) {
+        my $cb = delete $wait->{$_};
+        $cb->({ status  => 'fatal',  errstr  => $msg, req_id => $_ }, $raw);
+    }
+
     $self->_connect_reconnect;
 }
 
@@ -688,15 +686,15 @@ sub _connect_reconnect {
 
             $self->{connection_status} = 'connecting';
 
-
             tcp_connect $self->{host}, $self->{port}, sub {
                 my ($fh) = @_;
                 delete $self->{connecting};
                 if ($fh) {
                     $self->{fh} = $fh;
                     $self->{rbuf} = '';
-                    $self->{wbuf} = '';
                     $self->{rhandle} = AE::io $self->fh, 0, $self->on_read;
+                    $self->{whandle} = AE::io $self->fh, 1, $self->_on_write
+                        if length $self->{wbuf};
 
 
                     delete $self->{reconnect_timer};
