@@ -43,56 +43,60 @@ ok -r $tcfg, $tcfg;
 
 my $tnt = run DR::Tarantool::StartTest( cfg => $tcfg );
 
+SKIP: {
+
+    skip "tarantool isn't installed", PLAN - 10 unless $tnt->started;
+
+    my $c1 = DR::Tarantool::CoroClient->connect(
+        port => $tnt->primary_port, spaces => {}
+    );
+    my $c2 = DR::Tarantool::CoroClient->connect(
+        port => $tnt->primary_port, spaces => {}
+    );
+
+    ok $c1->ping, 'ping';
+    ok $c2->ping, 'ping';
 
 
-my $c1 = DR::Tarantool::CoroClient->connect(
-    port => $tnt->primary_port, spaces => {}
-);
-my $c2 = DR::Tarantool::CoroClient->connect(
-    port => $tnt->primary_port, spaces => {}
-);
-
-ok $c1->ping, 'ping';
-ok $c2->ping, 'ping';
-
-
-my $sid1 =
-    $c1->call_lua(
-        'box.dostring', [ 'return tostring(box.session.id())' ]
-    )->raw(0);
-my $sid2 =
-    $c1->call_lua(
-        'box.dostring', [ 'return tostring(box.session.id())' ]
-    )->raw(0);
-my $sid3 =
-    $c2->call_lua(
-        'box.dostring', [ 'return tostring(box.session.id())' ]
-    )->raw(0);
-my $sid4 =
-    $c2->call_lua(
-        'box.dostring', [ 'return tostring(box.session.id())' ]
-    )->raw(0);
-is $sid1, $sid2, 'sids are equal';
-is $sid3, $sid4, 'sids are equal';
-isnt $sid1, $sid3, 'sids are not equal';
+    my $sid1 =
+        $c1->call_lua(
+            'box.dostring', [ 'return tostring(box.session.id())' ]
+        )->raw(0);
+    my $sid2 =
+        $c1->call_lua(
+            'box.dostring', [ 'return tostring(box.session.id())' ]
+        )->raw(0);
+    my $sid3 =
+        $c2->call_lua(
+            'box.dostring', [ 'return tostring(box.session.id())' ]
+        )->raw(0);
+    my $sid4 =
+        $c2->call_lua(
+            'box.dostring', [ 'return tostring(box.session.id())' ]
+        )->raw(0);
+    is $sid1, $sid2, 'sids are equal';
+    is $sid3, $sid4, 'sids are equal';
+    isnt $sid1, $sid3, 'sids are not equal';
 
 
-$c1->call_lua('box.dostring',
-[
-<<eof
-    sessions = {}
-    box.session.on_disconnect(
-        function()
-            table.insert(sessions, tostring(box.session.id()))
-        end
-    )
-eof
-]
-);
+    $c1->call_lua('box.dostring',
+    [
+        q[
+            sessions = {}
+            box.session.on_disconnect(
+                function()
+                    table.insert(sessions, tostring(box.session.id()))
+                end
+            )
+        ]
+    ]
+    );
 
-$c2->_llc->disconnect;
-Coro::AnyEvent::sleep 0.5;
+    $c2->_llc->disconnect;
+    Coro::AnyEvent::sleep 0.5;
 
-my $dsid = $c1->call_lua('box.dostring', [ 'return sessions' ])->raw(0);
-is $sid3, $dsid, 'disconnect sid';
-isnt $sid1, $dsid, 'disconnect sid';
+    my $dsid = $c1->call_lua('box.dostring', [ 'return sessions' ])->raw(0);
+    is $sid3, $dsid, 'disconnect sid';
+    isnt $sid1, $dsid, 'disconnect sid';
+
+}
