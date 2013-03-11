@@ -140,7 +140,7 @@ sub _start_tarantool {
     system "$self->{box} -c $self->{cfg} --init-storage ".
         ">> $self->{log} 2>&1";
     goto EXIT if $?;
-    return $self->_restart;
+    $self->_restart;
     EXIT:
         chdir $self->{cwd};
 
@@ -183,6 +183,15 @@ Returns tarantool primary port
 =cut
 
 sub primary_port { return $_[0]->{primary_port} }
+
+
+=head2 admin_port
+
+Returns tarantool admin port
+
+=cut
+
+sub admin_port { return $_[0]->{admin_port} }
 
 
 =head2 tarantool_pid
@@ -234,6 +243,7 @@ Destructor. Kills tarantool, removes temporary files.
 
 sub DESTROY {
     my ($self) = @_;
+    local $?;
     chdir $self->{cwd};
     return unless $self->{master} == $$;
 
@@ -244,6 +254,20 @@ sub DESTROY {
 
     $self->kill;
     rmtree $self->{temp} if $self->{temp};
+}
+
+
+sub temp_dir {
+    my ($self) = @_;
+    return $self->{temp};
+}
+
+
+sub clean_xlogs {
+    my ($self) = @_;
+    return unless $self->{temp};
+    my @xlogs = glob catfile $self->{temp}, '*.xlog';
+    unlink for @xlogs;
 }
 
 {
