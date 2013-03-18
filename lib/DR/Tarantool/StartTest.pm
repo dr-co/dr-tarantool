@@ -101,6 +101,7 @@ sub _start_tarantool {
     my ($self) = @_;
     if ($ENV{TARANTOOL_TEMPDIR}) {
         $self->{temp} = $ENV{TARANTOOL_TEMPDIR};
+        $self->{dont_unlink_temp} = 1;
         rmtree $self->{temp} if -d $self->{temp};
         mkdir $self->{temp};
     } else {
@@ -154,7 +155,9 @@ sub _start_tarantool {
 
 sub _restart {
     my ($self) = @_;
+
     unless ($self->{child} = fork) {
+        chdir $self->{temp};
         die "Can't fork: $!" unless defined $self->{child};
         POSIX::setsid();
         exec "ulimit -c unlimited; ".
@@ -173,7 +176,6 @@ sub _restart {
 
         sleep 0.01;
     }
-
 }
 
 sub restart {
@@ -259,7 +261,7 @@ sub DESTROY {
     }
 
     $self->kill;
-    rmtree $self->{temp} if $self->{temp};
+    rmtree $self->{temp} if $self->{temp} and !$self->{dont_unlink_temp};
 }
 
 
