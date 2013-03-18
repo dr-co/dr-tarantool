@@ -99,7 +99,13 @@ sub log {
 
 sub _start_tarantool {
     my ($self) = @_;
-    $self->{temp} = tempdir;
+    if ($ENV{TARANTOOL_TEMPDIR}) {
+        $self->{temp} = $ENV{TARANTOOL_TEMPDIR};
+        rmtree $self->{temp} if -d $self->{temp};
+        mkdir $self->{temp};
+    } else {
+        $self->{temp} = tempdir;
+    }
     $self->{cfg} = catfile $self->{temp}, 'tarantool.cfg';
     $self->{log} = catfile $self->{temp}, 'tarantool.log';
     $self->{pid} = catfile $self->{temp}, 'tarantool.pid';
