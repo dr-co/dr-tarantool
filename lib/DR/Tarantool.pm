@@ -2,7 +2,7 @@ package DR::Tarantool;
 
 =head1 NAME
 
-DR::Tarantool - perl driver for L<tarantool|http://tarantool.org>
+DR::Tarantool - a Perl driver for L<Tarantool/Box|http://tarantool.org>
 
 
 =head1 SYNOPSIS
@@ -45,11 +45,13 @@ DR::Tarantool - perl driver for L<tarantool|http://tarantool.org>
 
 =head1 DESCRIPTION
 
-The module provides sync and async drivers for
-L<tarantool|http://tarantool.org>.
+This module provides a synchronous and asynchronous driver for
+L<Tarantool/Box|http://tarantool.org>.
 
-The driver uses libtarantool* libraries for making requests and
-parsing responses.
+The driver does not have external dependencies, but includes the
+official leight-weight Tarantool/Box C client (a single C header which
+implements all protocol formatting) for packing requests and unpacking
+server resposnes.
 
 =cut
 
@@ -68,7 +70,6 @@ our %EXPORT_TAGS = (
         qw(
             TNT_INSERT TNT_SELECT TNT_UPDATE TNT_DELETE TNT_CALL TNT_PING
             TNT_FLAG_RETURN TNT_FLAG_ADD TNT_FLAG_REPLACE TNT_FLAG_BOX_QUIET
-            TNT_FLAG_NOT_STORE
         )
     ],
 );
@@ -83,8 +84,8 @@ our $VERSION = '0.35';
 
 =head2 tarantool
 
-connects to L<tarantool|http://tarantool.org> in sync mode using
-L<DR::Tarantool::SyncClient>.
+connects to L<Tarantool/Box|http://tarantool.org> in synchronous mode
+using L<DR::Tarantool::SyncClient>.
 
 
 =cut
@@ -136,22 +137,28 @@ sub coro_tarantool {
 
 =head2 :constant
 
-Exports constants to use in request as flags:
+Exports constants to use in a client request as flags:
 
 =over
 
 =item TNT_FLAG_RETURN
 
-If You use the flag, driver will return tuple that were
-inserted/deleted/updated.
+With this flag on, each INSERT/UPDATE request
+returns the new value of the tuple. DELETE returns the deleted
+tuple, if it is found.
 
 =item TNT_FLAG_ADD
 
-Try to add tuple. Return error if tuple is already exists.
+With this flag on, INSERT returns an error if an old tuple
+with the same primary key already exists. No tuple is inserted
+in this case.
 
 =item TNT_FLAG_REPLACE
 
-Try to replace tuple. Return error if tuple isn't exists.
+With this flag on, INSERT returns an error if an old
+tuple for the primary key does not exist.
+Without either of the flags, INSERT replaces the old
+tuple if it doesn't exist.
 
 =back
 
@@ -182,7 +189,7 @@ L<DR::Tarantool::AsyncClient>.
 
 =head1 VCS
 
-The project is placed git repo on github:
+The project is hosted on github in the following git repository:
 L<https://github.com/dr-co/dr-tarantool/>.
 
 =cut
