@@ -7,7 +7,7 @@ use open qw(:std :utf8);
 use lib qw(lib ../lib);
 use lib qw(blib/lib blib/arch ../blib/lib ../blib/arch);
 
-use constant PLAN       => 24;
+use constant PLAN       => 32;
 use Test::More tests    => PLAN;
 use Encode qw(decode encode);
 
@@ -41,8 +41,9 @@ ok -d $script_dir, "-d $script_dir";
 ok -r $lua_file, "-r $lua_file";
 
 my $tnt = run DR::Tarantool::StartTest(
-    cfg => $tcfg,
-    script_dir => $script_dir
+    cfg         => $tcfg,
+    script_dir  => $script_dir,
+    readahead   => 1024000,
 );
 
 my $spaces = {
@@ -119,7 +120,7 @@ SKIP: {
     for my $cv (AE::cv) {
         my $started = AnyEvent::now;
         my $max = 0;
-        for my $i ( 0 .. 1 ) {
+        for my $i ( 0 .. 3 ) {
             my $period = 0.5 * rand;
             $period = substr $period, 0, 5 unless length($period) < 5;
             $cv->begin;

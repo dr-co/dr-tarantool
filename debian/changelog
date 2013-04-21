@@ -1,3 +1,10 @@
+libdr-tarantool-perl (0.36-1) unstable; urgency=low
+
+  * Update perldoc.
+  * Extends readahead buffer to fix FTBFS, closes: #704266.
+
+ -- Dmitry E. Oboukhov <unera@debian.org>  Sun, 21 Apr 2013 12:23:43 +0400
+
 libdr-tarantool-perl (0.35-1) unstable; urgency=low
 
   * Add stress test for tarantool, some additional test cases.

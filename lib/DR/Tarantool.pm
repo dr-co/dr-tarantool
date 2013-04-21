@@ -256,7 +256,7 @@ The same as above, but uses B<NUM64> as the underlying storage.
 =item JSON
 
 An arbitrary Perl object is automatically serialized to JSON with
-L<JSON::XS> on insertion, and de-serialized on selection.
+L<JSON::XS> on insertion, and deserialized on selection.
 
 =back
 
@@ -309,7 +309,7 @@ our %EXPORT_TAGS = (
 our @EXPORT_OK = ( map { @$_ } values %EXPORT_TAGS );
 $EXPORT_TAGS{all} = \@EXPORT_OK;
 our @EXPORT = @{ $EXPORT_TAGS{client} };
-our $VERSION = '0.35';
+our $VERSION = '0.36';
 
 =head1 EXPORT
 
