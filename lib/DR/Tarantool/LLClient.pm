@@ -4,8 +4,8 @@ use warnings;
 
 =head1 NAME
 
-DR::Tarantool::LLClient - low level async client
-for L<tarantool | http://tarantool.org>
+DR::Tarantool::LLClient - a low level async client
+for L<Tarantool|http://tarantool.org>
 
 =head1 SYNOPSIS
 
@@ -27,7 +27,8 @@ for L<tarantool | http://tarantool.org>
 
 =head1 DESCRIPTION
 
-The module provides low-level interface to L<tarantool|http://tarantool.org>
+This module provides a low-level interface to
+L<Tarantool|http://tarantool.org>.
 
 =head1 METHODS
 
@@ -44,25 +45,26 @@ Done status:
 
 =item fatal
 
-Fatal error was happenned. Server closed connection or returned broken package.
+A fatal error occurred. The server closed the connection or returned a
+broken package.
 
 =item buffer
 
-Internal driver error.
+An internal driver error.
 
 =item error
 
-Request wasn't done: database returned error.
+The request wasn't executed: the server returned an error.
 
 =item ok
 
-Request was done.
+Request was executed OK.
 
 =back
 
 =item errstr
 
-If an error was happenned contains error description.
+If an error occurred, contains error description.
 
 =item code
 
@@ -82,16 +84,18 @@ L<protocol documentation|https://github.com/mailru/tarantool/blob/master/doc/box
 
 =item count
 
-Contains count of returned tuples.
+Contains the count of returned tuples.
 
 =item tuples
 
-Contains returned tuples (B<ARRAYREF> of B<ARRAYREF>).
+Returned tuples (B<ARRAYREF> of B<ARRAYREF>).
 
 =back
 
-If You use B<NUM> or B<NUM64> values in database You have to pack them before
-requests and unpack them after response by hand. This is low-level driver :).
+If you use B<NUM> or B<NUM64> field types, values
+for these fields need to be packed before they are sent to the
+server, and unpacked when received in a response.
+This is a low-level driver :)
 
 =cut
 
@@ -114,7 +118,7 @@ my $LE = $] > 5.01 ? '<' : '';
 
 =head2 connect
 
-Creates a connection to L<tarantool | http://tarantool.org>
+Creates a connection to L<Tarantool/Box| http://tarantool.org>
 
     DR::Tarantool::LLClient->connect(
         host => '127.0.0.1',
@@ -131,25 +135,25 @@ Creates a connection to L<tarantool | http://tarantool.org>
 
 =item host & port
 
-Host and port to connect.
+Host and port to connect to.
 
 =item reconnect_period
 
-Interval to reconnect after fatal errors or unsuccessful connects.
-If the field is defined and more than zero driver will try to
-reconnect server using this interval.
+An interval to wait before trying to reconnect after a fatal error or
+unsuccessful connect. If the field is defined and is greater than 0, the
+driver tries to reconnect to the server after this interval.
 
-B<Important>: driver wont reconnect after B<the first> unsuccessful connection.
-It will call B<callback> instead.
+B<Important>: the driver does not reconnect after B<the first>
+unsuccessful connection. It calls B<callback> instead.
 
 =item reconnect_always
 
-Constantly trying to reconnect even after the first unsuccessful connection.
+Try to reconnect even after the first unsuccessful connection.
 
 =item cb
 
-Done callback. The callback will receive a client instance that
-is already connected with server or error string.
+Done callback. The callback receives a connection handle
+connected to the server or an error string.
 
 =back
 
@@ -219,7 +223,7 @@ sub DESTROY {
 
 =head2 is_connected
 
-Returns B<TRUE> if driver and server are connected with.
+B<True> if this connection is established.
 
 =cut
 
@@ -230,26 +234,27 @@ sub is_connected {
 
 =head2 connection_status
 
-Returns string that informs You about status of connection. Return value can be:
+Contains a string with the status of connection. Return value can be:
 
 =over
 
 =item ok
 
-Connection is established
+Connection is established.
 
 =item not_connected
 
-Connection isn't established yet, or was disconnected.
+Connection isn't established yet, or was lost.
 
 =item connecting
 
-Driver tries connecting server
+The driver is connecting to the server.
 
 =item fatal
 
-Driver tried connecting but receives an error. Driver can repeat connecting
-processes (see B<reconnect_period> option).
+An attempt to connect was made, but ended up with an error. 
+If the event loop is running, and B<reconnect_period> option
+is set, the driver continues to try to reconnect and update its status.
 
 =back
 
@@ -263,7 +268,7 @@ sub connection_status {
 
 =head2 ping
 
-Pings tarantool.
+Ping the server.
 
     $tnt->ping( sub { .. } );
 
@@ -271,7 +276,7 @@ Pings tarantool.
 
 =over
 
-=item callback for results
+=item a callback
 
 =back
 
@@ -289,7 +294,7 @@ sub ping :method {
 
 =head2 insert
 
-Inserts tuple.
+Insert a tuple.
 
     $tnt->insert(0, [ 1, 2, 3 ], sub { ... });
     $tnt->insert(0, [ 4, 5, 6 ], $flags, sub { .. });
@@ -304,10 +309,9 @@ Inserts tuple.
 
 =item flags (optional)
 
-=item callback for results
+=item callback
 
 =back
-
 
 =cut
 
@@ -329,7 +333,7 @@ sub insert :method {
 
 =head2 select
 
-Selects tuple(s).
+Select a tuple or tuples.
 
     $tnt->select(1, 0, [ [ 1, 2 ], [ 3, 4 ] ], sub { ... });
     $tnt->select(1, 0, [ [ 1, 2 ], [ 3, 4 ] ], 1, sub { ... });
@@ -347,7 +351,8 @@ Selects tuple(s).
 
 =item limit (optional)
 
-If limit isn't defined or zero select will extract all records without limit.
+If the limit isn't set or is zero, select extracts all records without
+a limit.
 
 =item offset (optional)
 
@@ -378,7 +383,7 @@ sub select :method {
 
 =head2 update
 
-Updates tuple.
+Update a tuple.
 
     $tnt->update(0, [ 1 ], [ [ 1 => add 1 ] ], sub { ... });
     $tnt->update(
@@ -406,7 +411,6 @@ Updates tuple.
 
 =back
 
-
 =cut
 
 sub update :method {
@@ -427,7 +431,7 @@ sub update :method {
 
 =head2 delete
 
-Deletes tuple.
+Delete a tuple.
 
     $tnt->delete( 0, [ 1 ], sub { ... });
     $tnt->delete( 0, [ 1 ], $flags, sub { ... });
@@ -466,7 +470,7 @@ sub delete :method {
 
 =head2 call_lua
 
-calls lua function.
+Calls a lua procedure.
 
     $tnt->call_lua( 'box.select', [ 0, 1, 2 ], sub { ... });
     $tnt->call_lua( 'box.select', [ 0, 1, 2 ], $flags, sub { ... });
@@ -475,13 +479,13 @@ calls lua function.
 
 =over
 
-=item name of function
+=item name of the procedure
 
 =item tuple_key
 
 =item flags (optional)
 
-=item callback for results
+=item callback to call when the request is ready
 
 =back
 
@@ -506,7 +510,8 @@ sub call_lua :method {
 
 =head2 last_code
 
-Returns code of last operation (B<undef> if there was no operation done).
+Return code of the last request or B<undef> if there was no
+request. 
 
 =cut
 
@@ -519,7 +524,8 @@ sub last_code {
 
 =head2 last_error_string
 
-Returns error string of last operation (B<undef> if there was no error).
+An error string if the last request ended up with an 
+error, or B<undef> otherwise.
 
 =cut
 
@@ -529,23 +535,21 @@ sub last_error_string {
     return undef;
 }
 
-
-
 =head1 Logging
 
-The module can log requests/responses. You can turn logging on by environment
-variables:
+The module can log requests/responses. Logging can be turned ON by 
+setting these environment variables:
 
 =over
 
 =item TNT_LOG_DIR
 
-LLClient will record all requests/responses into the directory.
+Instructs LLClient to record all requests/responses into this directory.
 
 =item TNT_LOG_ERRDIR
 
-LLClient will record requests/responses into the directory if an error was
-happened.
+Instructs LLClient to record all requests/responses which
+ended up with an error into this directory.
 
 =back
 

@@ -1,6 +1,7 @@
 =head1 NAME
 
-DR::Tarantool::Iterator - iterator/container class for L<DR::Tarantool>
+DR::Tarantool::Iterator - an iterator and a container class for
+L<DR::Tarantool>
 
 =head1 SYNOPSIS
 
@@ -33,7 +34,7 @@ use Data::Dumper;
 
 =head2 new
 
-Constructor.
+A constructor.
 
 =head3 Arguments
 
@@ -41,27 +42,28 @@ Constructor.
 
 =item *
 
-Array of items.
+An array of tuples to iterate over.
 
 =item *
 
-List of named arguments, that can be:
+A list of named arguments:
 
 =over
 
 =item item_class
 
-Name of class to bless/construct item. If the field is 'B<ARRAYREF>'
-then the first element of the array is B<item_class>, and the second
-element is B<item_constructor>.
+Name of the class to bless each tuple in the iterator with.
+If the field is 'B<ARRAYREF>' then the first element of the array is
+B<item_class>, and the second element is B<item_constructor>.
 
 =item item_constructor
 
-Name of constructor for item. If the value is undefined
-and B<item_class> is defined, iterator will bless value instead construct.
+Name of a constructor to invoke for each tuple. If this value is
+undefined and B<item_class> is defined, the iterator blesses each
+tuple but does not invoke a constructor on it.
 
-If B<item_constructor> is used, constructor method will be receive three
-arguments: B<item>, B<item_index> and B<iterator>.
+The constructor is invoked on with three arguments: B<item>,
+B<item_index> and B<iterator>, for example:
 
 
     my $iter = DR::Tarantool::Iterator->new(
@@ -84,7 +86,8 @@ arguments: B<item>, B<item_index> and B<iterator>.
 
 =item data
 
-Any Your data You want to assign to iterator.
+Application state to store in the iterator. Is useful
+if additional state needs to be passed into tuple constructor.
 
 =back
 
@@ -116,18 +119,19 @@ sub new {
 
 =head2 clone(%opt)
 
-clone iterator object (doesn't clone items).
-It is usable if You want to have iterator that have the other B<item_class>
-and (or) B<item_constructor>.
+Clone the iterator object, but do not clone the tuples.
+This method can be used to create an iterator that has
+a different B<item_class> and (or) B<item_constructor>.
 
-If B<clone_items> argument is true, the function will clone itemlist, too.
+If B<clone_items> argument is true, the function clones the  tuple
+list as well.
 
     my $iter1 = $old_iter->clone(item_class => [ 'MyClass', 'new' ]);
     my $iter2 = $old_iter->clone(item_class => [ 'MyClass', 'new' ],
         clone_items => 1);
 
     $old_iter->sort(sub { $_[0]->name cmp $_[1]->name });
-    # $iter1 will be resorted, too, but $iter2 will not be
+    # $iter1 is sorted, too, but $iter2 is not
 
 =cut
 
@@ -157,7 +161,7 @@ sub clone {
 
 =head2 count
 
-returns count of items that are contained in iterator
+Return the number of tuples available through the iterator.
 
 =cut
 
@@ -169,8 +173,8 @@ sub count {
 
 =head2 item
 
-returns one item from iterator by its number
-(or croaks error for wrong numbers)
+Return one tuple from the iterator by its index 
+(or croak an error if the index is out of range).
 
 =cut
 
@@ -195,10 +199,10 @@ sub item {
 
 =head2 raw_item
 
-returns one raw item from iterator by its number
-(or croaks error for wrong numbers).
+Return one raw tuple from the iterator by its index 
+(or croak error if the index is out of range).
 
-The function differ from L<item>: it doesn't know about 'B<item_class>'.
+In other words, this method ignores B<item_class> and B<item_constructor>.
 
 =cut
 
@@ -224,8 +228,9 @@ sub raw_item {
 
 =head2 raw_sort(&)
 
-resorts iterator (changes current object). Compare function receives two B<raw>
-objects:
+Sort the contents referred to by the iterator (changes the current 
+iterator object).
+The compare function receives two B<raw> objects:
 
     $iter->raw_sort(sub { $_[0]->field cmp $_[1]->field });
 
@@ -238,11 +243,10 @@ sub raw_sort {
     return $self;
 }
 
-
 =head2 sort(&)
 
-resorts iterator (changes current object). Compare function receives
-two objects:
+Sort the contents referred to by the iterator (changes the current object).
+The compare function receives two constructed objects:
 
     $iter->sort(sub { $_[0]->field <=> $_[1]->field });
 
@@ -261,7 +265,8 @@ sub sort : method {
 
 =head2 grep(&)
 
-greps iterator (returns new iterator).
+Find all objects in the set referred to by the iterator that
+match a given search criteria (linear search).
 
     my $admins = $users->grep(sub { $_[0]->is_admin });
 
@@ -285,9 +290,9 @@ sub grep :method {
 
 =head2 raw_grep(&)
 
-greps iterator (returns new iterator). grep function receives raw item.
+Same as grep, but works on raw objects.
 
-    my $admins = $users->grep(sub { $_[0]->is_admin });
+    my $admins = $users->raw_grep(sub { $_[0]->is_admin });
 
 =cut
 
@@ -307,7 +312,7 @@ sub raw_grep :method {
 
 =head2 get
 
-The same as L<item> method.
+An alias for L<item> method.
 
 =cut
 
@@ -316,7 +321,8 @@ sub get { goto \&item; }
 
 =head2 exists
 
-Returns B<true> if iterator contains element with noticed index.
+Return B<true> if the iterator contains a tuple with the given
+index.
 
     my $item = $iter->exists(10) ? $iter->get(10) : somethig_else();
 
@@ -334,13 +340,13 @@ sub exists : method{
 
 =head2 next
 
-returns next element from iterator (or B<undef> if eof).
+Return the next tuple, or B<undef> in case of eof.
 
     while(my $item = $iter->next) {
         do_something_with( $item );
     }
 
-You can ask current element's number by function 'L<iter>'.
+Index of the current tuple can be queried with function 'L<iter>'.
 
 =cut
 
@@ -362,7 +368,7 @@ sub next :method {
 
 =head2 iter
 
-returns current iterator index.
+Return index of the tuple at the current iterator position.
 
 =cut
 
@@ -374,7 +380,7 @@ sub iter {
 
 =head2 reset
 
-resets iterator index, returns previous index value.
+Reset iteration index, return the previous value of the index.
 
 =cut
 
@@ -386,7 +392,7 @@ sub reset :method {
 
 =head2 all
 
-returns all elements from iterator.
+Return all tuples available through the iterator.
 
     my @list = $iter->all;
     my $list_aref = $iter->all;
@@ -401,7 +407,6 @@ returns all elements from iterator.
 
     my @list = map { $_->abc + $_->cde } $iter->all;
     my @list = $iter->all(sub { $_[0]->abc + $_->cde }); # the same
-
 
 =cut
 
@@ -438,9 +443,8 @@ sub all {
 
 =head2 item_class
 
-set/returns item class. If the value isn't defined, iterator will
-bless fields into the class (or calls L<item_constructor> in the class
-if L<item_constructor> is defined
+Set/return the tuple class. If the value is defined, the iterator
+blesses tuples with it (and also calls L<item_constructor> if it is set).
 
 =cut
 
@@ -454,8 +458,8 @@ sub item_class {
 
 =head2 item_constructor
 
-set/returns item constructor. The value can be used only if L<item_class>
-is defined.
+Set/return the tuple constructor.
+The value is used only if L<item_class> is defined.
 
 =cut
 
@@ -468,7 +472,7 @@ sub item_constructor {
 
 =head2 push
 
-push item into iterator.
+Push a tuple into the iterator.
 
 =cut
 
@@ -481,7 +485,8 @@ sub push :method {
 
 =head2 data
 
-returns/set user's data assigned to the iterator
+Return/set an application-specific context maintained in the iterator
+object. This can be useful to pass additional state to B<item_constructor>.
 
 =cut
 

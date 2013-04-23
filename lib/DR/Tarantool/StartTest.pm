@@ -13,7 +13,7 @@ use POSIX ();
 
 =head1 NAME
 
-DR::Tarantool::StartTest - finds and starts tarantool on free port.
+DR::Tarantool::StartTest - finds and starts Tarantool/Box on free port.
 
 =head1 SYNOPSIS
 
@@ -72,7 +72,7 @@ sub run {
 
 =head2 started
 
-Returns true if tarantool is found and started
+Return true if Tarantool/Box is found and started
 
 =cut
 
@@ -84,7 +84,7 @@ sub started {
 
 =head2 log
 
-Returns tarantool logs
+Return Tarantool/Box logs
 
 =cut
 
@@ -168,7 +168,7 @@ sub _restart {
     $self->{started} = 1;
 
 
-    # wait for starting tarantool
+    # wait for starting Tarantool/Box
     for (my $i = 0; $i < 100; $i++) {
         last if IO::Socket::INET->new(
             PeerAddr => '127.0.0.1', PeerPort => $self->primary_port
@@ -186,7 +186,7 @@ sub restart {
 
 =head2 primary_port
 
-Returns tarantool primary port
+Return Tarantool/Box primary port
 
 =cut
 
@@ -195,7 +195,7 @@ sub primary_port { return $_[0]->{primary_port} }
 
 =head2 admin_port
 
-Returns tarantool admin port
+Return Tarantool/Box admin port
 
 =cut
 
@@ -204,7 +204,7 @@ sub admin_port { return $_[0]->{admin_port} }
 
 =head2 tarantool_pid
 
-Returns B<PID>
+Return B<PID>
 
 =cut
 
@@ -213,7 +213,7 @@ sub tarantool_pid { return $_[0]->{child} }
 
 =head2 kill
 
-Kills tarantool
+Kills Tarantool/Box
 
 =cut
 
@@ -232,7 +232,7 @@ sub kill :method {
 
 =head2 is_dead
 
-Returns true if child tarantool process is dead
+Return true if child Tarantool/Box process is dead.
 
 =cut
 

@@ -4,7 +4,7 @@ use warnings;
 
 =head1 NAME
 
-DR::Tarantool::Tuple - tuple container for L<DR::Tarantool>
+DR::Tarantool::Tuple - a tuple container for L<DR::Tarantool>
 
 =head1 SYNOPSIS
 
@@ -22,12 +22,13 @@ DR::Tarantool::Tuple - tuple container for L<DR::Tarantool>
 
 =head1 DESCRIPTION
 
-Tuple contains normalized (unpacked) fields. You can access the fields
+A tuple contains normalized (unpacked) fields. You can access the fields
 by their indexes (see L<raw> function) or by their names (if they are
-described in space).
+described in the space).
 
-Each tuple can contain references to L<next> tuple and L<iter>ator.
-So If You extract more than one tuple, You can access them.
+Each tuple can contain references to L<next> tuple and L<iter>ator,
+so that if the server returns more than one tuple, all of them
+can be accessed.
 
 =head1 METHODS
 
@@ -42,7 +43,7 @@ $Carp::Internal{ (__PACKAGE__) }++;
 
 =head2 new
 
-Constructor.
+A constructor.
 
     my $t = DR::Tarantool::Tuple->new([1, 2, 3]);
     my $t = DR::Tarantool::Tuple->new([1, 2, 3], $space);
@@ -89,7 +90,7 @@ sub _new {
 
 =head2 unpack
 
-Constructor.
+Another way to construct a tuple.
 
     my $t = DR::Tarantool::Tuple->unpack([1, 2, 3], $space);
 
@@ -115,7 +116,7 @@ sub unpack :method {
 
 =head2 raw
 
-Returns raw data from tuple.
+Return raw data from the tuple.
 
     my $array = $tuple->raw;
 
@@ -140,7 +141,8 @@ sub raw :method {
 
 =head2 next
 
-Appends or returns the following tuple.
+Append or return the next tuple, provided there is more than one
+tuple in the result set.
 
     my $next_tuple = $tuple->next;
 
@@ -172,7 +174,7 @@ sub next :method {
 
 =head2 iter
 
-Returns iterator linked with the tuple.
+Return an iterator object associated with the tuple.
 
 
     my $iterator = $tuple->iter;
@@ -192,11 +194,11 @@ Returns iterator linked with the tuple.
 
 =item method (optional)
 
-if 'package' and 'method' are present, $iterator->L<next> method will
-construct objects using C<< $package->$method( $next_tuple ) >>
+If 'package' and 'method' are present, $iterator->L<next> method
+constructs objects using C<< $package->$method( $next_tuple ) >>
 
-if 'method' is not present and 'package' is present, iterator will
-bless raw array into 'package'
+If 'method' is not present and 'package' is present, the iterator
+blesses the  raw array with 'package'.
 
 =back
 
@@ -233,8 +235,8 @@ sub iter :method {
 
 =head2 tail
 
-Returns tail of tuple (array of unnamed fields). The function always
-return B<ARRAYREF> (as L<raw>).
+Return the tail of the tuple (array of unnamed fields). The function always
+returns B<ARRAYREF> (as L<raw>).
 
 =cut
 

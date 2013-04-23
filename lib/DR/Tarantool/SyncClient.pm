@@ -11,7 +11,8 @@ $Carp::Internal{ (__PACKAGE__) }++;
 
 =head1 NAME
 
-DR::Tarantool::SyncClient - sync driver for L<tarantool|http://tarantool.org>
+DR::Tarantool::SyncClient - a synchronous driver for
+L<Tarantool/Box|http://tarantool.org>.
 
 =head1 SYNOPSIS
 
@@ -39,13 +40,13 @@ DR::Tarantool::SyncClient - sync driver for L<tarantool|http://tarantool.org>
 
 =head2 connect
 
-Connects to tarantool.
+Connects to the server.
 
 =head3 Arguments
 
-The same as L<DR::Tarantool::AsyncClient/connect> exclude callback.
+The same as L<DR::Tarantool::AsyncClient/connect>, excluding the callback.
 
-Returns a connector or croaks error.
+Returns a connection handle or croaks an error.
 
 =head3 Additional arguments
 
@@ -53,7 +54,8 @@ Returns a connector or croaks error.
 
 =item raise_error
 
-If B<true> (default behaviour) the driver will throw exception for each error.
+If B<true> (default behaviour) the driver throws an exception for each
+error.
 
 =back
 
@@ -88,44 +90,44 @@ sub connect {
 
 =head2 ping
 
-The same as L<DR::Tarantool::AsyncClient/ping> exclude callback.
+The same as L<DR::Tarantool::AsyncClient/ping>, excluding the callback.
 
-Returns B<TRUE> or B<FALSE> if an error.
+Returns B<true> on success, b<false> in case of an error.
 
 =head2 insert
 
-The same as L<DR::Tarantool::AsyncClient/insert> exclude callback.
+The same as L<DR::Tarantool::AsyncClient/insert>, excluding the callback.
 
-Returns tuples that were extracted from database or undef.
-Croaks error if an error was happened (if B<raise_error> is true).
+Returns the inserted tuple.
+Croaks error if an error occurred (as long as B<raise_error> is true).
 
 =head2 select
 
-The same as L<DR::Tarantool::AsyncClient/select> exclude callback.
+The same as L<DR::Tarantool::AsyncClient/select>, excluding the callback.
 
-Returns tuples that were extracted from database or undef.
-Croaks error if an error was happened (if B<raise_error> is true).
+Returns tuples contained in the server response or undef.
+Croaks error if an error occurred (as long as B<raise_error> is true).
 
 =head2 update
 
-The same as L<DR::Tarantool::AsyncClient/update> exclude callback.
+The same as L<DR::Tarantool::AsyncClient/update>, excluding the callback.
 
-Returns tuples that were extracted from database or undef.
-Croaks error if an error was happened (if B<raise_error> is true).
+Returns the updated tuple.
+Croaks error if an error occurred (as long as B<raise_error> is true).
 
 =head2 delete
 
-The same as L<DR::Tarantool::AsyncClient/delete> exclude callback.
+The same as L<DR::Tarantool::AsyncClient/delete>, excluding the callback.
 
-Returns tuples that were extracted from database or undef.
-Croaks error if an error was happened (if B<raise_error> is true).
+Returns the deleted tuple or undef.
+Croaks error if an error occurred (as long as B<raise_error> is true).
 
 =head2 call_lua
 
-The same as L<DR::Tarantool::AsyncClient/call_lua> exclude callback.
+The same as L<DR::Tarantool::AsyncClient/call_lua>, excluding the callback.
 
-Returns tuples that were extracted from database or undef.
-Croaks error if an error was happened (if B<raise_error> is true).
+Returns tuples contained in the server response or undef.
+Croaks error if an error occurred (as long as B<raise_error> is true).
 
 =cut
 

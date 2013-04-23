@@ -125,7 +125,7 @@ how to describe a schema.
 The callback passed to connect() gets invoked after a connection
 is established. The only argument of the callback is the newly
 established connection handle. The handle's type is
-DR::Tarantool::AsyncClient.
+L<DR::Tarantool::AsyncClient>.
 
 =head3 L<DR::Tarantool::CoroClient> and L<DR::Tarantool::SyncClient>
 

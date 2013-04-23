@@ -10,7 +10,7 @@ my $LE = $] > 5.01 ? '<' : '';
 
 =head1 NAME
 
-DR::Tarantool::Spaces - spaces container
+DR::Tarantool::Spaces - Tarantool/Box schema description 
 
 =head1 SYNOPSIS
 
@@ -63,28 +63,29 @@ DR::Tarantool::Spaces - spaces container
 
 =head1 DESCRIPTION
 
-The package describes all spaces that You use. It supports the following
-field types:
+The package describes all spaces used in an application.
+It supports the following field types:
 
 =over
 
 =item NUM, NUM64, STR
 
-- standard L<tarantool|http://tarantool.org> types.
+The standard L<Tarantool|http://tarantool.org> types.
 
 =item UTF8STR
 
-- the same as B<STR>, but string will be utf8-decoded after extracting
-from database.
+The same as B<STR>, but the string is utf8-decoded 
+after it's received from the server.
 
 =item INT & INT64
 
-- the same as B<NUM> and B<NUM64>, but contain signed values.
+The same as B<NUM> and B<NUM64>, but contain signed values.
 
 =item JSON
 
-- the filed will be encoded by L<JSON::XS> before inserting and decoded
-after extracting from database.
+The field is encoded with L<JSON::XS> when putting
+into a database, and decoded after is received back 
+from the server.
 
 =back
 
@@ -117,7 +118,7 @@ sub new {
 
 =head2 space
 
-Returns space object by number or name.
+Return space object by number or name.
 
     my $space = $spaces->space('name');
     my $space = $spaces->space(0);
@@ -140,7 +141,7 @@ sub space {
 
 =head2 space_number
 
-Returns space number by its name.
+Return space number by its name.
 
 =cut
 
@@ -152,7 +153,7 @@ sub space_number {
 
 =head2 pack_field
 
-packs one field before making database request
+Packs one field into a format suitable for making a database request:
 
     my $field = $spaces->pack_field('space', 'field', $data);
 
@@ -168,7 +169,7 @@ sub pack_field {
 
 =head2 unpack_field
 
-unpacks one field after extracting data from database
+Unpack one field after getting it from the server:
 
     my $field = $spaces->unpack_field('space', 'field', $data);
 
@@ -185,7 +186,7 @@ sub unpack_field {
 
 =head2 pack_tuple
 
-packs tuple before making database request
+Pack a tuple before making database request.
 
     my $t = $spaces->pack_tuple('space', [ 1, 2, 3 ]);
 
@@ -200,7 +201,7 @@ sub pack_tuple {
 
 =head2 unpack_tuple
 
-unpacks tuple after extracting data from database
+Unpack a tuple after getting it from the database: 
 
     my $t = $spaces->unpack_tuple('space', \@fields);
 
@@ -336,9 +337,10 @@ sub new {
 
 =head2 tuple_class
 
-Creates (or returns) class for storage tuples. The class will be child of
-L<DR::Tarantool::Tuple>. Returns unique class (package) name. If package
-is already exists, the method won't recreate it.
+Create (or return) a class to hold tuple data.
+The class is a descendant of L<DR::Tarantool::Tuple>. Returns a unique class
+(package) name. If a package with such name is already exists, the method
+doesn't recreate it.
 
 =cut
 
@@ -366,7 +368,7 @@ sub tuple_class {
 
 =head2 name
 
-returns space name
+Get a space name.
 
 =cut
 
@@ -375,7 +377,7 @@ sub name { $_[0]{name} }
 
 =head2 number
 
-returns space number
+Get a space number.
 
 =cut
 
@@ -397,7 +399,7 @@ sub _field {
 
 =head2 field_number
 
-Returns number of field by its name.
+Return field index by field name.
 
 =cut
 
@@ -411,7 +413,7 @@ sub field_number {
 
 =head2 tail_index
 
-Returns index of the first element that is not described in the space.
+Return index of the first element that is not described in the space.
 
 =cut
 
@@ -423,7 +425,7 @@ sub tail_index {
 
 =head2 pack_field
 
-packs field before making database request
+Pack a field before making a database request.
 
 =cut
 
@@ -477,7 +479,7 @@ sub pack_field {
 
 =head2 unpack_field
 
-unpacks field after extracting data from database
+Unpack a single field in a server response.
 
 =cut
 
@@ -522,7 +524,7 @@ sub unpack_field {
 
 =head2 pack_tuple
 
-packs tuple before making database request
+Pack a tuple to the binary protocol format:
 
 =cut
 
@@ -539,7 +541,7 @@ sub pack_tuple {
 
 =head2 unpack_tuple
 
-unpacks tuple after extracting data from database
+Unpack a tuple in a server response.
 
 =cut
 
