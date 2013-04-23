@@ -89,8 +89,8 @@ sub _split_args {
 
 =head2 connect
 
-Connects to L<tarantool:http://tarantool.org>, returns (by callback)
-object that can be used to make requests.
+Connects to L<Tarantool:http://tarantool.org>, returns (by callback)
+an object which can be used to make requests.
 
     DR::Tarantool::AsyncClient->connect(
         host                => $host,
@@ -117,7 +117,7 @@ Address where tarantool is started.
 
 =item spaces
 
-A hash with spaces description or L<DR::Tarantool::Spaces> reference.
+A hash with space description or a L<DR::Tarantool::Spaces> reference.
 
 =item reconnect_period & reconnect_always
 
@@ -176,7 +176,7 @@ sub connect {
 
 =head2 space
 
-Returns space object by name (or by number). See perldoc
+Returns a space object by space name or numeric id. See perldoc
 L<DR::Tarantool::Spaces> for more details.
 
 =cut
@@ -215,22 +215,24 @@ sub _cb_default {
 
 =head1 Worker methods
 
-All methods receive callbacks that will receive the following arguments:
+All methods accept callbacks which are invoked with the following arguments:
 
 =over
 
 =item status
 
-If success the field will have value 'B<ok>'.
+On success, this field has value 'B<ok>'. The value
+of this parameter determines the contents of the rest of the callback
+arguments.
 
-=item tuple(s) or code of error
+=item  a tuple or tuples or an error code
 
-If success, the second argument will contain tuple(s) that extracted by
-request.
+On success, the second argument contains tuple(s) produced by
+the request. On error, it contains the server error code.
 
 =item errorstr
 
-Error string if error was happened.
+Error string in case of an error.
 
 =back
 
@@ -247,7 +249,7 @@ Error string if error was happened.
 
 =head2 ping
 
-Pings server.
+Ping the server.
 
     $client->ping(sub { ... });
 
@@ -270,7 +272,7 @@ sub ping {
 
 =head2 insert
 
-Inserts tuple into database.
+Insert a tuple into a space.
 
     $client->insert('space', [ 'user', 10, 'password' ], sub { ... });
     $client->insert('space', \@tuple, $flags, sub { ... });
@@ -286,7 +288,7 @@ Inserts tuple into database.
 
 =item flags (optional)
 
-Flag list described in perldoc L<DR::Tarantool/:constant>.
+Possible flags are described in perldoc L<DR::Tarantool/:constant>.
 
 =item callback
 
@@ -318,8 +320,9 @@ sub insert {
 
 =head2 call_lua
 
-Calls lua function. All arguments translates to lua as strings (As is).
-Returned tuples can be unpacked by space or by format.
+Call a Lua function. All arguments are passed to Lua as binary strings.
+Returned tuples can be unpacked using either a space description
+or a format specification.
 
 
     $client->call_lua(foo => ['arg1', 'arg2'], sub {  });
@@ -346,7 +349,13 @@ Returned tuples can be unpacked by space or by format.
 
 =item function arguments
 
-=item space name or the other optional arguments
+=item space or fields
+
+Is optional. If given, this space description
+will be used to interpret contents of tuples
+returned by the procedure. Alternatively, instead
+of providing a reference to a space, the format
+can be set explicitly with B<fields> argument.
 
 =item callback
 
@@ -358,12 +367,12 @@ Returned tuples can be unpacked by space or by format.
 
 =item space
 
-Space name. Use the argument if Your function returns tuple(s) from a
-described in L<connect> space.
+Space name. Use the argument if your function returns tuple(s) from a
+space described on L<connect>.
 
 =item fields
 
-Output fields format (like 'B<fields>' in L<connect> method).
+Output format of the returned tuple (like 'B<fields>' in L<connect> method).
 
 =item flags
 
@@ -371,7 +380,7 @@ Reserved option.
 
 =item args
 
-Argument fields format.
+Format description for stored procedure arguments.
 
 =back
 
@@ -439,7 +448,7 @@ sub call_lua {
 
 =head2 select
 
-Selects tuple(s) from database.
+Select a tuple from a space by index.
 
     $tuples = $client->select('space', 1, sub { ... });
     $tuples = $client->select('space', [1, 2], sub { ... });
@@ -463,8 +472,8 @@ Selects tuple(s) from database.
 
 =head3 optional arguments
 
-The section can contain only one element: index name, or hash with the
-following fields:
+This section can contain only one element, which is either an index name,
+or a hash with the following fields:
 
 =over
 
@@ -518,10 +527,12 @@ sub select {
 
 =head2 delete
 
-Deletes tuple.
+Delete a tuple.
 
     $client->delete('space', 1, sub { ... });
     $client->delete('space', $key, $flags, sub { ... });
+
+Tuple is always deleted by primary key.
 
 =head3 Arguments
 
@@ -533,7 +544,7 @@ Deletes tuple.
 
 =item flags (optional)
 
-Flag list described in perldoc L<DR::Tarantool/:constant>.
+Server flags, as described in perldoc L<DR::Tarantool/:constant>.
 
 =item callback
 
@@ -561,7 +572,7 @@ sub delete :method {
 
 =head2 update
 
-Updates tuple.
+Update a tuple.
 
     $client->update('space', 1, [ passwd => set => 'abc' ], sub { .. });
     $client->update(
@@ -579,11 +590,11 @@ Updates tuple.
 
 =item key
 
-=item operations list
+=item operation list
 
 =item flags (optional)
 
-Flag list described in perldoc L<DR::Tarantool/:constant>.
+Server flags, as described in perldoc L<DR::Tarantool/:constant>.
 
 =item callback
 
@@ -613,7 +624,8 @@ sub update {
 
 =head2 last_code
 
-Returns code of last operation (see L<DR::Tarantool::LLClient/last_code>).
+The error code returned by the last request
+(see L<DR::Tarantool::LLClient/last_code>).
 
 =cut
 
@@ -622,8 +634,9 @@ sub last_code { $_[0]->_llc->last_code }
 
 =head2 last_error_string
 
-Returns error message of last operation
-(see L<DR::Tarantool::LLClient/last_error_string>)
+The error message associated with the last request
+(see L<DR::Tarantool::LLClient/last_error_string>), if
+there was an error.
 
 =cut
 
