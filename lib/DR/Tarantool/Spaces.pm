@@ -10,7 +10,7 @@ my $LE = $] > 5.01 ? '<' : '';
 
 =head1 NAME
 
-DR::Tarantool::Spaces - Tarantool/Box schema description 
+DR::Tarantool::Spaces - Tarantool schema description 
 
 =head1 SYNOPSIS
 

@@ -35,7 +35,7 @@ L<Tarantool|http://tarantool.org>
 
 =head2 connect
 
-Connects to Tarantool/Box.
+Connects to Tarantool.
 
 =head3 Arguments
 

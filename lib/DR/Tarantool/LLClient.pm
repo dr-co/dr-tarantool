@@ -118,7 +118,7 @@ my $LE = $] > 5.01 ? '<' : '';
 
 =head2 connect
 
-Creates a connection to L<Tarantool/Box| http://tarantool.org>
+Creates a connection to L<Tarantool| http://tarantool.org>
 
     DR::Tarantool::LLClient->connect(
         host => '127.0.0.1',

@@ -2,7 +2,7 @@ package DR::Tarantool;
 
 =head1 NAME
 
-DR::Tarantool - a Perl driver for L<Tarantool/Box|http://tarantool.org>
+DR::Tarantool - a Perl driver for L<Tarantool|http://tarantool.org>
 
 
 =head1 SYNOPSIS
@@ -46,10 +46,10 @@ DR::Tarantool - a Perl driver for L<Tarantool/Box|http://tarantool.org>
 =head1 DESCRIPTION
 
 This module provides a synchronous and asynchronous driver for
-L<Tarantool/Box|http://tarantool.org>.
+L<Tarantool|http://tarantool.org>.
 
 The driver does not have external dependencies, but includes the
-official light-weight Tarantool/Box C client (a single C header which
+official light-weight Tarantool C client (a single C header which
 implements all protocol formatting) for packing requests and unpacking
 server responses.
 
@@ -90,7 +90,7 @@ different coroutines are served concurrently.
 
 =back
 
-L<Tarantool/Box|http://tarantool.org> binary protocol
+L<Tarantool|http://tarantool.org> binary protocol
 contains no representation of database schema or tuple field types.
 Due to this deficiency, to easily integrate with Perl and automatically
 convert tuple fields to Perl values, the driver needs to know field names
@@ -232,7 +232,7 @@ Invoke a Lua stored procedure by name.
 
 =head2 Supported data types
 
-The driver supports all Tarantool/Box types (B<NUM>, B<NUM64>, B<STR>),
+The driver supports all Tarantool types (B<NUM>, B<NUM64>, B<STR>),
 as well as some client-only types, which are converted to the
 above server types automatically on the client:
 
@@ -260,7 +260,7 @@ L<JSON::XS> on insertion, and deserialized on selection.
 
 =back
 
-The basic data transfer unit in Tarantool/Box protocol is a single
+The basic data transfer unit in Tarantool protocol is a single
 tuple. A selected tuple is automatically wrapped into an instance
 of class L<DR::Tarantool::Tuple>. An object of this class can be
 used as an associative container, in which any field can be
@@ -315,7 +315,7 @@ our $VERSION = '0.36';
 
 =head2 tarantool
 
-connects to L<Tarantool/Box|http://tarantool.org> in synchronous mode
+connects to L<Tarantool|http://tarantool.org> in synchronous mode
 using L<DR::Tarantool::SyncClient>.
 
 =cut

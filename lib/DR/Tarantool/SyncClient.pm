@@ -12,7 +12,7 @@ $Carp::Internal{ (__PACKAGE__) }++;
 =head1 NAME
 
 DR::Tarantool::SyncClient - a synchronous driver for
-L<Tarantool/Box|http://tarantool.org>.
+L<Tarantool|http://tarantool.org>.
 
 =head1 SYNOPSIS
 
