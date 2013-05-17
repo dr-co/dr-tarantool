@@ -212,7 +212,7 @@ Insert a field before the given field.
 
 =item delete
 
-Delete a field by index.
+Delete a field.
 
 =item push
 
@@ -409,7 +409,7 @@ Exports all functions and constants.
 
 =item *
 
-Support push, pop, delete in UPDATE.
+Support push, pop in UPDATE.
 
 =item *
 
