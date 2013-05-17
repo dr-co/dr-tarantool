@@ -19,6 +19,10 @@ inline static void hash_ssave(HV *h, const char *k, const char *v) {
 	hv_store( h, k, strlen(k), newSVpvn( v, strlen(v) ), 0 );
 }
 
+inline static void hash_scsave(HV *h, const char *k, SV *sv) {
+	hv_store( h, k, strlen(k), sv, 0);
+}
+
 inline static void hash_isave(HV *h, const char *k, uint32_t v) {
 	hv_store( h, k, strlen(k), newSViv( v ), 0 );
 }
@@ -364,7 +368,8 @@ HV * _pkt_parse_response( response )
 					err = newSVpvn("", 0);
 				}
 
-				hv_stores(RETVAL, "errstr", err);
+				hash_scsave(RETVAL, "errstr", err);
+				//hv_stores(RETVAL, "errstr", err);
 			}
 		}
 	OUTPUT:
