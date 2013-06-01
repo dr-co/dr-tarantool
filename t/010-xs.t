@@ -7,7 +7,7 @@ use open qw(:std :utf8);
 use lib qw(lib ../lib);
 use lib qw(blib/lib blib/arch ../blib/lib ../blib/arch);
 
-use Test::More tests    => 216;
+use Test::More tests    => 336;
 use Encode qw(decode encode);
 
 
@@ -200,3 +200,49 @@ for my $bin (sort @bins) {
     }
 }
 
+
+for (1 .. 30) {
+    my $body = join '', map { chr int rand 256 } 1 .. (300 + int rand 300);
+    my $pkt =
+        pack 'LLLLa*',
+            TNT_SELECT,
+            length $body,
+            int rand 500,
+            0,
+            $body
+        ;
+    $res = DR::Tarantool::_pkt_parse_response( $pkt );
+    is $res->{status}, 'buffer', "Broken package $_";
+    $pkt =
+        pack 'LLLLa*',
+            TNT_SELECT,
+            10 + length $body,
+            int rand 500,
+            0,
+            $body
+        ;
+    $res = DR::Tarantool::_pkt_parse_response( $pkt );
+    is $res->{status}, 'buffer', "Broken package $_, too long body";
+    
+    $pkt =
+        pack 'LLLLa*',
+            TNT_SELECT,
+            -10 + length $body,
+            int rand 500,
+            0,
+            $body
+        ;
+    $res = DR::Tarantool::_pkt_parse_response( $pkt );
+    is $res->{status}, 'buffer', "Broken package $_, too short body";
+    
+    $pkt =
+        pack 'LLLLa*',
+            TNT_SELECT,
+            int rand 500,
+            int rand 500,
+            0,
+            ''
+        ;
+    $res = DR::Tarantool::_pkt_parse_response( $pkt );
+    is $res->{status}, 'buffer', "Broken package $_, zero length body";
+}

@@ -647,6 +647,8 @@ tp_next(struct tp *p) {
 	p->t = tp_tupleend(p) + 4;
 fetch:
 	p->tsz = *(uint32_t*)(p->t - 4);
+	if (tp_unlikely(p->t + p->tsz > p->e))
+		return -1;
 	p->f = NULL;
 	return 1;
 }
@@ -665,6 +667,8 @@ tp_nextfield(struct tp *p) {
 	p->f += p->fsz;
 fetch:;
 	register int rc = tp_leb128load(p, &p->fsz);
+	if (tp_unlikely(p->f + p->fsz > p->e))
+		return -1;
 	if (tp_unlikely(rc == -1))
 		return -1;
 	return 1;
