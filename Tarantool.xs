@@ -52,19 +52,29 @@ inline static void tp_av_tuple(struct tp *req, AV *tuple) {
 }
 
 
-inline static void fetch_tuples( HV * ret, struct tp * rep ) {
-    AV * tuples = newAV();
-    hv_store( ret, "tuples", 6, newRV_noinc( ( SV * ) tuples ), 0 );
+inline static int fetch_tuples( HV * ret, struct tp * rep ) {
+	AV * tuples = newAV();
+	hv_store( ret, "tuples", 6, newRV_noinc( ( SV * ) tuples ), 0 );
 
-    while ( tp_next(rep) ) {
-        AV * t = newAV();
-        av_push( tuples, newRV_noinc( ( SV * ) t ) );
+	int code;
+	while ( (code = tp_next(rep)) ) {
 
-        while(tp_nextfield(rep)) {
-            SV * f = newSVpvn( tp_getfield(rep), tp_getfieldsize(rep) );
-            av_push( t, f );
-        }
-    }
+		if (code < 0)
+			return code;
+
+		AV * t = newAV();
+		av_push( tuples, newRV_noinc( ( SV * ) t ) );
+
+		while((code = tp_nextfield(rep))) {
+			if (code < 0)
+				return code;
+			SV * f = newSVpvn(
+				tp_getfield(rep), tp_getfieldsize(rep)
+			);
+			av_push( t, f );
+		}
+	}
+	return 0;
 }
 
 
@@ -342,9 +352,6 @@ HV * _pkt_parse_response( response )
 		if (code == -1) {
  			hash_ssave(RETVAL, "status", "buffer");
  			hash_ssave(RETVAL, "errstr", "Input data too short");
-//			hash_ssave(RETVAL, "status", "fatal");
-//			hash_ssave(RETVAL, "errstr",
-//					"Can't parse server response");
 		} else if (code >= 0) {
 			uint32_t type = tp_replyop(&rep);
 			hash_isave(RETVAL, "code", tp_replycode(&rep) );
@@ -353,8 +360,14 @@ HV * _pkt_parse_response( response )
 			hash_isave(RETVAL, "count", tp_replycount(&rep) );
 			if (code == 0) {
 			    if (type != TP_PING)
-			        fetch_tuples(RETVAL, &rep);
-                            hash_ssave(RETVAL, "status", "ok");
+			        code = fetch_tuples(RETVAL, &rep);
+			        if (code != 0) {
+ 					hash_ssave(RETVAL, "status", "buffer");
+ 					hash_ssave(RETVAL, "errstr",
+ 						"Broken response");
+				} else {
+					hash_ssave(RETVAL, "status", "ok");
+				}
 			} else {
 				hash_ssave(RETVAL, "status", "error");
 				size_t el = tp_replyerrorlen(&rep);
@@ -369,7 +382,6 @@ HV * _pkt_parse_response( response )
 				}
 
 				hash_scsave(RETVAL, "errstr", err);
-				//hv_stores(RETVAL, "errstr", err);
 			}
 		}
 	OUTPUT:
