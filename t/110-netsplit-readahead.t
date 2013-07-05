@@ -141,7 +141,7 @@ SKIP: {
                 cmp_ok $done_time, '>=', $period, 'delay minimum';
                 cmp_ok $done_time, '<', $period + .2, 'delay maximum';
                 $max = $done_time if $max < $done_time;
-                cmp_ok $tuple->raw(1), '~~', $tlen, 'Length of tuple';
+                is $tuple->raw(1), $tlen, 'Length of tuple';
                 $cv->end;
             });
 
