@@ -19,6 +19,7 @@ WriteMakefile(
     META_MERGE => {
         resources => {
             homepage   => 'https://github.com/dr-co/dr-tarantool',
+            repository => 'https://github.com/dr-co/dr-tarantool',
             bugtracker => 'https://github.com/dr-co/dr-tarantool/issues',
         }
     },
