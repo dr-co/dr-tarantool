@@ -178,9 +178,11 @@ sub _restart {
     }
 
     for (my $i = 0; $i < 100; $i++) {
-        last if $self->log =~ /I'm/;
+        last if $self->log =~ /entering event loop/;
         sleep 0.01;
     }
+
+    sleep 1 unless $self->log =~ /entering event loop/;
 }
 
 sub restart {
