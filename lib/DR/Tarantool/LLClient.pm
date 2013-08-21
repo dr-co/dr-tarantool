@@ -284,11 +284,42 @@ Ping the server.
 
 sub ping :method {
     my ($self, $cb) = @_;
-    $self->_check_cb( $cb );
     my $id = $self->_req_id;
+    $self->_check_cb( $cb );
     my $pkt = DR::Tarantool::_pkt_ping( $id );
-    $self->_request( $id, $pkt, $cb );
-    return;
+
+    if ($self->is_connected) {
+        $self->_request( $id, $pkt, $cb );
+        return;
+    }
+    
+    unless($self->{reconnect_period}) {
+        $cb->({
+                status  => 'fatal',
+                req_id  => $id,
+                errstr  => "Connection isn't established (yet)"
+            }
+        );
+        return;
+    }
+
+    my $this = $self;
+    weaken $this;
+
+    my $tmr;
+    $tmr = AE::timer $self->{reconnect_period}, 0, sub {
+        undef $tmr;
+        if ($this and $this->is_connected) {
+            $this->_request( $id, $pkt, $cb );
+            return;
+        }
+        $cb->({
+                status  => 'fatal',
+                req_id  => $id,
+                errstr  => "Connection isn't established (yet)"
+            }
+        );
+    };
 }
 
 
