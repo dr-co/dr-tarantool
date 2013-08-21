@@ -176,6 +176,11 @@ sub _restart {
 
         sleep 0.01;
     }
+
+    for (my $i = 0; $i < 100; $i++) {
+        last if $self->log =~ /I'm/;
+        sleep 0.01;
+    }
 }
 
 sub restart {
