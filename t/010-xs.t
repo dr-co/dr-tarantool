@@ -200,7 +200,8 @@ for my $bin (sort @bins) {
     }
 }
 
-
+SKIP: {
+    skip 'Devel tests $ENV{DEVEL_TEST}=0', 120 unless $ENV{DEVEL_TEST};
 for (1 .. 30) {
     my $body = join '', map { chr int rand 256 } 1 .. (300 + int rand 300);
     my $pkt =
@@ -245,4 +246,5 @@ for (1 .. 30) {
         ;
     $res = DR::Tarantool::_pkt_parse_response( $pkt );
     is $res->{status}, 'buffer', "Broken package $_, zero length body";
+}
 }
