@@ -7,7 +7,7 @@ use open qw(:std :utf8);
 use lib qw(lib ../lib);
 use lib qw(blib/lib blib/arch ../blib/lib ../blib/arch);
 
-use Test::More tests    => 336;
+use Test::More tests    => 335;
 use Encode qw(decode encode);
 
 
@@ -32,7 +32,7 @@ like TNT_PING,              qr{^\d+$}, 'TNT_PING';
 like TNT_FLAG_RETURN,       qr{^\d+$}, 'TNT_FLAG_RETURN';
 like TNT_FLAG_ADD,          qr{^\d+$}, 'TNT_FLAG_ADD';
 like TNT_FLAG_REPLACE,      qr{^\d+$}, 'TNT_FLAG_REPLACE';
-like TNT_FLAG_BOX_QUIET,    qr{^\d+$}, 'TNT_FLAG_BOX_QUIET';
+# like TNT_FLAG_BOX_QUIET,    qr{^\d+$}, 'TNT_FLAG_BOX_QUIET';
 # like TNT_FLAG_NOT_STORE,    qr{^\d+$}, 'TNT_FLAG_NOT_STORE';
 
 my $LE = $] > 5.01 ? '<' : '';
@@ -201,7 +201,7 @@ for my $bin (sort @bins) {
 }
 
 SKIP: {
-    skip 'Devel tests $ENV{DEVEL_TEST}=0', 120 unless $ENV{DEVEL_TEST};
+#     skip 'Devel tests $ENV{DEVEL_TEST}=0', 120 unless $ENV{DEVEL_TEST};
 for (1 .. 30) {
     my $body = join '', map { chr int rand 256 } 1 .. (300 + int rand 300);
     my $pkt =
@@ -213,6 +213,7 @@ for (1 .. 30) {
             $body
         ;
     $res = DR::Tarantool::_pkt_parse_response( $pkt );
+    note explain $res unless
     is $res->{status}, 'buffer', "Broken package $_";
     $pkt =
         pack 'LLLLa*',
@@ -223,6 +224,7 @@ for (1 .. 30) {
             $body
         ;
     $res = DR::Tarantool::_pkt_parse_response( $pkt );
+    note explain $res unless
     is $res->{status}, 'buffer', "Broken package $_, too long body";
     
     $pkt =
@@ -234,6 +236,7 @@ for (1 .. 30) {
             $body
         ;
     $res = DR::Tarantool::_pkt_parse_response( $pkt );
+    note explain $res unless
     is $res->{status}, 'buffer', "Broken package $_, too short body";
     
     $pkt =
@@ -245,6 +248,7 @@ for (1 .. 30) {
             ''
         ;
     $res = DR::Tarantool::_pkt_parse_response( $pkt );
+    note explain $res unless
     is $res->{status}, 'buffer', "Broken package $_, zero length body";
 }
 }

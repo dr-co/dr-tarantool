@@ -301,7 +301,7 @@ our %EXPORT_TAGS = (
     constant    => [
         qw(
             TNT_INSERT TNT_SELECT TNT_UPDATE TNT_DELETE TNT_CALL TNT_PING
-            TNT_FLAG_RETURN TNT_FLAG_ADD TNT_FLAG_REPLACE TNT_FLAG_BOX_QUIET
+            TNT_FLAG_RETURN TNT_FLAG_ADD TNT_FLAG_REPLACE
         )
     ],
 );
@@ -309,7 +309,7 @@ our %EXPORT_TAGS = (
 our @EXPORT_OK = ( map { @$_ } values %EXPORT_TAGS );
 $EXPORT_TAGS{all} = \@EXPORT_OK;
 our @EXPORT = @{ $EXPORT_TAGS{client} };
-our $VERSION = '0.39';
+our $VERSION = '0.40';
 
 =head1 EXPORT
 

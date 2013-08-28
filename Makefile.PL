@@ -33,6 +33,6 @@ WriteMakefile(
     LICENSE           => 'artistic',
 );
 
-if (open my $fh, '>>', 'Makefile') {
-    print $fh "\n\nTEST_VERBOSE=1\n";
-}
+# if (open my $fh, '>>', 'Makefile') {
+#     print $fh "\n\nTEST_VERBOSE=1\n";
+# }

@@ -58,3 +58,7 @@ st/Check/Ping.pm
 st/Check/OneTree.pm
 st/Check/OneHash.pm
 st/stress.cfg
+lib/DR/Tarantool/LLSyncClient.pm
+lib/DR/Tarantool/RealSync.pm
+t/025-ll_synclient.t
+t/065-realsync-client.t
