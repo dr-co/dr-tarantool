@@ -27,3 +27,6 @@ tarball:
 		-czf libdr-tarantool-perl_$(DEBVERSION).orig.tar.gz \
 		libdr-tarantool-perl-$(DEBVERSION)
 
+
+DEB_INSTALL_CHANGELOGS_ALL :=
+DEB_DH_INSTALLCHANGELOGS_ARGS := -XChanges
