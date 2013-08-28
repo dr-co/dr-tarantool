@@ -213,7 +213,7 @@ for (1 .. 30) {
             $body
         ;
     $res = DR::Tarantool::_pkt_parse_response( $pkt );
-    note explain $res unless
+    diag explain $res unless
     is $res->{status}, 'buffer', "Broken package $_";
     $pkt =
         pack 'LLLLa*',
@@ -224,7 +224,7 @@ for (1 .. 30) {
             $body
         ;
     $res = DR::Tarantool::_pkt_parse_response( $pkt );
-    note explain $res unless
+    diag explain $res unless
     is $res->{status}, 'buffer', "Broken package $_, too long body";
     
     $pkt =
@@ -236,7 +236,7 @@ for (1 .. 30) {
             $body
         ;
     $res = DR::Tarantool::_pkt_parse_response( $pkt );
-    note explain $res unless
+    diag explain $res unless
     is $res->{status}, 'buffer', "Broken package $_, too short body";
     
     $pkt =
@@ -248,7 +248,7 @@ for (1 .. 30) {
             ''
         ;
     $res = DR::Tarantool::_pkt_parse_response( $pkt );
-    note explain $res unless
+    diag explain $res unless
     is $res->{status}, 'buffer', "Broken package $_, zero length body";
 }
 }

@@ -891,7 +891,7 @@ sub _check_operations {
 =head1 VCS
 
 The project is placed git repo on github:
-L<https://github.com/unera/dr-tarantool/>.
+L<https://github.com/dr-co/dr-tarantool/>.
 
 =cut
 

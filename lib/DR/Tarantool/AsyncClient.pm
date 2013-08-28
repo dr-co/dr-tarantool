@@ -654,7 +654,7 @@ sub last_error_string { $_[0]->_llc->last_error_string }
 =head1 VCS
 
 The project is placed git repo on github:
-L<https://github.com/unera/dr-tarantool/>.
+L<https://github.com/dr-co/dr-tarantool/>.
 
 =cut
 

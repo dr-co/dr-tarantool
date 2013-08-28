@@ -330,6 +330,23 @@ sub tarantool {
 }
 
 
+=head2 rsync_tarantool
+
+connects to L<Tarantool|http://tarantool.org> in synchronous mode
+using L<DR::Tarantool::RealSyncClient>.
+
+=cut
+
+sub rsync_tarantool {
+    require DR::Tarantool::RealSyncClient;
+    no warnings 'redefine';
+    *rsync_tarantool = sub {
+        DR::Tarantool::RealSyncClient->connect(@_);
+    };
+    goto \&rsync_tarantool;
+}
+
+
 =head2 async_tarantool
 
 connects to L<tarantool|http://tarantool.org> in async mode using

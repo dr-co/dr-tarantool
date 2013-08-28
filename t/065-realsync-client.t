@@ -26,7 +26,7 @@ BEGIN {
     use_ok 'File::Spec::Functions', 'catfile';
     use_ok 'File::Basename', 'dirname', 'basename';
     use_ok 'AnyEvent';
-    use_ok 'DR::Tarantool::RealSync';
+    use_ok 'DR::Tarantool::RealSyncClient';
 }
 
 my $cfg_dir = catfile dirname(__FILE__), 'test-data';
@@ -75,12 +75,12 @@ SKIP: {
         skip "tarantool isn't started", PLAN - 9;
     }
 
-    my $client = DR::Tarantool::RealSync->connect(
+    my $client = DR::Tarantool::RealSyncClient->connect(
         port    => $tnt->primary_port,
         spaces  => $spaces
     );
 
-    isa_ok $client => 'DR::Tarantool::RealSync';
+    isa_ok $client => 'DR::Tarantool::RealSyncClient';
     is $client->last_code, undef, 'last_code';
     is $client->last_error_string, undef, 'last_error_string';
 

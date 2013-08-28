@@ -2,7 +2,57 @@ use utf8;
 use strict;
 use warnings;
 
-package DR::Tarantool::RealSync;
+package DR::Tarantool::RealSyncClient;
+
+
+=head1 NAME
+
+DR::Tarantool::RealSyncClient - a synchronous driver for L<Tarantool/Box|http://tarantool.org>
+
+=head1 SYNOPSIS
+
+    my $client = DR::Tarantool::RealSyncClient->connect(
+        port    => $tnt->primary_port,
+        spaces  => $spaces
+    );
+
+    if ($client->ping) { .. };
+
+    my $t = $client->insert(
+        first_space => [ 1, 'val', 2, 'test' ], TNT_FLAG_RETURN
+    );
+
+    $t = $client->call_lua('luafunc' =>  [ 0, 0, 1 ], 'space_name');
+
+    $t = $client->select(space_name => $key);
+
+    $t = $client->update(space_name => 2 => [ name => set => 'new' ]);
+
+    $client->delete(space_name => $key);
+
+
+=head1 DESCRIPTION
+
+The module is a clone of L<DR::Tarantool::SyncClient> but it doesn't
+use L<AnyEvent> or L<Coro>.
+
+The module uses L<IO::Socket> sockets.
+
+=head1 COPYRIGHT AND LICENSE
+
+ Copyright (C) 2011 Dmitry E. Oboukhov <unera@debian.org>
+ Copyright (C) 2011 Roman V. Nikolaev <rshadow@rambler.ru>
+
+ This program is free software, you can redistribute it and/or
+ modify it under the terms of the Artistic License.
+
+=head1 VCS
+
+The project is placed git repo on github:
+L<|https://github.com/dr-co/dr-tarantool/>.
+
+=cut
+
 use DR::Tarantool::LLSyncClient;
 use DR::Tarantool::Spaces;
 use DR::Tarantool::Tuple;
