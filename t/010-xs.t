@@ -242,13 +242,16 @@ for (1 .. 30) {
     $pkt =
         pack 'LLLLa*',
             TNT_SELECT,
-            int rand 500,
-            int rand 500,
+            5 + int rand 500,
+            5 + int rand 500,
             0,
             ''
         ;
+
+    my $pkth = join '', map { sprintf '.%02x', ord $_ } split //, $pkt;
+    
     $res = DR::Tarantool::_pkt_parse_response( $pkt );
-    diag explain $res unless
+    diag explain [ $res, $pkth, TNT_SELECT ] unless
     is $res->{status}, 'buffer', "Broken package $_, zero length body";
 }
 }
