@@ -7,7 +7,16 @@ use open qw(:std :utf8);
 use lib qw(lib ../lib);
 use lib qw(blib/lib blib/arch ../blib/lib ../blib/arch);
 
-use Test::More tests    => 17;
+use constant PLAN => 17;
+BEGIN {
+    use Test::More;
+    
+    $ENV{TARANTOOL_BOX} ||= 'tarantool_box';
+    plan skip_all => 'Tarantool is not found'
+        if $ENV{SKIP_TNT} or !qx[which $ENV{TARANTOOL_BOX} ];
+    plan tests    => PLAN;
+
+}
 use Encode qw(decode encode);
 
 

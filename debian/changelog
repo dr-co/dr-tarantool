@@ -1,3 +1,10 @@
+libdr-tarantool-perl (0.42-1) unstable; urgency=low
+
+  * Rebuild for Debian perl 5.18.
+  * Fix some cpan tests (that are run without tarantool).
+
+ -- Dmitry E. Oboukhov <unera@debian.org>  Wed, 18 Sep 2013 01:37:52 +0400
+
 libdr-tarantool-perl (0.41-1) unstable; urgency=low
 
   * Fix broken xs-test (by cpan testers reports).
