@@ -13,6 +13,9 @@
 #include "XSUB.h"
 #include "tp.h"
 
+extern void _mpack_item(SV *res, SV *o);
+extern const char *_munpack_item(const char *p, size_t len, SV **res, HV *ext);
+
 #define PREALLOC_SCALAR_SIZE		0
 
 inline static void hash_ssave(HV *h, const char *k, const char *v) {
@@ -447,3 +450,28 @@ unsigned TNT_FLAG_REPLACE()
 
 
 
+SV * _msgpack(o)
+	SV *o
+	CODE:
+		SV *res = newSVpvn("", 0);
+		RETVAL = res;
+
+		_mpack_item(res, o);
+	OUTPUT:
+		RETVAL
+
+SV * _msgunpack(str, ...)
+	SV *str
+	PROTOTYPE: $;$
+	CODE:
+		SV *sv = 0;
+		size_t len;
+		const char *s = SvPV(str, len);
+		if (items > 1)
+			_munpack_item(s, len, &sv, (HV *)ST(1));
+		else
+			_munpack_item(s, len, &sv, NULL);
+		RETVAL = sv;
+
+	OUTPUT:
+		RETVAL
