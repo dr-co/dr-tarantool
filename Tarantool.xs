@@ -83,10 +83,10 @@ inline static int fetch_tuples( HV * ret, struct tp * rep ) {
 
 
 #define ALLOC_RET_SV(__name, __ptr, __len, __size)		\
-	SV *__name = newSVpvn("", 0); 			\
-	RETVAL = __name;				\
-	if (__size) SvGROW(__name, __size);		\
-	STRLEN __len;					\
+	SV *__name = newSVpvn("", 0);                           \
+	RETVAL = __name;					\
+	if (__size) SvGROW(__name, __size);			\
+	STRLEN __len;						\
 	char *__ptr = SvPV(__name, __len);
 
 MODULE = DR::Tarantool		PACKAGE = DR::Tarantool
@@ -301,7 +301,7 @@ SV * _pkt_update( req_id, ns, flags, tuple, operations )
 				char * data;
 				if ( asize > 4 && SvOK( *av_fetch( aop, 4, 0 ) ) ) {
 				    data =
-				    	SvPV( *av_fetch( aop, 4, 0 ), size );
+					SvPV( *av_fetch( aop, 4, 0 ), size );
 				} else {
 				    data = "";
 				    size = 0;
@@ -346,16 +346,16 @@ HV * _pkt_parse_response( response )
 			croak( "response is undefined" );
 		STRLEN size;
 		char *data = SvPV( response, size );
-		
+
 		struct tp rep;
 		tp_init(&rep, data, size, NULL, 0);
 		// tp_use(&rep, size);
-		
+
 		ssize_t code = tp_reply(&rep);
 
 		if (code == -1) {
- 			hash_ssave(RETVAL, "status", "buffer");
- 			hash_ssave(RETVAL, "errstr", "Input data too short");
+			hash_ssave(RETVAL, "status", "buffer");
+			hash_ssave(RETVAL, "errstr", "Input data too short");
 		} else if (code >= 0) {
 			uint32_t type = tp_replyop(&rep);
 			hash_isave(RETVAL, "code", tp_replycode(&rep) );
@@ -364,11 +364,11 @@ HV * _pkt_parse_response( response )
 			hash_isave(RETVAL, "count", tp_replycount(&rep) );
 			if (code == 0) {
 			    if (type != TP_PING)
-			        code = fetch_tuples(RETVAL, &rep);
-			        if (code != 0) {
- 					hash_ssave(RETVAL, "status", "buffer");
- 					hash_ssave(RETVAL, "errstr",
- 						"Broken response");
+				code = fetch_tuples(RETVAL, &rep);
+				if (code != 0) {
+					hash_ssave(RETVAL, "status", "buffer");
+					hash_ssave(RETVAL, "errstr",
+						"Broken response");
 				} else {
 					hash_ssave(RETVAL, "status", "ok");
 				}
@@ -380,7 +380,7 @@ HV * _pkt_parse_response( response )
 					char *s = tp_replyerror(&rep);
 					if (s[el - 1] == 0)
 						el--;
-				 	err = newSVpvn(s, el);
+					err = newSVpvn(s, el);
 				} else {
 					err = newSVpvn("", 0);
 				}
@@ -496,3 +496,6 @@ int _msgcheck(str)
             }
         OUTPUT:
             RETVAL
+
+
+

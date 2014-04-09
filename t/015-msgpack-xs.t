@@ -17,7 +17,7 @@ BEGIN {
     binmode $builder->failure_output, ":utf8";
     binmode $builder->todo_output,    ":utf8";
 
-    use_ok 'DR::Tarantool::MsgPack';
+    use_ok 'DR::Tarantool::MsgPack', 'msgpack', 'msgunpack', 'msgcheck';
 }
 note '===================== pack ===============================';
 note 'string';

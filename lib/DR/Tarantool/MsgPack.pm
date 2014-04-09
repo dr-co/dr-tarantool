@@ -6,14 +6,18 @@ package DR::Tarantool::MsgPack;
 use Carp;
 require DR::Tarantool;
 use base qw(Exporter);
-our @EXPORT_OK = qw(msgpack msgunpack);
+our @EXPORT_OK = qw(msgpack msgunpack msgcheck);
 
-sub msgpack {
-
+sub msgpack($) {
+    DR::Tarantool::_msgpack($_[0])
 }
 
-sub msgunpack {
+sub msgunpack($) {
+    DR::Tarantool::_msgunpack($_[0])
+}
 
+sub msgcheck($) {
+    DR::Tarantool::_msgcheck($_[0])
 }
 
 sub TRUE()  { DR::Tarantool::MsgPack::Bool->new(1) };
