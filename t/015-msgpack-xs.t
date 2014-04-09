@@ -7,7 +7,7 @@ use open qw(:std :utf8);
 use lib qw(lib ../lib);
 use lib qw(blib/lib blib/arch ../blib/lib ../blib/arch);
 
-use Test::More tests    => 64;
+use Test::More tests    => 68;
 use Encode qw(decode encode);
 
 
@@ -260,8 +260,18 @@ note 'arrays';
 }
 {
     my $p = DR::Tarantool::_msgpack([ a => 'b', c => 'd', undef ]);
+    is DR::Tarantool::_msgcheck($p), 1, 'non broken msgpack';
     diag explain DR::Tarantool::_msgunpack($p) unless
     is_deeply DR::Tarantool::_msgunpack($p), [ a => 'b', c => 'd', undef ],
         'non-empty array';
 }
 
+
+note 'unpack errors';
+{
+    my $p = substr DR::Tarantool::_msgpack([1,2,3,4,5, 6, 7, 5000]), 0, 8;
+    is DR::Tarantool::_msgcheck($p), 0, 'broken msgpack';
+    ok !eval { DR::Tarantool::_msgunpack($p); 1 }, '_msgpack(broken)';
+    like $@ => qr{Unexpected EOF}, 'message error';
+
+}

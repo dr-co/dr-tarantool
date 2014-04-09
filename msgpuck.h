@@ -1,6 +1,9 @@
-#ifndef MSGPACK_MSGPACK_H_INCLUDED
-#define MSGPACK_MSGPACK_H_INCLUDED
+#ifndef MSGPUCK_H_INCLUDED
+#define MSGPUCK_H_INCLUDED
 /*
+ * Copyright (c) 2013 MsgPuck Authors
+ * All rights reserved.
+ *
  * Redistribution and use in source and binary forms, with or
  * without modification, are permitted provided that the following
  * conditions are met:
@@ -30,8 +33,10 @@
  */
 
 /**
- * \file
- * \brief MsgPack - a reactive MsgPack encoder/decoder in a single file.
+ * \file msgpuck.h
+ * MsgPuck
+ * \brief MsgPuck is a simple and efficient MsgPack encoder/decoder
+ * library in a single self-contained file.
  *
  * Usage example:
  * \code
@@ -46,7 +51,8 @@
  *
  * // Validate
  * const char *b = buf;
- * mp_check(&b);
+ * int r = mp_check(&b);
+ * assert(!r)
  * assert(b == w);
  *
  * // Decode
@@ -82,7 +88,7 @@
  *
  * \note Inline functions.
  * The implementation is compatible with both C99 and GNU inline functions.
- * Please define MP_SOURCE 1 before #include <msgpack.h> in a single
+ * Please define MP_SOURCE 1 before \#include <msgpuck.h> in a single
  * compilation unit. This module will be used to store non-inlined versions of
  * functions and global tables.
  */
@@ -93,7 +99,9 @@
 #if defined(__cplusplus) && !defined(__STDC_LIMIT_MACROS)
 #define __STDC_LIMIT_MACROS 1    /* make С++ to be happy */
 #endif
+#include <stdlib.h>
 #include <stdint.h>
+#include <stddef.h>
 #include <stdbool.h>
 #include <string.h>
 #include <assert.h>
@@ -136,7 +144,11 @@ extern "C" {
 	(__GNUC__ == (major) && __GNUC_MINOR__ >= (minor)))
 #endif
 
-#if MP_GCC_VERSION(2, 9)
+#if !defined(__has_builtin)
+#define __has_builtin(x) 0 /* clang */
+#endif
+
+#if MP_GCC_VERSION(2, 9) || __has_builtin(__builtin_expect)
 #define mp_likely(x) __builtin_expect((x), 1)
 #define mp_unlikely(x) __builtin_expect((x), 0)
 #else
@@ -144,15 +156,19 @@ extern "C" {
 #define mp_unlikely(x) (x)
 #endif
 
-#if MP_GCC_VERSION(4, 5)
+#if MP_GCC_VERSION(4, 5) || __has_builtin(__builtin_unreachable)
 #define mp_unreachable() (assert(0), __builtin_unreachable())
 #else
+MP_PROTO void
+mp_unreachable(void) __attribute__((noreturn));
+MP_PROTO void
+mp_unreachable(void) { assert(0); abort(); }
 #define mp_unreachable() (assert(0))
 #endif
 
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
 
-#if MP_GCC_VERSION(4, 8)
+#if MP_GCC_VERSION(4, 8) || __has_builtin(__builtin_bswap16)
 #define mp_bswap_u16(x) __builtin_bswap16(x)
 #else /* !MP_GCC_VERSION(4, 8) */
 #define mp_bswap_u16(x) ( \
@@ -160,15 +176,19 @@ extern "C" {
 	(((x) >>  8) & 0x00ff) )
 #endif
 
-#if MP_GCC_VERSION(4, 3)
+#if MP_GCC_VERSION(4, 3) || __has_builtin(__builtin_bswap32)
 #define mp_bswap_u32(x) __builtin_bswap32(x)
-#define mp_bswap_u64(x) __builtin_bswap64(x)
 #else /* !MP_GCC_VERSION(4, 3) */
 #define mp_bswap_u32(x) ( \
 	(((x) << 24) & UINT32_C(0xff000000)) | \
 	(((x) <<  8) & UINT32_C(0x00ff0000)) | \
 	(((x) >>  8) & UINT32_C(0x0000ff00)) | \
 	(((x) >> 24) & UINT32_C(0x000000ff)) )
+#endif
+
+#if MP_GCC_VERSION(4, 3) || __has_builtin(__builtin_bswap64)
+#define mp_bswap_u64(x) __builtin_bswap64(x)
+#else /* !MP_GCC_VERSION(4, 3) */
 #define mp_bswap_u64(x) (\
 	(((x) << 56) & UINT64_C(0xff00000000000000)) | \
 	(((x) << 40) & UINT64_C(0x00ff000000000000)) | \
@@ -189,6 +209,10 @@ extern "C" {
 #else
 #error Unsupported __BYTE_ORDER__
 #endif
+
+#if !defined(__FLOAT_WORD_ORDER__)
+#define __FLOAT_WORD_ORDER__ __BYTE_ORDER__
+#endif /* defined(__FLOAT_WORD_ORDER__) */
 
 #if __FLOAT_WORD_ORDER__ == __ORDER_LITTLE_ENDIAN__
 MP_PROTO float
@@ -265,7 +289,7 @@ enum mp_type {
  * \param c - a first byte of encoded data
  * \return MsgPack type
  */
-MP_PROTO enum mp_type
+MP_PROTO __attribute__((pure)) enum mp_type
 mp_typeof(const char c);
 
 /**
@@ -275,7 +299,7 @@ mp_typeof(const char c);
  * \param size - a number of elements
  * \return buffer size in bytes (max is 5)
  */
-MP_PROTO uint32_t
+MP_PROTO __attribute__((const)) uint32_t
 mp_sizeof_array(uint32_t size);
 
 /**
@@ -310,6 +334,18 @@ MP_PROTO char *
 mp_encode_array(char *data, uint32_t size);
 
 /**
+ * \brief Check that \a cur buffer has enough bytes to decode an array header
+ * \param cur buffer
+ * \param end end of the buffer
+ * \retval 0 - buffer has enough bytes
+ * \retval > 0 - the number of remaining bytes to read
+ * \pre cur < end
+ * \pre mp_typeof(*cur) == MP_ARRAY
+ */
+MP_PROTO __attribute__((pure)) ptrdiff_t
+mp_check_array(const char *cur, const char *end);
+
+/**
  * \brief Decode an array header from MsgPack \a data.
  *
  * All array members must be decoded after the header.
@@ -328,7 +364,7 @@ mp_decode_array(const char **data);
  * \param size - a number of elements
  * \return buffer size in bytes (max is 5)
  */
-MP_PROTO uint32_t
+MP_PROTO __attribute__((const)) uint32_t
 mp_sizeof_map(uint32_t size);
 
 /**
@@ -369,6 +405,18 @@ MP_PROTO char *
 mp_encode_map(char *data, uint32_t size);
 
 /**
+ * \brief Check that \a cur buffer has enough bytes to decode a map header
+ * \param cur buffer
+ * \param end end of the buffer
+ * \retval 0 - buffer has enough bytes
+ * \retval > 0 - the number of remaining bytes to read
+ * \pre cur < end
+ * \pre mp_typeof(*cur) == MP_MAP
+ */
+MP_PROTO __attribute__((pure)) ptrdiff_t
+mp_check_map(const char *cur, const char *end);
+
+/**
  * \brief Decode a map header from MsgPack \a data.
  *
  * All map key-value pairs must be decoded after the header.
@@ -392,20 +440,21 @@ mp_decode_map(const char **data);
  * // my_buffer_ensure(9, &end);
  * mp_encode_uint(buffer, x);
  * \endcode
- * \param size - a number of elements
+ * \param num - a number
  * \return buffer size in bytes (max is 9)
  */
-MP_PROTO uint32_t
+MP_PROTO __attribute__((const)) uint32_t
 mp_sizeof_uint(uint64_t num);
 
 /**
  * \brief Calculate exact buffer size needed to store an integer \a num.
  * Maximum return value is 9. For performance reasons you can preallocate
  * buffer for maximum size without calling the function.
- * \param size - the number of elements
+ * \param num - a number
  * \return buffer size in bytes (max is 9)
+ * \pre \a num < 0
  */
-MP_PROTO uint32_t
+MP_PROTO __attribute__((const)) uint32_t
 mp_sizeof_int(int64_t num);
 
 /**
@@ -423,16 +472,39 @@ mp_encode_uint(char *data, uint64_t num);
 /**
  * \brief Encode a signed integer \a num.
  * It is your responsibility to ensure that \a data has enough space.
- * \note If \a num is positive it will encoded by mp_encode_uint().
  * \param data - a buffer
  * \param num - a number
  * \return \a data + mp_sizeof_int(\a num)
  * \sa \link mp_encode_array() An usage example \endlink
  * \sa mp_sizeof_int()
+ * \pre \a num < 0
  */
 MP_PROTO char *
 mp_encode_int(char *data, int64_t num);
 
+/**
+ * \brief Check that \a cur buffer has enough bytes to decode an uint
+ * \param cur buffer
+ * \param end end of the buffer
+ * \retval 0 - buffer has enough bytes
+ * \retval > 0 - the number of remaining bytes to read
+ * \pre cur < end
+ * \pre mp_typeof(*cur) == MP_UINT
+ */
+MP_PROTO __attribute__((pure)) ptrdiff_t
+mp_check_uint(const char *cur, const char *end);
+
+/**
+ * \brief Check that \a cur buffer has enough bytes to decode an int
+ * \param cur buffer
+ * \param end end of the buffer
+ * \retval 0 - buffer has enough bytes
+ * \retval > 0 - the number of remaining bytes to read
+ * \pre cur < end
+ * \pre mp_typeof(*cur) == MP_INT
+ */
+MP_PROTO __attribute__((pure)) ptrdiff_t
+mp_check_int(const char *cur, const char *end);
 
 /**
  * \brief Decode an unsigned integer from MsgPack \a data
@@ -462,7 +534,7 @@ mp_decode_int(const char **data);
  * \retval   0 when \a a == \a b
  * \retval > 0 when \a a > \a b
  */
-MP_PROTO int
+MP_PROTO __attribute__((pure)) int
 mp_compare_uint(const char *data_a, const char *data_b);
 
 /**
@@ -472,7 +544,7 @@ mp_compare_uint(const char *data_a, const char *data_b);
  * \param num - a float
  * \return buffer size in bytes (always 5)
  */
-MP_PROTO uint32_t
+MP_PROTO __attribute__((const)) uint32_t
 mp_sizeof_float(float num);
 
 /**
@@ -483,14 +555,14 @@ mp_sizeof_float(float num);
  * \param num - a double
  * \return buffer size in bytes (5 or 9)
  */
-MP_PROTO uint32_t
+MP_PROTO __attribute__((const)) uint32_t
 mp_sizeof_double(double num);
 
 /**
  * \brief Encode a float \a num.
  * It is your responsibility to ensure that \a data has enough space.
  * \param data - a buffer
- * \param float - a float
+ * \param num - a float
  * \return \a data + mp_sizeof_float(\a num)
  * \sa mp_sizeof_float()
  * \sa \link mp_encode_array() An usage example \endlink
@@ -502,13 +574,37 @@ mp_encode_float(char *data, float num);
  * \brief Encode a double \a num.
  * It is your responsibility to ensure that \a data has enough space.
  * \param data - a buffer
- * \param float - a float
+ * \param num - a float
  * \return \a data + mp_sizeof_double(\a num)
  * \sa \link mp_encode_array() An usage example \endlink
  * \sa mp_sizeof_double()
  */
 MP_PROTO char *
 mp_encode_double(char *data, double num);
+
+/**
+ * \brief Check that \a cur buffer has enough bytes to decode a float
+ * \param cur buffer
+ * \param end end of the buffer
+ * \retval 0 - buffer has enough bytes
+ * \retval > 0 - the number of remaining bytes to read
+ * \pre cur < end
+ * \pre mp_typeof(*cur) == MP_FLOAT
+ */
+MP_PROTO __attribute__((pure)) ptrdiff_t
+mp_check_float(const char *cur, const char *end);
+
+/**
+ * \brief Check that \a cur buffer has enough bytes to decode a double
+ * \param cur buffer
+ * \param end end of the buffer
+ * \retval 0 - buffer has enough bytes
+ * \retval > 0 - the number of remaining bytes to read
+ * \pre cur < end
+ * \pre mp_typeof(*cur) == MP_DOUBLE
+ */
+MP_PROTO __attribute__((pure)) ptrdiff_t
+mp_check_double(const char *cur, const char *end);
 
 /**
  * \brief Decode a float from MsgPack \a data
@@ -535,7 +631,7 @@ mp_decode_double(const char **data);
  * \param len - a string length
  * \return size in chars (max is 5)
  */
-MP_PROTO uint32_t
+MP_PROTO __attribute__((const)) uint32_t
 mp_sizeof_strl(uint32_t len);
 
 /**
@@ -543,7 +639,7 @@ mp_sizeof_strl(uint32_t len);
  * \param len - a string length
  * \return size in chars (max is 5 + \a len)
  */
-MP_PROTO uint32_t
+MP_PROTO __attribute__((const)) uint32_t
 mp_sizeof_str(uint32_t len);
 
 /**
@@ -553,7 +649,7 @@ mp_sizeof_str(uint32_t len);
  * \param len - a string length
  * \return size in chars (max is 5)
  */
-MP_PROTO uint32_t
+MP_PROTO __attribute__((const)) uint32_t
 mp_sizeof_binl(uint32_t len);
 
 /**
@@ -561,7 +657,7 @@ mp_sizeof_binl(uint32_t len);
  * \param len - a string length
  * \return size in chars (max is 5 + \a len)
  */
-MP_PROTO uint32_t
+MP_PROTO __attribute__((const)) uint32_t
 mp_sizeof_bin(uint32_t len);
 
 /**
@@ -641,6 +737,30 @@ MP_PROTO char *
 mp_encode_bin(char *data, const char *str, uint32_t len);
 
 /**
+ * \brief Check that \a cur buffer has enough bytes to decode a string header
+ * \param cur buffer
+ * \param end end of the buffer
+ * \retval 0 - buffer has enough bytes
+ * \retval > 0 - the number of remaining bytes to read
+ * \pre cur < end
+ * \pre mp_typeof(*cur) == MP_STR
+ */
+MP_PROTO __attribute__((pure)) ptrdiff_t
+mp_check_strl(const char *cur, const char *end);
+
+/**
+ * \brief Check that \a cur buffer has enough bytes to decode a binstring header
+ * \param cur buffer
+ * \param end end of the buffer
+ * \retval 0 - buffer has enough bytes
+ * \retval > 0 - the number of remaining bytes to read
+ * \pre cur < end
+ * \pre mp_typeof(*cur) == MP_BIN
+ */
+MP_PROTO __attribute__((pure)) ptrdiff_t
+mp_check_binl(const char *cur, const char *end);
+
+/**
  * \brief Decode a length of a string from MsgPack \a data
  * \param data - the pointer to a buffer
  * \return a length of astring
@@ -688,7 +808,7 @@ mp_decode_bin(const char **data, uint32_t *len);
  * the library.
  * \return buffer size in bytes (always 1)
  */
-MP_PROTO uint32_t
+MP_PROTO __attribute__((const)) uint32_t
 mp_sizeof_nil(void);
 
 /**
@@ -701,6 +821,18 @@ mp_sizeof_nil(void);
  */
 MP_PROTO char *
 mp_encode_nil(char *data);
+
+/**
+ * \brief Check that \a cur buffer has enough bytes to decode nil
+ * \param cur buffer
+ * \param end end of the buffer
+ * \retval 0 - buffer has enough bytes
+ * \retval > 0 - the number of remaining bytes to read
+ * \pre cur < end
+ * \pre mp_typeof(*cur) == MP_NIL
+ */
+MP_PROTO __attribute__((pure)) ptrdiff_t
+mp_check_nil(const char *cur, const char *end);
 
 /**
  * \brief Decode the nil value from MsgPack \a data
@@ -716,19 +848,32 @@ mp_decode_nil(const char **data);
  * the library.
  * \return buffer size in bytes (always 1)
  */
-MP_PROTO uint32_t
+MP_PROTO __attribute__((const)) uint32_t
 mp_sizeof_bool(bool val);
 
 /**
  * \brief Encode a bool value \a val.
  * It is your responsibility to ensure that \a data has enough space.
  * \param data - a buffer
+ * \param val - a bool
  * \return \a data + mp_sizeof_bool(val)
  * \sa \link mp_encode_array() An usage example \endlink
  * \sa mp_sizeof_bool()
  */
 MP_PROTO char *
 mp_encode_bool(char *data, bool val);
+
+/**
+ * \brief Check that \a cur buffer has enough bytes to decode a bool value
+ * \param cur buffer
+ * \param end end of the buffer
+ * \retval 0 - buffer has enough bytes
+ * \retval > 0 - the number of remaining bytes to read
+ * \pre cur < end
+ * \pre mp_typeof(*cur) == MP_BOOL
+ */
+MP_PROTO __attribute__((pure)) ptrdiff_t
+mp_check_bool(const char *cur, const char *end);
 
 /**
  * \brief Decode a bool value from MsgPack \a data
@@ -804,13 +949,13 @@ mp_next(const char **data);
  * \brief Equivalent to mp_next() but also validates MsgPack in \a data.
  * \param data - the pointer to a buffer
  * \param end - the end of a buffer
- * \retval true when MsgPack in \a data is valid.
- * \retval false when MsgPack in \a data is not valid.
+ * \retval 0 when MsgPack in \a data is valid.
+ * \retval != 0 when MsgPack in \a data is not valid.
  * \post *data = *data + mp_sizeof_TYPE() where TYPE is mp_typeof(**data)
  * \post *data is not defined if MsgPack is not valid
  * \sa mp_next()
  */
-MP_PROTO bool
+MP_PROTO int
 mp_check(const char **data, const char *end);
 
 /*
@@ -858,6 +1003,20 @@ mp_encode_array(char *data, uint32_t size)
 		*(uint32_t *) data = mp_bswap_u32(size);
 		return data + sizeof(uint32_t);
 	}
+}
+
+MP_IMPL ptrdiff_t
+mp_check_array(const char *cur, const char *end)
+{
+	assert(cur < end);
+	assert(mp_typeof(*cur) == MP_ARRAY);
+	unsigned char c = *(unsigned char *) cur;
+	if (mp_likely(!(c & 0x40)))
+		return 1 - (end - cur);
+
+	assert(c >= 0xdc && c <= 0xdd); /* must be checked above by mp_typeof */
+	uint32_t hsize = 2U << (c & 0x1); /* 0xdc->2, 0xdd->4 */
+	return 1 + hsize - (end - cur);
 }
 
 MP_PROTO uint32_t
@@ -922,6 +1081,20 @@ mp_encode_map(char *data, uint32_t size)
 	}
 }
 
+MP_IMPL ptrdiff_t
+mp_check_map(const char *cur, const char *end)
+{
+	assert(cur < end);
+	assert(mp_typeof(*cur) == MP_MAP);
+	unsigned char c = *(unsigned char *) cur;
+	if (mp_likely((c & ~0xfU) == 0x80))
+		return 1 - (end - cur);
+
+	assert(c >= 0xde && c <= 0xdf); /* must be checked above by mp_typeof */
+	uint32_t hsize = 2U << (c & 0x1); /* 0xde->2, 0xdf->4 */
+	return 1 + hsize - (end - cur);
+}
+
 MP_IMPL uint32_t
 mp_decode_map(const char **data)
 {
@@ -963,9 +1136,8 @@ mp_sizeof_uint(uint64_t num)
 MP_IMPL uint32_t
 mp_sizeof_int(int64_t num)
 {
-	if (num >= 0) {
-		return mp_sizeof_uint(num);
-	} else if (num >= -0x20) {
+	assert(num < 0);
+	if (num >= -0x20) {
 		return 1;
 	} else if (num >= INT8_MIN && num <= INT8_MAX) {
 		return 1 + sizeof(int8_t);
@@ -976,6 +1148,22 @@ mp_sizeof_int(int64_t num)
 	} else {
 		return 1 + sizeof(int64_t);
 	}
+}
+
+MP_IMPL ptrdiff_t
+mp_check_uint(const char *cur, const char *end)
+{
+	assert(cur < end);
+	assert(mp_typeof(*cur) == MP_UINT);
+	return 1 + mp_parser_hint[*(unsigned char *) cur] - (end - cur);
+}
+
+MP_IMPL ptrdiff_t
+mp_check_int(const char *cur, const char *end)
+{
+	assert(cur < end);
+	assert(mp_typeof(*cur) == MP_INT);
+	return 1 + mp_parser_hint[*(unsigned char *) cur] - (end - cur);
 }
 
 MP_IMPL char *
@@ -1010,9 +1198,8 @@ mp_encode_uint(char *data, uint64_t num)
 MP_IMPL char *
 mp_encode_int(char *data, int64_t num)
 {
-	if (num >= 0) {
-		return mp_encode_uint(data, num);
-	} else if (num >= -0x20) {
+	assert(num < 0);
+	if (num >= -0x20) {
 		*data = (0xe0 | num);
 		return data + 1;
 	} else if (num >= INT8_MIN) {
@@ -1153,6 +1340,22 @@ mp_sizeof_double(double num)
 {
 	(void) num;
 	return 1 + sizeof(double);
+}
+
+MP_IMPL ptrdiff_t
+mp_check_float(const char *cur, const char *end)
+{
+	assert(cur < end);
+	assert(mp_typeof(*cur) == MP_FLOAT);
+	return 1 + sizeof(float) - (end - cur);
+}
+
+MP_IMPL ptrdiff_t
+mp_check_double(const char *cur, const char *end)
+{
+	assert(cur < end);
+	assert(mp_typeof(*cur) == MP_DOUBLE);
+	return 1 + sizeof(double) - (end - cur);
 }
 
 MP_IMPL char *
@@ -1300,6 +1503,33 @@ mp_encode_bin(char *data, const char *str, uint32_t len)
 	return data + len;
 }
 
+MP_IMPL ptrdiff_t
+mp_check_strl(const char *cur, const char *end)
+{
+	assert(cur < end);
+	assert(mp_typeof(*cur) == MP_STR);
+
+	unsigned char c = *(unsigned char *) cur;
+	if (mp_likely(c & ~0x1f) == 0xa0)
+		return 1 - (end - cur);
+
+	assert(c >= 0xd9 && c <= 0xdb); /* must be checked above by mp_typeof */
+	uint32_t hsize = 1U << (c & 0x3) >> 1; /* 0xd9->1, 0xda->2, 0xdb->4 */
+	return 1 + hsize - (end - cur);
+}
+
+MP_IMPL ptrdiff_t
+mp_check_binl(const char *cur, const char *end)
+{
+	unsigned char c = *(unsigned char *) cur;
+	assert(cur < end);
+	assert(mp_typeof(c) == MP_BIN);
+
+	assert(c >= 0xc4 && c <= 0xc6); /* must be checked above by mp_typeof */
+	uint32_t hsize = 1U << (c & 0x3); /* 0xc4->1, 0xc5->2, 0xc6->4 */
+	return 1 + hsize - (end - cur);
+}
+
 MP_IMPL uint32_t
 mp_decode_strl(const char **data)
 {
@@ -1388,6 +1618,14 @@ mp_encode_nil(char *data)
 	return data + 1;
 }
 
+MP_IMPL ptrdiff_t
+mp_check_nil(const char *cur, const char *end)
+{
+	assert(cur < end);
+	assert(mp_typeof(*cur) == MP_NIL);
+	return 1 - (end - cur);
+}
+
 MP_IMPL void
 mp_decode_nil(const char **data)
 {
@@ -1409,6 +1647,14 @@ mp_encode_bool(char *data, bool val)
 {
 	*data = 0xc2 | (val & 1);
 	return data + 1;
+}
+
+MP_IMPL ptrdiff_t
+mp_check_bool(const char *cur, const char *end)
+{
+	assert(cur < end);
+	assert(mp_typeof(*cur) == MP_BOOL);
+	return 1 - (end - cur);
 }
 
 MP_IMPL bool
@@ -1435,8 +1681,10 @@ enum {
 	MP_HINT_ARRAY_16 = MP_HINT - 3,
 	MP_HINT_ARRAY_32 = MP_HINT - 4,
 	MP_HINT_MAP_16 = MP_HINT - 5,
-	MP_HINT_MAP_32 = MP_HINT - 6
-
+	MP_HINT_MAP_32 = MP_HINT - 6,
+	MP_HINT_EXT_8 = MP_HINT - 7,
+	MP_HINT_EXT_16 = MP_HINT - 8,
+	MP_HINT_EXT_32 = MP_HINT - 9
 };
 
 MP_PROTO void
@@ -1493,6 +1741,20 @@ mp_next_slowpath(const char **data, int k)
 			k += 2 * mp_bswap_u32(*(uint32_t *) *data);
 			*data += sizeof(uint32_t);
 			break;
+		case MP_HINT_EXT_8:
+			/* MP_EXT (8) */
+			*data += *(uint8_t *) *data + sizeof(uint8_t) + 1;
+			break;
+		case MP_HINT_EXT_16:
+			/* MP_EXT (16) */
+			*data += mp_bswap_u16(*(uint16_t *) *data) +
+					sizeof(uint16_t) + 1;
+			break;
+		case MP_HINT_EXT_32:
+			/* MP_EXT (32) */
+			*data += mp_bswap_u32(*(uint32_t *) *data) +
+					sizeof(uint32_t) + 1;
+			break;
 		default:
 			mp_unreachable();
 		}
@@ -1524,13 +1786,13 @@ mp_next(const char **data)
 	}
 }
 
-MP_IMPL bool
+MP_IMPL int
 mp_check(const char **data, const char *end)
 {
 	int k;
 	for (k = 1; k > 0; k--) {
 		if (mp_unlikely(*data >= end))
-			return false;
+			return 1;
 
 		unsigned char c = (unsigned char) **data;
 		*data += 1;
@@ -1547,34 +1809,34 @@ mp_check(const char **data, const char *end)
 		case MP_HINT_STR_8:
 			/* MP_STR (8) */
 			if (mp_unlikely(*data + sizeof(uint8_t) > end))
-				return false;
+				return 1;
 			*data += *(uint8_t *) *data + sizeof(uint8_t);
 			break;
 		case MP_HINT_STR_16:
 			/* MP_STR (16) */
 			if (mp_unlikely(*data + sizeof(uint16_t) > end))
-				return false;
+				return 1;
 			*data += mp_bswap_u16(*(uint16_t *) *data) +
 					sizeof(uint16_t);
 			break;
 		case MP_HINT_STR_32:
 			/* MP_STR (32) */
 			if (mp_unlikely(*data + sizeof(uint32_t) > end))
-				return false;
+				return 1;
 			*data += mp_bswap_u32(*(uint32_t *) *data) +
 					sizeof(uint32_t);
 			break;
 		case MP_HINT_ARRAY_16:
 			/* MP_ARRAY (16) */
 			if (mp_unlikely(*data + sizeof(uint16_t) > end))
-				return false;
+				return 1;
 			k += mp_bswap_u16(*(uint16_t *) *data);
 			*data += sizeof(uint16_t);
 			break;
 		case MP_HINT_ARRAY_32:
 			/* MP_ARRAY (32) */
 			if (mp_unlikely(*data + sizeof(uint32_t) > end))
-				return false;
+				return 1;
 			k += mp_bswap_u32(*(uint32_t *) *data);
 			*data += sizeof(uint32_t);
 			break;
@@ -1588,9 +1850,29 @@ mp_check(const char **data, const char *end)
 		case MP_HINT_MAP_32:
 			/* MP_MAP (32) */
 			if (mp_unlikely(*data + sizeof(uint32_t) > end))
-				return false;
+				return 1;
 			k += 2 * mp_bswap_u32(*(uint32_t *) *data);
 			*data += sizeof(uint32_t);
+			break;
+		case MP_HINT_EXT_8:
+			/* MP_EXT (8) */
+			if (mp_unlikely(*data + sizeof(uint8_t) + 1 > end))
+				return 1;
+			*data += *(uint8_t *) *data + sizeof(uint8_t);
+			break;
+		case MP_HINT_EXT_16:
+			/* MP_EXT (16) */
+			if (mp_unlikely(*data + sizeof(uint16_t) + 1 > end))
+				return 1;
+			*data += mp_bswap_u16(*(uint16_t *) *data) +
+					sizeof(uint16_t) + 1;
+			break;
+		case MP_HINT_EXT_32:
+			/* MP_EXT (32) */
+			if (mp_unlikely(*data + sizeof(uint32_t) + 1 > end))
+				return 1;
+			*data += mp_bswap_u32(*(uint32_t *) *data) +
+					sizeof(uint32_t) + 1;
 			break;
 		default:
 			mp_unreachable();
@@ -1598,9 +1880,9 @@ mp_check(const char **data, const char *end)
 	}
 
 	if (mp_unlikely(*data > end))
-		return false;
+		return 1;
 
-	return true;
+	return 0;
 }
 
 /** \endcond */
@@ -2151,9 +2433,9 @@ const int8_t mp_parser_hint[256] = {
 	/* }}} */
 
 	/* {{{ MP_EXT */
-	/* 0xc7 */ MP_HINT_STR_8,    /* MP_EXT (8)  */
-	/* 0xc8 */ MP_HINT_STR_16,   /* MP_EXT (16) */
-	/* 0xc9 */ MP_HINT_STR_32,   /* MP_EXT (32) */
+	/* 0xc7 */ MP_HINT_EXT_8,    /* MP_EXT (8)  */
+	/* 0xc8 */ MP_HINT_EXT_16,   /* MP_EXT (16) */
+	/* 0xc9 */ MP_HINT_EXT_32,   /* MP_EXT (32) */
 	/* }}} */
 
 	/* {{{ MP_FLOAT, MP_DOUBLE */
@@ -2252,13 +2534,5 @@ const int8_t mp_parser_hint[256] = {
 #undef MP_IMPL
 #undef MP_ALWAYSINLINE
 #undef MP_GCC_VERSION
-#undef mp_likely
-#undef mp_unlikely
-#undef mp_unreachable
-#undef mp_bswap_u16
-#undef mp_bswap_u32
-#undef mp_bswap_u64
-#undef mp_bswap_float
-#undef mp_bswap_double
 
-#endif /* MSGPACK_MSGPACK_H_INCLUDED */
+#endif /* MSGPUCK_H_INCLUDED */

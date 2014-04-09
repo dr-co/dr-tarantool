@@ -12,6 +12,7 @@
 #include "perl.h"
 #include "XSUB.h"
 #include "tp.h"
+#include "msgpuck.h"
 
 extern void _mpack_item(SV *res, SV *o);
 extern const char *_munpack_item(const char *p, size_t len, SV **res, HV *ext);
@@ -475,3 +476,23 @@ SV * _msgunpack(str, ...)
 
 	OUTPUT:
 		RETVAL
+
+int _msgcheck(str)
+        SV *str
+        PROTOTYPE: $
+        CODE:
+            int res;
+            size_t len;
+            if (SvOK(str)) {
+                const char *p = SvPV(str, len);
+                const char *pe = p + len;
+                if (mp_check(&p, pe) == 0) {
+                    RETVAL = 1;
+                } else {
+                    RETVAL = 0;
+                }
+            } else {
+                RETVAL = 0;
+            }
+        OUTPUT:
+            RETVAL
