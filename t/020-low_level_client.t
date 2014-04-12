@@ -7,8 +7,18 @@ use open qw(:std :utf8);
 use lib qw(lib ../lib);
 use lib qw(blib/lib blib/arch ../blib/lib ../blib/arch);
 
-use constant PLAN       => 101;
-use Test::More tests    => PLAN;
+BEGIN {
+    use constant PLAN       => 100;
+    use Test::More;
+    use DR::Tarantool::StartTest;
+
+    unless (DR::Tarantool::StartTest::is_version('1.5.2')) {
+
+        plan skip_all => 'Too low tarantool version';
+    } else {
+        plan tests => PLAN;
+    }
+}
 use Encode qw(decode encode);
 
 my $LE = $] > 5.01 ? '<' : '';
@@ -22,12 +32,12 @@ BEGIN {
     binmode $builder->todo_output,    ":utf8";
 
     use_ok 'DR::Tarantool::LLClient', 'tnt_connect';
-    use_ok 'DR::Tarantool::StartTest';
     use_ok 'DR::Tarantool', ':constant';
     use_ok 'File::Spec::Functions', 'catfile';
     use_ok 'File::Basename', 'dirname', 'basename';
     use_ok 'AnyEvent';
 }
+
 
 my $cfg_dir = catfile dirname(__FILE__), 'test-data';
 ok -d $cfg_dir, 'directory with test data';

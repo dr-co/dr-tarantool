@@ -7,8 +7,18 @@ use open qw(:std :utf8);
 use lib qw(lib ../lib);
 use lib qw(blib/lib blib/arch ../blib/lib ../blib/arch);
 
-use constant PLAN   => 64;
-use Test::More tests    => PLAN;
+BEGIN {
+    use constant PLAN       => 63;
+    use Test::More;
+    use DR::Tarantool::StartTest;
+
+    unless (DR::Tarantool::StartTest::is_version('1.5.2')) {
+
+        plan skip_all => 'Too low tarantool version';
+    } else {
+        plan tests => PLAN;
+    }
+}
 use Encode qw(decode encode);
 
 
@@ -20,7 +30,6 @@ BEGIN {
     binmode $builder->todo_output,    ":utf8";
 
     use_ok 'DR::Tarantool::LLSyncClient';
-    use_ok 'DR::Tarantool::StartTest';
     use_ok 'File::Spec::Functions', 'catfile';
     use_ok 'File::Basename', 'dirname';
     use_ok 'DR::Tarantool', ':constant';

@@ -11,6 +11,8 @@ use Cwd;
 use IO::Socket::INET;
 use POSIX ();
 
+
+
 =head1 NAME
 
 DR::Tarantool::StartTest - finds and starts Tarantool on free port.
@@ -42,6 +44,23 @@ path to tarantool.cfg
 
 =cut
 
+
+
+=head2 is_version(VERSION)
+
+return true if tarantool_box is found and its version is more than L<VERSION>.
+
+=cut
+
+sub is_version {
+    my ($version) = @_;
+    my $box = $ENV{TARANTOOL_BOX} || 'tarantool_box';
+
+    my $str = `$box -V`;
+    my ($vt) = $str =~ /^Tarantool:?\s+(\d(?:\.\d+)+).*\s*$/s;
+    return 0 unless $vt;
+    return $version le $vt;
+}
 
 sub run {
     my ($module, %opts) = @_;
