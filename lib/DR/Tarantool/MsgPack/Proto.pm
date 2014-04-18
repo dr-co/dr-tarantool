@@ -5,9 +5,10 @@ use warnings;
 package DR::Tarantool::MsgPack::Proto;
 use DR::Tarantool::MsgPack qw(msgpack msgunpack msgcheck);
 use base qw(Exporter);
-our @EXPORT_OK = qw(call_lua response);
+our @EXPORT_OK = qw(call_lua response insert replace del update select);
 use Carp;
 use Data::Dumper;
+use Scalar::Util 'looks_like_number';
 
 my (%resolve, %tresolve);
 
@@ -112,10 +113,10 @@ sub response($) {
         $res->{$name} = $v;
     }
 
-#     if (defined $res->{CODE}) {
-#         my $n = $tresolve{ $res->{CODE} };
-#         $res->{CODE} = $n if defined $n;
-#     }
+    if (defined $res->{CODE}) {
+        my $n = $tresolve{ $res->{CODE} };
+        $res->{CODE} = $n if defined $n;
+    }
 
     return $res;
     
@@ -140,5 +141,177 @@ sub call_lua($$@) {
         }
     ;
 }
+
+sub insert($$$) {
+    my ($sync, $space, $tuple) = @_;
+
+    $tuple = [ $tuple ] unless ref $tuple;
+    croak "Cant convert HashRef to tuple" if 'HASH' eq ref $tuple;
+
+    if (looks_like_number $space) {
+        return request
+            {
+                IPROTO_SYNC,        $sync,
+                IPROTO_CODE,        IPROTO_INSERT,
+                IPROTO_SPACE_ID,    $space,
+            },
+            {
+                IPROTO_TUPLE,       $tuple,
+            }
+        ;
+    }
+    # HACK
+    request
+        {
+            IPROTO_SYNC,            $sync,
+            IPROTO_CODE,            IPROTO_CALL,
+        },
+        {
+            IPROTO_FUNCTION_NAME,   "box.space.$space:insert",
+            IPROTO_TUPLE,           $tuple,
+        }
+    ;
+}
+
+sub replace($$$) {
+    my ($sync, $space, $tuple) = @_;
+
+    $tuple = [ $tuple ] unless ref $tuple;
+    croak "Cant convert HashRef to tuple" if 'HASH' eq ref $tuple;
+
+    if (looks_like_number $space) {
+        return request
+            {
+                IPROTO_SYNC,        $sync,
+                IPROTO_CODE,        IPROTO_REPLACE,
+                IPROTO_SPACE_ID,    $space,
+            },
+            {
+                IPROTO_TUPLE,       $tuple,
+            }
+        ;
+    }
+    # HACK
+    request
+        {
+            IPROTO_SYNC,            $sync,
+            IPROTO_CODE,            IPROTO_CALL,
+        },
+        {
+            IPROTO_FUNCTION_NAME,   "box.space.$space:replace",
+            IPROTO_TUPLE,           $tuple,
+        }
+    ;
+}
+sub del($$$) {
+    my ($sync, $space, $key) = @_;
+
+    $key = [ $key ] unless ref $key;
+    croak "Cant convert HashRef to key" if 'HASH' eq ref $key;
+
+    if (looks_like_number $space) {
+        return request
+            {
+                IPROTO_SYNC,        $sync,
+                IPROTO_CODE,        IPROTO_DELETE,
+                IPROTO_SPACE_ID,    $space,
+            },
+            {
+                IPROTO_KEY,         $key,
+            }
+        ;
+    }
+    # HACK
+    request
+        {
+            IPROTO_SYNC,            $sync,
+            IPROTO_CODE,            IPROTO_CALL,
+        },
+        {
+            IPROTO_FUNCTION_NAME,   "box.space.$space:delete",
+            IPROTO_TUPLE,           $key,
+        }
+    ;
+}
+
+
+sub update($$$$) {
+    my ($sync, $space, $key, $ops) = @_;
+    croak 'Oplist must be Arrayref' unless 'ARRAY' eq ref $ops;
+    $key = [ $key ] unless ref $key;
+    croak "Cant convert HashRef to key" if 'HASH' eq ref $key;
+
+    if (looks_like_number $space) {
+        return request
+            {
+                IPROTO_SYNC,        $sync,
+                IPROTO_CODE,        IPROTO_UPDATE,
+                IPROTO_SPACE_ID,    $space,
+            },
+            {
+                IPROTO_KEY,         $key,
+                IPROTO_TUPLE,       $ops,
+            }
+        ;
+    }
+    # HACK
+    request
+        {
+            IPROTO_SYNC,            $sync,
+            IPROTO_CODE,            IPROTO_CALL,
+        },
+        {
+            IPROTO_FUNCTION_NAME,   "box.space.$space:update",
+            IPROTO_TUPLE,           [ $key, $ops ]
+        }
+    ;
+}
+
+sub select($$$$;$$$) {
+    my ($sync, $space, $index, $key, $limit, $offset, $iterator) = @_;
+    $iterator = 'EQ' unless defined $iterator;
+    $offset ||= 0;
+    $limit  = 0xFFFF_FFFF unless defined $limit;
+    $key = [ $key ] unless ref $key;
+    croak "Cant convert HashRef to key" if 'HASH' eq ref $key;
+
+    if (looks_like_number $space and looks_like_number $index) {
+        return request
+            {
+                IPROTO_SYNC,        $sync,
+                IPROTO_CODE,        IPROTO_SELECT,
+                IPROTO_SPACE_ID,    $space,
+                IPROTO_INDEX_ID,    $index,
+                IPROTO_LIMIT,       $limit,
+                IPROTO_OFFSET,      $offset,
+                IPROTO_ITERATOR,    $iterator
+            },
+            {
+                IPROTO_KEY,         $key,
+            }
+        ;
+    }
+
+    # HACK
+    request
+        {
+            IPROTO_SYNC,            $sync,
+            IPROTO_CODE,            IPROTO_CALL,
+        },
+        {
+            IPROTO_FUNCTION_NAME,   "box.space.$space.index.$index:select",
+            IPROTO_TUPLE,           [
+                $key,
+                {
+                    offset => $offset,
+                    limit => $limit,
+                    iterator => $iterator
+                } 
+            ]
+        }
+    ;
+
+}
+
 
 1;
