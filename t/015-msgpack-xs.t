@@ -7,7 +7,7 @@ use open qw(:std :utf8);
 use lib qw(lib ../lib);
 use lib qw(blib/lib blib/arch ../blib/lib ../blib/arch);
 
-use Test::More tests    => 68;
+use Test::More tests    => 70;
 use Encode qw(decode encode);
 
 
@@ -260,7 +260,10 @@ note 'arrays';
 }
 {
     my $p = DR::Tarantool::_msgpack([ a => 'b', c => 'd', undef ]);
-    is DR::Tarantool::_msgcheck($p), 1, 'non broken msgpack';
+    ok DR::Tarantool::_msgcheck($p), 'non broken msgpack';
+    is DR::Tarantool::_msgcheck($p), DR::Tarantool::_msgcheck($p . 'aaa'),
+        'msgcheck return length';
+    is DR::Tarantool::_msgcheck($p), length($p), 'length is valid';
     diag explain DR::Tarantool::_msgunpack($p) unless
     is_deeply DR::Tarantool::_msgunpack($p), [ a => 'b', c => 'd', undef ],
         'non-empty array';

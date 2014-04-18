@@ -477,7 +477,7 @@ SV * _msgunpack(str, ...)
 	OUTPUT:
 		RETVAL
 
-int _msgcheck(str)
+size_t _msgcheck(str)
         SV *str
         PROTOTYPE: $
         CODE:
@@ -485,9 +485,14 @@ int _msgcheck(str)
             size_t len;
             if (SvOK(str)) {
                 const char *p = SvPV(str, len);
-                const char *pe = p + len;
-                if (mp_check(&p, pe) == 0) {
-                    RETVAL = 1;
+                if (len > 0) {
+                    const char *pe = p + len;
+                    const char *begin = p;
+                    if (mp_check(&p, pe) == 0) {
+                        RETVAL = p - begin;
+                    } else {
+                        RETVAL = 0;
+                    }
                 } else {
                     RETVAL = 0;
                 }

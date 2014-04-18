@@ -106,8 +106,11 @@ void _mpack_item(SV *res, SV *o)
 		return;
 	}
 
-	switch(SvTYPE(o)) {
+	switch(SvTYPE(o) & SVt_MASK) {
 		case SVt_PV:
+		case SVt_PVIV:
+		case SVt_PVNV:
+		case SVt_PVMG:
 		case SVt_REGEXP:
 			if (!looks_like_number(o)) {
 				s = SvPV(o, len);
@@ -132,7 +135,7 @@ void _mpack_item(SV *res, SV *o)
 		}
 		case SVt_IV: {
 			IV v = SvIV(o);
-			if (v > 0) {
+			if (v >= 0) {
 				new_len = res_len + mp_sizeof_uint(v);
 				res_s = SvGROW(res, new_len);
 				SvCUR_set(res, new_len);
@@ -145,6 +148,8 @@ void _mpack_item(SV *res, SV *o)
 			}
 			break;
 		}
+		default:
+			croak("Internal msgpack error %d", SvTYPE(o));
 	}
 }
 
