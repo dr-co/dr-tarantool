@@ -9,7 +9,7 @@ use lib qw(blib/lib blib/arch ../blib/lib
     ../blib/arch ../../blib/lib ../../blib/arch);
 
 BEGIN {
-    use constant PLAN       => 53;
+    use constant PLAN       => 70;
     use Test::More;
     use DR::Tarantool::StartTest;
 
@@ -174,7 +174,6 @@ for my $cv (AE::cv) {
     $tnt->auth('user1', 'password1', sub {
         my ($r) = @_;
         isa_ok $r => 'HASH', 'auth response';
-#         note explain $r;
         ok exists $r->{CODE}, 'exists code';
         ok exists $r->{SYNC}, 'exists sync';
         ok !exists $r->{ERROR}, "existn't error";
@@ -213,6 +212,8 @@ for my $cv (AE::cv) {
 
     ok $tnt => 'connector was saved';
 }
+
+my $sid;
 for my $cv (AE::cv) {
     $cv->begin;
     $tnt->call_lua('box.session.id', sub {
@@ -224,6 +225,7 @@ for my $cv (AE::cv) {
         isa_ok $r->{DATA} => 'ARRAY', 'extsts data';
         is scalar @{ $r->{DATA} }, 1, 'count of tuples';
         cmp_ok $r->{DATA}[0], '>', 0, 'box.session.id';
+        $sid = $r->{DATA}[0];
 
         $cv->end;
     });
@@ -234,4 +236,111 @@ for my $cv (AE::cv) {
     undef $timer;
 
     ok $tnt => 'connector was saved';
+}
+
+note 'autologin';
+for my $cv (AE::cv) {
+    my $tnt;
+    $cv->begin;
+    DR::Tarantool::MsgPack::LLClient->connect(
+        host        => '127.0.0.1',
+        port        => $t->primary_port,
+        user        => 'user1',
+        password    => 'password1',
+        cb      => sub {
+            ($tnt) = @_;
+            ok $tnt, 'connect callback';
+            $cv->end;
+        }
+
+    );
+   
+    my $timer;
+    $timer = AE::timer 1.5, 0, sub { $cv->end };
+    $cv->recv;
+    undef $timer;
+
+    ok $tnt => 'connector was saved';
+
+    for my $cv (AE::cv) {
+        $cv->begin;
+        $tnt->call_lua('box.session.id', sub {
+            my ($r) = @_;
+            isa_ok $r => 'HASH', 'call response';
+            ok exists $r->{CODE}, 'exists code';
+            ok exists $r->{SYNC}, 'exists sync';
+            ok !exists $r->{ERROR}, 'exists not error';
+            isa_ok $r->{DATA} => 'ARRAY', 'extsts data';
+            is scalar @{ $r->{DATA} }, 1, 'count of tuples';
+            cmp_ok $r->{DATA}[0], '>', 0, 'box.session.id';
+            isnt $r->{DATA}[0], $sid, 'the other session.id';
+            $cv->end;
+        });
+
+        my $timer;
+        $timer = AE::timer 1.5, 0, sub { $cv->end };
+        $cv->recv;
+        undef $timer;
+
+        ok $tnt => 'connector was saved';
+    }
+}
+
+{
+    my @warns;
+    local $SIG{__WARN__} = sub { push @warns => $_[0] };
+
+    for my $cv (AE::cv) {
+        my $tnt;
+        $cv->begin;
+        DR::Tarantool::MsgPack::LLClient->connect(
+            host        => '127.0.0.1',
+            port        => $t->primary_port,
+            user        => 'user1',
+            password    => 'password2',
+            cb      => sub {
+                ($tnt) = @_;
+                ok $tnt, 'connect callback';
+                $cv->end;
+            }
+
+        );
+       
+        my $timer;
+        $timer = AE::timer 1.5, 0, sub { $cv->end };
+        $cv->recv;
+        undef $timer;
+    }
+    is scalar @warns, 1, 'One warning';
+    like $warns[0] => qr{Incorrect password}, 'text of warning';
+}
+{
+    my @warns;
+    local $SIG{__WARN__} = sub { push @warns => $_[0] };
+
+    for my $cv (AE::cv) {
+        my $tnt;
+        $cv->begin;
+        DR::Tarantool::MsgPack::LLClient->connect(
+            host        => '127.0.0.1',
+            port        => $t->primary_port,
+            user        => 'user1',
+            password    => 'password2',
+            reconnect_period => 1,
+            reconnect_always => 1,
+            cb      => sub {
+                ($tnt) = @_;
+                ok $tnt, 'connect callback';
+                $cv->end;
+            }
+
+        );
+       
+        my $timer;
+        $timer = AE::timer 1.5, 0, sub { $cv->end };
+        $cv->recv;
+        undef $timer;
+    }
+    is scalar @warns, 1, 'One warning';
+    like $warns[0] => qr{Incorrect password}, 'text of warning';
 }

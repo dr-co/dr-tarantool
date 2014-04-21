@@ -26,6 +26,8 @@ sub connect {
                     $tnt->{password}    = $password;
                 }
                 $tnt->{handshake}   = 1;
+                $tnt->{_connect_cb} = $cb;
+                return;
             }
 
             $cb->( $tnt );
@@ -45,10 +47,30 @@ sub _check_rbuf {
                 DR::Tarantool::MsgPack::Proto::handshake($handshake)
         };
         if ($@) {
-            $self->_fatal_error('Broken handshake');
+            if (my $cb = delete $self->{_connect_cb}) {
+                $cb->('Broken handshake');
+            } else {
+                $self->_fatal_error('Broken handshake');
+            }
             return;
         }
         $self->{handshake} = 0;
+
+        if (my $cb = delete $self->{_connect_cb}) {{
+            unless (defined $self->{user} and defined $self->{password}) {
+                $cb->($self);
+                last;
+            }
+            $self->auth(sub {
+                my ($r) = @_;
+                if ('HASH' eq ref $r) {
+                    warn $r->{ERROR} unless $r->{CODE} == 0;
+                    $cb->($self);
+                } else {
+                    $cb->($r);
+                }
+            });
+        }}
     }
 
     # usual receive
