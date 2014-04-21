@@ -10,7 +10,7 @@ use File::Spec::Functions qw(catfile rel2abs);
 use Cwd;
 use IO::Socket::INET;
 use POSIX ();
-
+use List::MoreUtils 'any';
 
 
 =head1 NAME
@@ -45,21 +45,63 @@ path to tarantool.cfg
 =cut
 
 
+sub compare_versions($$) {
+    my ($v1, $v2) = @_;
+    my @v1 = split /\./, $v1;
+    my @v2 = split /\./, $v2;
 
-=head2 is_version(VERSION)
+    for (0 .. (@v1 < @v2 ? $#v1 : $#v2)) {
+        return 'gt' if $v1[$_] > $v2[$_];
+        return 'lt' if $v1[$_] < $v2[$_];
+    }
+    return 'gt' if @v1 > @v2;
+    return 'lt' if @v1 < @v2;
+    return 'eq';
+}
+
+
+=head2 is_version(VERSION[, FAMILY])
 
 return true if tarantool_box is found and its version is more than L<VERSION>.
 
+FAMILY can be:
+
+=over
+
+=item 1 (default)
+
+For tarantool < 1.6.
+
+=item 2
+
+For tarantool >= 1.6.
+
+=back
+
 =cut
 
-sub is_version {
-    my ($version) = @_;
-    my $box = $ENV{TARANTOOL_BOX} || 'tarantool_box';
+sub is_version($;$) {
+    my ($version, $family) = @_;
 
+    my $box;
+    $family ||= 1;
+
+    croak "Unknown family: $family" unless any { $family == $_ } 1, 2;
+
+    if ($family == 1) {
+        $box = $ENV{TARANTOOL_BOX} || 'tarantool_box';
+    } else {
+        $box = $ENV{TARANTOOL_BOX} || 'tarantool';
+    }
+   
     my $str = `$box -V`;
+
+    return 0 if $str =~ /^tarantool client, version/;
     my ($vt) = $str =~ /^Tarantool:?\s+(\d(?:\.\d+)+).*\s*$/s;
     return 0 unless $vt;
-    return $version le $vt;
+    my $res = compare_versions $version, $vt;
+    return 0 unless any { $_ eq $res } 'eq', 'lt';
+    return 1;
 }
 
 sub run {
@@ -71,6 +113,9 @@ sub run {
     local $/;
     my $cfg = <$fh>;
 
+    my $family = $opts{family} || 1;
+    croak "Unknown family: $family" unless any { $family == $_ } 1, 2;
+
     my %self = (
         admin_port      => $module->_find_free_port,
         primary_port    => $module->_find_free_port,
@@ -79,6 +124,7 @@ sub run {
         master          => $$,
         cwd             => getcwd,
         add_opts        => \%opts,
+        family          => $family,
     );
 
     $opts{script_dir} = rel2abs $opts{script_dir} if $opts{script_dir};
@@ -86,6 +132,12 @@ sub run {
     my $self = bless \%self => $module;
     $self->_start_tarantool;
     $self;
+}
+
+
+sub family {
+    my ($self) = @_;
+    return $self->{family};
 }
 
 
@@ -116,6 +168,31 @@ sub log {
     return $l;
 }
 
+sub admin {
+    my ($self, @cmd) = @_;
+    $cmd[-1] =~ s/\s*$/\n/;
+    my $cmd = join ' ' => @cmd;
+
+    my $s = IO::Socket::INET->new(
+                PeerHost    => '127.0.0.1',
+                PeerPort    => $self->admin_port,
+                Proto       => 'tcp',
+                (($^O eq 'MSWin32') ? () : (ReuseAddr => 1)),
+            );
+
+    croak "Can't connect to admin port: $!" unless $s;
+    print $s $cmd;
+    my @lines;
+    while(<$s>) {
+        s/\s*$//;
+        next if $_ eq '---';
+        last if $_ eq '...';
+        push @lines => $_;
+    }
+    close $s;
+    return @lines;
+}
+
 sub _start_tarantool {
     my ($self) = @_;
     if ($ENV{TARANTOOL_TEMPDIR}) {
@@ -126,31 +203,66 @@ sub _start_tarantool {
     } else {
         $self->{temp} = tempdir;
     }
-    $self->{cfg} = catfile $self->{temp}, 'tarantool.cfg';
+
+    if ($self->family) {
+        $self->{cfg} = catfile $self->{temp}, 'tarantool.cfg';
+    } else {
+        $self->{cfg} = catfile $self->{temp}, 'box.lua';
+    }
     $self->{log} = catfile $self->{temp}, 'tarantool.log';
     $self->{pid} = catfile $self->{temp}, 'tarantool.pid';
     $self->{core} = catfile $self->{temp}, 'core';
 
 
 
+    if ($self->family == 1) {
+        croak "Available tarantool is not valid (is_version '1.4.0')"
+            unless is_version '1.4.0', $self->family;
+    } else {
+        croak "Available tarantool is not valid (is_version '1.4.0')"
+            unless is_version '1.6.0', $self->family;
+    }
+
+
     $self->{config_body} = $self->{cfg_data};
-    $self->{config_body} .= "\n\n";
-    $self->{config_body} .= "slab_alloc_arena = 1.1\n";
-    $self->{config_body} .= sprintf "pid_file = %s\n", $self->{pid};
-    $self->{box} = $ENV{TARANTOOL_BOX} || 'tarantool_box';
+    if ($self->family == 1) {
+        $self->{config_body} .= "\n\n";
+        $self->{config_body} .= "slab_alloc_arena = 1.1\n";
+        $self->{config_body} .= sprintf "pid_file = %s\n", $self->{pid};
+        $self->{box} = $ENV{TARANTOOL_BOX} || 'tarantool_box';
 
-    $self->{config_body} .= sprintf "%s = %s\n", $_, $self->{$_}
-        for (qw(admin_port primary_port secondary_port));
+        $self->{config_body} .= sprintf "%s = %s\n", $_, $self->{$_}
+            for (qw(admin_port primary_port secondary_port));
 
-    $self->{config_body} .= sprintf qq{logger = "cat >> %s"\n}, $self->{log};
+        $self->{config_body} .=
+            sprintf qq{logger = "cat >> %s"\n}, $self->{log};
 
-    for (keys %{ $self->{add_opts} }) {
-        my $v = $self->{add_opts}{ $_ };
+        for (keys %{ $self->{add_opts} }) {
+            my $v = $self->{add_opts}{ $_ };
 
-        if ($v =~ /^\d+$/) {
-            $self->{config_body} .= sprintf qq{%s = %s\n}, $_, $v;
-        } else {
-            $self->{config_body} .= sprintf qq{%s = "%s"\n}, $_, $v;
+            if ($v =~ /^\d+$/) {
+                $self->{config_body} .= sprintf qq{%s = %s\n}, $_, $v;
+            } else {
+                $self->{config_body} .= sprintf qq{%s = "%s"\n}, $_, $v;
+            }
+        }
+    } else {
+        $self->{box} = $ENV{TARANTOOL_BOX} || 'tarantool';
+        for ($self->{config_body}) {
+            if (/admin_port\s*=/) {
+                s{admin_port\s*=\s*['"]?\d+['"]}
+                    /admin_port = @{[$self->admin_port]}/;
+            } else {
+                s<box\.cfg\s*\(?\s*\{>
+                    /$& admin_port = @{[$self->admin_port]},/;
+            }
+            if (/primary_port\s*=/) {
+                s{primary_port\s*=\s*['"]?\d+['"]}
+                    /primary_port = @{[$self->primary_port]}/;
+            } else {
+                s<box\.cfg\s*\(?\s*\{>
+                    /$& primary_port = @{[$self->primary_port]},/;
+            }
         }
     }
 
@@ -160,12 +272,15 @@ sub _start_tarantool {
 
     chdir $self->{temp};
 
-    system "$self->{box} -c $self->{cfg} --check-config >> $self->{log} 2>&1";
-    goto EXIT if $?;
+    if ($self->family == 1) {
+        system "$self->{box} -c $self->{cfg} ".
+            "--check-config >> $self->{log} 2>&1";
+        goto EXIT if $?;
 
-    system "$self->{box} -c $self->{cfg} --init-storage ".
-        ">> $self->{log} 2>&1";
-    goto EXIT if $?;
+        system "$self->{box} -c $self->{cfg} --init-storage ".
+            ">> $self->{log} 2>&1";
+        goto EXIT if $?;
+    }
     $self->_restart;
     EXIT:
         chdir $self->{cwd};
@@ -179,8 +294,13 @@ sub _restart {
         chdir $self->{temp};
         die "Can't fork: $!" unless defined $self->{child};
         POSIX::setsid();
-        exec "ulimit -c unlimited; ".
-            "exec $self->{box} -c $self->{cfg} >> $self->{log} 2>&1";
+        if ($self->family == 1) {
+            exec "ulimit -c unlimited; ".
+                "exec $self->{box} -c $self->{cfg} >> $self->{log} 2>&1";
+        } else {
+            exec "ulimit -c unlimited; ".
+                "exec $self->{box} $self->{cfg} >> $self->{log} 2>&1";
+        }
         die "Can't start $self->{box}: $!\n";
     }
 

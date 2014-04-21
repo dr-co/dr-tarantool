@@ -4,10 +4,11 @@ use warnings;
 use strict;
 use utf8;
 use open qw(:std :utf8);
-use lib qw(lib ../lib);
-use lib qw(blib/lib blib/arch ../blib/lib ../blib/arch);
+use lib qw(lib ../lib ../../lib);
+use lib qw(blib/lib blib/arch ../blib/lib
+    ../blib/arch ../../blib/lib ../../blib/arch);
 
-use Test::More tests    => 20;
+use Test::More tests    => 25;
 use Encode qw(decode encode);
 
 
@@ -19,14 +20,13 @@ BEGIN {
     binmode $builder->todo_output,    ":utf8";
 
     use_ok 'DR::Tarantool::MsgPack::Proto',
-        'call_lua', 'response',
-        'insert', 'replace', 'del', 'update', 'select';
+        qw(call_lua response insert replace del update select auth);
 }
 
 
 note 'call';
 {
-    my $p = response call_lua(121, 'test');
+    my ($p) = response call_lua(121, 'test');
     is_deeply $p => {
         CODE            => 'CALL',
         FUNCTION_NAME   => 'test',
@@ -36,7 +36,7 @@ note 'call';
 }
 
 {
-    my $p = response call_lua(121, 'test', 1, [2, 3], 4);
+    my ($p) = response call_lua(121, 'test', 1, [2, 3], 4);
     is_deeply $p => {
         CODE            => 'CALL',
         FUNCTION_NAME   => 'test',
@@ -47,7 +47,7 @@ note 'call';
 
 note 'insert';
 {
-    my $p = response insert(10, 20, [1,2,3]);
+    my ($p) = response insert(10, 20, [1,2,3]);
     is_deeply $p => {
         CODE            => 'INSERT',
         SYNC            => 10,
@@ -56,7 +56,7 @@ note 'insert';
     }, 'Insert request with space number';
 }
 {
-    my $p = response insert(17, 20, 'scalar');
+    my ($p) = response insert(17, 20, 'scalar');
     is_deeply $p => {
         CODE            => 'INSERT',
         SYNC            => 17,
@@ -65,7 +65,7 @@ note 'insert';
     }, 'Insert request with space number';
 }
 {
-    my $p = response insert(19, 'space_name', [1,2,3]);
+    my ($p) = response insert(19, 'space_name', [1,2,3]);
     is_deeply $p => {
         CODE            => 'CALL',
         SYNC            => 19,
@@ -76,7 +76,7 @@ note 'insert';
 
 note 'replace';
 {
-    my $p = response replace(10, 20, [1,2,3]);
+    my ($p) = response replace(10, 20, [1,2,3]);
     is_deeply $p => {
         CODE            => 'REPLACE',
         SYNC            => 10,
@@ -85,7 +85,7 @@ note 'replace';
     }, 'Replace request with space number';
 }
 {
-    my $p = response replace(17, 20, 'scalar');
+    my ($p) = response replace(17, 20, 'scalar');
     is_deeply $p => {
         CODE            => 'REPLACE',
         SYNC            => 17,
@@ -94,7 +94,7 @@ note 'replace';
     }, 'Replace request with space number';
 }
 {
-    my $p = response replace(19, 'space_name', [1,2,3]);
+    my ($p) = response replace(19, 'space_name', [1,2,3]);
     is_deeply $p => {
         CODE            => 'CALL',
         SYNC            => 19,
@@ -105,7 +105,7 @@ note 'replace';
 
 note 'del';
 {
-    my $p = response del(10, 27, [1,2,3]);
+    my ($p) = response del(10, 27, [1,2,3]);
     is_deeply $p => {
         CODE            => 'DELETE',
         SYNC            => 10,
@@ -114,7 +114,7 @@ note 'del';
     }, 'Delete request with space number';
 }
 {
-    my $p = response del(17, 20, 'scalar');
+    my ($p) = response del(17, 20, 'scalar');
     is_deeply $p => {
         CODE            => 'DELETE',
         SYNC            => 17,
@@ -123,7 +123,7 @@ note 'del';
     }, 'Delete request with space number';
 }
 {
-    my $p = response del(19, 'space_name', [1,2,3]);
+    my ($p) = response del(19, 'space_name', [1,2,3]);
     is_deeply $p => {
         CODE            => 'CALL',
         SYNC            => 19,
@@ -134,7 +134,7 @@ note 'del';
 
 note 'update';
 {
-    my $p = response update(10, 27, [1,2,3], [['+', 1, 2]]);
+    my ($p) = response update(10, 27, [1,2,3], [['+', 1, 2]]);
     is_deeply $p => {
         CODE            => 'UPDATE',
         SYNC            => 10,
@@ -144,7 +144,7 @@ note 'update';
     }, 'Update request with space number';
 }
 {
-    my $p = response update(10, 27, 'test', [['+', 1, 2]]);
+    my ($p) = response update(10, 27, 'test', [['+', 1, 2]]);
     is_deeply $p => {
         CODE            => 'UPDATE',
         SYNC            => 10,
@@ -154,7 +154,7 @@ note 'update';
     }, 'Update request with space number';
 }
 {
-    my $p = response update(10, 'space_name', 'test', [['+', 1, 2]]);
+    my ($p) = response update(10, 'space_name', 'test', [['+', 1, 2]]);
     is_deeply $p => {
         CODE            => 'CALL',
         SYNC            => 10,
@@ -165,7 +165,7 @@ note 'update';
 
 note 'select';
 {
-    my $p = response select(10, 27, 30, [1,2,3]);
+    my ($p) = response select(10, 27, 30, [1,2,3]);
     is_deeply $p => {
         CODE            => 'SELECT',
         SYNC            => 10,
@@ -178,7 +178,7 @@ note 'select';
     }, 'Select request with space & index numbers';
 }
 {
-    my $p = response select(10, 27, 30, [1,2,3], 300);
+    my ($p) = response select(10, 27, 30, [1,2,3], 300);
     is_deeply $p => {
         CODE            => 'SELECT',
         SYNC            => 10,
@@ -191,7 +191,7 @@ note 'select';
     }, 'Select request with space & index numbers';
 }
 {
-    my $p = response select(10, 27, 30, [1,2,3], 300, 400, 'LE');
+    my ($p) = response select(10, 27, 30, [1,2,3], 300, 400, 'LE');
     is_deeply $p => {
         CODE            => 'SELECT',
         SYNC            => 10,
@@ -204,7 +204,7 @@ note 'select';
     }, 'Select request with space & index numbers';
 }
 {
-    my $p = response select('10', '27', '30', [1,2,3]);
+    my ($p) = response select('10', '27', '30', [1,2,3]);
     is_deeply $p => {
         CODE            => 'SELECT',
         SYNC            => 10,
@@ -217,7 +217,7 @@ note 'select';
     }, 'Select request with space & index numbers';
 }
 {
-    my $p = response select('10', 'space_name', 'index_name', [1], 5, 1, 'GT');
+    my ($p) = response select('10', 'space_name', 'index_name', [1], 5, 1, 'GT');
     is_deeply $p => {
         CODE            => 'CALL',
         SYNC            => 10,
@@ -231,4 +231,19 @@ note 'select';
             }
         ]
     }, 'Select request with space & index numbers';
+}
+
+note 'auth';
+{
+    my ($p) = response auth 19, 'user', 'password', '1234';
+    isa_ok $p => 'HASH';
+    my $tuple = delete $p->{TUPLE};
+    is_deeply $p => {
+        CODE        => 'AUTH',
+        SYNC        => 19,
+        USER_NAME   => 'user',
+    }, 'Auth request';
+    isa_ok $tuple => 'ARRAY';
+    is $tuple->[0] => 'chap-sha1', 'chap-sha1';
+    is length $tuple->[1] => 20, 'length of sha';
 }

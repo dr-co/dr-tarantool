@@ -4,8 +4,9 @@ use warnings;
 use strict;
 use utf8;
 use open qw(:std :utf8);
-use lib qw(lib ../lib);
-use lib qw(blib/lib blib/arch ../blib/lib ../blib/arch);
+use lib qw(lib ../lib ../../lib);
+use lib qw(blib/lib blib/arch ../blib/lib
+    ../blib/arch ../../blib/lib ../../blib/arch);
 
 use Test::More tests    => 70;
 use Encode qw(decode encode);

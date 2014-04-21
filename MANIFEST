@@ -13,6 +13,7 @@ lib/DR/Tarantool/Iterator.pm
 lib/DR/Tarantool/LLClient.pm
 lib/DR/Tarantool/LLSyncClient.pm
 lib/DR/Tarantool/MsgPack.pm
+lib/DR/Tarantool/MsgPack/LLClient.pm
 lib/DR/Tarantool/MsgPack/Proto.pm
 lib/DR/Tarantool/RealSyncClient.pm
 lib/DR/Tarantool/Spaces.pm
@@ -52,6 +53,11 @@ t/065-realsync-client.t
 t/070-coro-client.t
 t/080-tarantool.t
 t/090-parallel-requests.t
+t/1.6/015-msgpack-xs.t
+t/1.6/017-msgpack-proto.t
+t/1.6/022-msgpack-llclient.t
+t/1.6/data/ll-grant.lua
+t/1.6/data/ll.lua
 t/100-transform.t
 t/110-netsplit-readahead.t
 t/120-sessionid.t

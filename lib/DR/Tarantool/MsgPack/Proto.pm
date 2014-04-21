@@ -5,10 +5,11 @@ use warnings;
 package DR::Tarantool::MsgPack::Proto;
 use DR::Tarantool::MsgPack qw(msgpack msgunpack msgcheck);
 use base qw(Exporter);
-our @EXPORT_OK = qw(call_lua response insert replace del update select);
+our @EXPORT_OK = qw(call_lua response insert replace del update select auth handshake ping);
 use Carp;
-use Data::Dumper;
 use Scalar::Util 'looks_like_number';
+use Digest::SHA 'sha1';
+use MIME::Base64;
 
 my (%resolve, %tresolve);
 
@@ -74,6 +75,7 @@ sub raw_response($) {
         $len += $lenlen;
     }
 
+
     return if length $response < $len;
 
     my @r;
@@ -86,6 +88,11 @@ sub raw_response($) {
             unless $len_item and $len_item + $off <= length $response;
         push @r => msgunpack $sp;
         $off += $len_item;
+
+        if ($_ eq 2 and $off == length $response) {
+            push @r => {};
+            last;
+        }
     }
 
     croak 'Broken response header' unless 'HASH' eq ref $r[1];
@@ -118,7 +125,7 @@ sub response($) {
         $res->{CODE} = $n if defined $n;
     }
 
-    return $res;
+    return $res, $tail;
     
 }
 
@@ -313,5 +320,61 @@ sub select($$$$;$$$) {
 
 }
 
+sub ping($) {
+    my ($sync) = @_;
+    request
+        {
+            IPROTO_SYNC,    $sync,
+            IPROTO_CODE,    IPROTO_PING,
+        },
+        {
+        }
+    ;
+}
+
+
+
+sub strxor($$) {
+    my ($x, $y) = @_;
+
+    my @x = unpack 'C*', $x;
+    my @y = unpack 'C*', $y;
+    $x[$_] ^= $y[$_] for 0 .. $#x;
+    return pack 'C*', @x;
+}
+
+sub auth($$$$) {
+    my ($sync, $user, $password, $salt) = @_;
+
+    my $hpasswd = sha1 $password;
+    my $hhpasswd = sha1 $hpasswd;
+    my $scramble = sha1 $salt . $hhpasswd;
+
+
+    my $hash = strxor $hpasswd, $scramble;
+    request
+        {
+            IPROTO_SYNC, $sync,
+            IPROTO_CODE, IPROTO_AUTH,
+        },
+        {
+            IPROTO_USER_NAME,   $user,
+            IPROTO_TUPLE,       [ 'chap-sha1', $hash ],
+        }
+    ;
+}
+
+sub handshake($) {
+    my ($h) = @_;
+    croak 'Wrong handshake length' unless length $h == 128;
+    my $version = substr $h, 0, 64;
+    my $salt =    substr MIME::Base64::decode_base64(substr $h, 64), 0, 20;
+
+    for ($version) {
+        s/\0.*//;
+        s/^tarantool:?\s*//i;
+    }
+    return $version, $salt;
+}
 
 1;
