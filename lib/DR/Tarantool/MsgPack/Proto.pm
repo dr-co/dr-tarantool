@@ -156,8 +156,8 @@ sub request($$) {
     return msgpack(length $pkt) . $pkt;
 }
 
-sub call_lua($$@) {
-    my ($sync, $proc, @args) = @_;
+sub _call_lua($$$) {
+    my ($sync, $proc, $tuple) = @_;
     request
         {
             IPROTO_SYNC,            $sync,
@@ -165,9 +165,14 @@ sub call_lua($$@) {
         },
         {
             IPROTO_FUNCTION_NAME,   $proc,
-            IPROTO_TUPLE,           \@args,
+            IPROTO_TUPLE,           $tuple,
         }
     ;
+}
+
+sub call_lua($$@) {
+    my ($sync, $proc, @args) = @_;
+    return _call_lua($sync, $proc, \@args);
 }
 
 sub insert($$$) {
@@ -181,24 +186,16 @@ sub insert($$$) {
             {
                 IPROTO_SYNC,        $sync,
                 IPROTO_CODE,        IPROTO_INSERT,
-                IPROTO_SPACE_ID,    $space,
             },
             {
+                IPROTO_SPACE_ID,    $space,
                 IPROTO_TUPLE,       $tuple,
             }
         ;
     }
+
     # HACK
-    request
-        {
-            IPROTO_SYNC,            $sync,
-            IPROTO_CODE,            IPROTO_CALL,
-        },
-        {
-            IPROTO_FUNCTION_NAME,   "box.space.$space:insert",
-            IPROTO_TUPLE,           $tuple,
-        }
-    ;
+    _call_lua($sync, "box.space.$space:insert", $tuple);
 }
 
 sub replace($$$) {
@@ -212,24 +209,15 @@ sub replace($$$) {
             {
                 IPROTO_SYNC,        $sync,
                 IPROTO_CODE,        IPROTO_REPLACE,
-                IPROTO_SPACE_ID,    $space,
             },
             {
+                IPROTO_SPACE_ID,    $space,
                 IPROTO_TUPLE,       $tuple,
             }
         ;
     }
     # HACK
-    request
-        {
-            IPROTO_SYNC,            $sync,
-            IPROTO_CODE,            IPROTO_CALL,
-        },
-        {
-            IPROTO_FUNCTION_NAME,   "box.space.$space:replace",
-            IPROTO_TUPLE,           $tuple,
-        }
-    ;
+    _call_lua($sync, "box.space.$space:replace", $tuple);
 }
 sub del($$$) {
     my ($sync, $space, $key) = @_;
@@ -242,24 +230,15 @@ sub del($$$) {
             {
                 IPROTO_SYNC,        $sync,
                 IPROTO_CODE,        IPROTO_DELETE,
-                IPROTO_SPACE_ID,    $space,
             },
             {
+                IPROTO_SPACE_ID,    $space,
                 IPROTO_KEY,         $key,
             }
         ;
     }
     # HACK
-    request
-        {
-            IPROTO_SYNC,            $sync,
-            IPROTO_CODE,            IPROTO_CALL,
-        },
-        {
-            IPROTO_FUNCTION_NAME,   "box.space.$space:delete",
-            IPROTO_TUPLE,           $key,
-        }
-    ;
+    _call_lua($sync, "box.space.$space:delete", $key);
 }
 
 
@@ -274,25 +253,16 @@ sub update($$$$) {
             {
                 IPROTO_SYNC,        $sync,
                 IPROTO_CODE,        IPROTO_UPDATE,
-                IPROTO_SPACE_ID,    $space,
             },
             {
+                IPROTO_SPACE_ID,    $space,
                 IPROTO_KEY,         $key,
                 IPROTO_TUPLE,       $ops,
             }
         ;
     }
     # HACK
-    request
-        {
-            IPROTO_SYNC,            $sync,
-            IPROTO_CODE,            IPROTO_CALL,
-        },
-        {
-            IPROTO_FUNCTION_NAME,   "box.space.$space:update",
-            IPROTO_TUPLE,           [ $key, $ops ]
-        }
-    ;
+    _call_lua($sync, "box.space.$space:update", [ $key, $ops ]);
 }
 
 sub select($$$$;$$$) {
@@ -327,14 +297,7 @@ sub select($$$$;$$$) {
     }
 
     # HACK
-    request
-        {
-            IPROTO_SYNC,            $sync,
-            IPROTO_CODE,            IPROTO_CALL,
-        },
-        {
-            IPROTO_FUNCTION_NAME,   "box.space.$space.index.$index:select",
-            IPROTO_TUPLE,           [
+    _call_lua($sync, "box.space.$space.index.$index:select", [
                 $key,
                 {
                     offset => $offset,
@@ -342,9 +305,7 @@ sub select($$$$;$$$) {
                     iterator => $iterator
                 } 
             ]
-        }
-    ;
-
+    );
 }
 
 sub ping($) {
