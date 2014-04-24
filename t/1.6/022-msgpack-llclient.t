@@ -9,7 +9,7 @@ use lib qw(blib/lib blib/arch ../blib/lib
     ../blib/arch ../../blib/lib ../../blib/arch);
 
 BEGIN {
-    use constant PLAN       => 70;
+    use constant PLAN       => 88;
     use Test::More;
     use DR::Tarantool::StartTest;
 
@@ -239,6 +239,35 @@ for my $cv (AE::cv) {
 }
 
 note 'autologin';
+{
+    my @warns;
+    local $SIG{__WARN__} = sub { push @warns => $_[0] };
+
+    for my $cv (AE::cv) {
+        my $tnt;
+        $cv->begin;
+        DR::Tarantool::MsgPack::LLClient->connect(
+            host        => '127.0.0.1',
+            port        => $t->primary_port,
+            user        => 'user1',
+            password    => 'password2',
+            cb      => sub {
+                ($tnt) = @_;
+                ok $tnt, 'connect callback';
+                $cv->end;
+            }
+
+        );
+       
+        my $timer;
+        $timer = AE::timer 1.5, 0, sub { $cv->end };
+        $cv->recv;
+        undef $timer;
+    }
+    is scalar @warns, 1, 'One warning';
+    like $warns[0] => qr{Incorrect password}, 'text of warning';
+}
+
 for my $cv (AE::cv) {
     my $tnt;
     $cv->begin;
@@ -298,34 +327,6 @@ for my $cv (AE::cv) {
             port        => $t->primary_port,
             user        => 'user1',
             password    => 'password2',
-            cb      => sub {
-                ($tnt) = @_;
-                ok $tnt, 'connect callback';
-                $cv->end;
-            }
-
-        );
-       
-        my $timer;
-        $timer = AE::timer 1.5, 0, sub { $cv->end };
-        $cv->recv;
-        undef $timer;
-    }
-    is scalar @warns, 1, 'One warning';
-    like $warns[0] => qr{Incorrect password}, 'text of warning';
-}
-{
-    my @warns;
-    local $SIG{__WARN__} = sub { push @warns => $_[0] };
-
-    for my $cv (AE::cv) {
-        my $tnt;
-        $cv->begin;
-        DR::Tarantool::MsgPack::LLClient->connect(
-            host        => '127.0.0.1',
-            port        => $t->primary_port,
-            user        => 'user1',
-            password    => 'password2',
             reconnect_period => 1,
             reconnect_always => 1,
             cb      => sub {
@@ -344,3 +345,74 @@ for my $cv (AE::cv) {
     is scalar @warns, 1, 'One warning';
     like $warns[0] => qr{Incorrect password}, 'text of warning';
 }
+
+note 'select';
+
+$t->admin(q[box.schema.create_space('test', { id = 7 }).n]);
+$t->admin(q[box.space.test:create_index('pk', { type = 'tree' })]);
+$t->admin(q[box.space.test:insert({1,2,3})]);
+$t->admin(q[box.space.test:insert({2,2,3})]);
+
+
+{
+    for my $cv (AE::cv) {
+        $cv->begin;
+        $tnt->select(6, 0, 1, sub {
+            my ($res) = @_;
+            isa_ok $res => 'HASH', 'select response';
+            ok $res->{CODE}, 'code != 0';
+            like $res->{ERROR} => qr{Space \d+ does not exist}, 'error str';
+            $cv->end;
+        });
+        
+        $cv->begin;
+        $tnt->select(7, 0, 1, sub {
+            my ($res) = @_;
+            isa_ok $res => 'HASH', 'select response';
+            is $res->{CODE}, 0, 'code == 0';
+            is_deeply $res->{DATA}, [[1, 2, 3]], 'tuple';
+            $cv->end;
+        });
+        
+        $cv->begin;
+        $tnt->select(7, 0, 2, sub {
+            my ($res) = @_;
+            isa_ok $res => 'HASH', 'select response';
+            is $res->{CODE}, 0, 'code == 0';
+            is_deeply $res->{DATA}, [[2, 2, 3]], 'tuple';
+            $cv->end;
+        });
+        
+        $cv->begin;
+        $tnt->select('test', 'pk', [1], 3, 0, 'GT', sub {
+            my ($res) = @_;
+            isa_ok $res => 'HASH', 'select response';
+            is $res->{CODE}, 0, 'code == 0';
+            is_deeply $res->{DATA}, [[2, 2, 3]], 'tuple';
+            $cv->end;
+        });
+        
+        $cv->begin;
+        $tnt->select(7, 0, 3, sub {
+            my ($res) = @_;
+            isa_ok $res => 'HASH', 'select response';
+            is $res->{CODE}, 0, 'code == 0';
+            is_deeply $res->{DATA}, [], 'tuple';
+            $cv->end;
+        });
+        
+        $cv->begin;
+        $tnt->select(7, 11, 1, sub {
+            my ($res) = @_;
+            isa_ok $res => 'HASH', 'select response';
+            ok $res->{CODE}, 'code != 0';
+            like $res->{ERROR} => qr{No index.*is defined in space 7},
+                'error str';
+            $cv->end;
+        });
+
+        $cv->recv;
+    }
+}
+
+# note $t->log;

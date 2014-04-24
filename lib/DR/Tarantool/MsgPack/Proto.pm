@@ -11,7 +11,23 @@ use Scalar::Util 'looks_like_number';
 use Digest::SHA 'sha1';
 use MIME::Base64;
 
+
 my (%resolve, %tresolve);
+
+my %iter = (
+    EQ                  => 0,
+    REQ                 => 1,
+    ALL                 => 2,
+    LT                  => 3,
+    LE                  => 4,
+    GE                  => 5,
+    GT                  => 6,
+    BITS_ALL_SET        => 7,
+    BITS_ANY_SET        => 8,
+    BITS_ALL_NOT_SET    => 9
+);
+
+my %riter = reverse %iter;
 
 BEGIN {
     my %types = (
@@ -123,6 +139,11 @@ sub response($) {
     if (defined $res->{CODE}) {
         my $n = $tresolve{ $res->{CODE} };
         $res->{CODE} = $n if defined $n;
+    }
+
+    if (defined $res->{ITERATOR}) {
+        my $n = $riter{ $res->{ITERATOR} };
+        $res->{ITERATOR} = $n if defined $n;
     }
 
     return $res, $tail;
@@ -282,19 +303,25 @@ sub select($$$$;$$$) {
     $key = [ $key ] unless ref $key;
     croak "Cant convert HashRef to key" if 'HASH' eq ref $key;
 
+    unless(looks_like_number $iterator) {
+        my $i = $iter{$iterator};
+        croak "Wrong iterator type: $iterator" unless defined $i;
+        $iterator = $i;
+    }
+
     if (looks_like_number $space and looks_like_number $index) {
         return request
             {
                 IPROTO_SYNC,        $sync,
                 IPROTO_CODE,        IPROTO_SELECT,
-                IPROTO_SPACE_ID,    $space,
-                IPROTO_INDEX_ID,    $index,
-                IPROTO_LIMIT,       $limit,
-                IPROTO_OFFSET,      $offset,
-                IPROTO_ITERATOR,    $iterator
             },
             {
                 IPROTO_KEY,         $key,
+                IPROTO_SPACE_ID,    $space,
+                IPROTO_OFFSET,      $offset,
+                IPROTO_INDEX_ID,    $index,
+                IPROTO_LIMIT,       $limit,
+                IPROTO_ITERATOR,    $iterator,
             }
         ;
     }

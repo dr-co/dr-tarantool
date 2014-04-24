@@ -100,10 +100,26 @@ sub _check_rbuf {
 
 
 sub _fatal_error {
-    my ($self, @args) = @_;
+    my ($self, $msg, $raw) = @_;
+    $self->{last_code} ||= -1;
+    $self->{last_error_string} ||= $msg;
     $self->{handshake} = 1;
     delete $self->{tnt_salt};
-    return $self->SUPER::_fatal_error(@args);
+
+    delete $self->{rhandle};
+    delete $self->{whandle};
+    delete $self->{fh};
+    $self->{wbuf} = '';
+    $self->{connection_status} = 'not_connected',
+
+    my $wait = delete $self->{wait};
+    $self->{wait} = {};
+    for (keys %$wait) {
+        my $cb = delete $wait->{$_};
+        $cb->({ status  => 'fatal',  ERROR  => $msg, SYNC => $_ }, $raw);
+    }
+
+    $self->_connect_reconnect;
 }
 
 sub ping {
@@ -157,7 +173,41 @@ sub auth {
 
 sub _request {
     my ($self, $id, $pkt, $cb) = @_;
-    return $self->SUPER::_request($id, $pkt, $cb);
+    return $self->SUPER::_request($id, $pkt, sub {
+        unless (exists $_[0]{status}) {
+            if ($_[0]{CODE} == 0) {
+                $_[0]{status} = 'ok';
+            } else {
+                $_[0]{status} = 'error';
+            }
+        }
+        &$cb;
+    });
+}
+
+sub select {
+    my $self = shift;
+
+    my $space = shift;
+    my $index = shift;
+    my $key = shift;
+
+    my $cb = pop;
+    
+    my $limit = shift;
+    my $offset = shift;
+    my $iterator = shift;
+
+    $self->_check_cb( $cb );
+
+    my $id = $self->_req_id;
+    my $pkt = DR::Tarantool::MsgPack::Proto::select(
+        $id, $space, $index, $key, $limit, $offset, $iterator);
+
+#     warn Dumper DR::Tarantool::MsgPack::Proto::response($pkt);
+
+    $self->_request($id, $pkt, $cb);
+    return;
 }
 
 
