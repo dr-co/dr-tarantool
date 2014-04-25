@@ -9,7 +9,7 @@ use lib qw(blib/lib blib/arch ../blib/lib
     ../blib/arch ../../blib/lib ../../blib/arch);
 
 BEGIN {
-    use constant PLAN       => 88;
+    use constant PLAN       => 134;
     use Test::More;
     use DR::Tarantool::StartTest;
 
@@ -411,8 +411,190 @@ $t->admin(q[box.space.test:insert({2,2,3})]);
             $cv->end;
         });
 
+        my $timer;
+        $timer = AE::timer 1.5, 0, sub { $cv->end };
         $cv->recv;
+        undef $timer;
     }
 }
 
-# note $t->log;
+note 'insert';
+for my $cv (AE::cv) {
+    $cv->begin;
+    $tnt->insert(6, [ 3, 4, 5 ], sub {
+        my ($res) = shift;
+        isa_ok $res => 'HASH';
+        ok $res->{CODE}, 'CODE is not 0';
+        like $res->{ERROR} => qr{Space 6 does not exist}, 'error message';
+
+        $cv->end;
+    });
+
+
+    $cv->begin;
+    $tnt->insert(7, [ 3, 4, 5 ], sub {
+        my ($res) = shift;
+        isa_ok $res => 'HASH';
+        is_deeply $res->{DATA} => [[3, 4, 5]], 'tuple was inserted';
+        is $res->{CODE}, 0, 'code';
+        is $res->{status}, 'ok', 'status';
+        $cv->end;
+    });
+    
+    $cv->begin;
+    $tnt->insert(7, [ 1, 2, 3 ], sub {
+        my ($res) = shift;
+        isa_ok $res => 'HASH';
+        ok $res->{CODE}, 'code';
+        like $res->{ERROR} => qr{Duplicate key}, 'error message';
+        is $res->{status}, 'error', 'status';
+        $cv->end;
+    });
+
+    my $timer;
+    $timer = AE::timer 1.5, 0, sub { $cv->end };
+    $cv->recv;
+    undef $timer;
+}
+
+note 'replace';
+for my $cv (AE::cv) {
+    $cv->begin;
+    $tnt->replace(6, [ 3, 4, 5 ], sub {
+        my ($res) = shift;
+        isa_ok $res => 'HASH';
+        ok $res->{CODE}, 'CODE is not 0';
+        like $res->{ERROR} => qr{Space 6 does not exist}, 'error message';
+
+        $cv->end;
+    });
+
+
+    $cv->begin;
+    $tnt->replace(7, [ 4, 5 ], sub {
+        my ($res) = shift;
+        isa_ok $res => 'HASH';
+        is_deeply $res->{DATA} => [[4, 5]], 'tuple was inserted';
+        is $res->{CODE}, 0, 'code';
+        is $res->{status}, 'ok', 'status';
+        $cv->end;
+    });
+    
+    $cv->begin;
+    $tnt->replace(7, [ 1, 4, 5 ], sub {
+        my ($res) = shift;
+        isa_ok $res => 'HASH';
+        is_deeply $res->{DATA} => [[1, 4, 5]], 'tuple was replaced';
+        is $res->{CODE}, 0, 'code';
+        is $res->{status}, 'ok', 'status';
+        $cv->end;
+    });
+
+    my $timer;
+    $timer = AE::timer 1.5, 0, sub { $cv->end };
+    $cv->recv;
+    undef $timer;
+}
+
+note 'delete';
+for my $cv (AE::cv) {
+    $cv->begin;
+    $tnt->delete(6, [ 3 ], sub {
+        my ($res) = shift;
+        isa_ok $res => 'HASH';
+        ok $res->{CODE}, 'CODE is not 0';
+        like $res->{ERROR} => qr{Space 6 does not exist}, 'error message';
+
+        $cv->end;
+    });
+
+
+
+    $cv->begin;
+    $tnt->delete(7, 55, sub {
+        my ($res) = shift;
+        isa_ok $res => 'HASH';
+        is_deeply $res->{DATA} => [], 'tuple was not found';
+        is $res->{CODE}, 0, 'code';
+        is $res->{status}, 'ok', 'status';
+        $cv->end;
+    });
+    
+    $cv->begin;
+    $tnt->select(7, 0, 4, sub {
+        my ($res) = @_;
+        is_deeply $res->{DATA} => [[4,5]], 'tuple exists';
+
+        $tnt->delete(7, [4], sub {
+            my ($res) = shift;
+            isa_ok $res => 'HASH';
+            is_deeply $res->{DATA} => [[4,5]], 'tuple was removed';
+            is $res->{CODE}, 0, 'code';
+            is $res->{status}, 'ok', 'status';
+
+            $tnt->select(7, 0, 4, sub {
+                my ($res) = @_;
+                is_deeply $res->{DATA} => [], 'tuple was removed really';
+                $cv->end;
+            });
+
+        });
+    });
+
+    my $timer;
+    $timer = AE::timer 1.5, 0, sub { $cv->end };
+    $cv->recv;
+    undef $timer;
+}
+
+
+note 'update';
+for my $cv (AE::cv) {
+    $cv->begin;
+    $tnt->update(6, 1, [ ], sub {
+        my ($res) = shift;
+        isa_ok $res => 'HASH';
+        ok $res->{CODE}, 'CODE is not 0';
+        like $res->{ERROR} => qr{Space 6 does not exist}, 'error message';
+
+        $cv->end;
+    });
+
+
+
+    $cv->begin;
+    $tnt->update(7, 55, [['+', 1, 1]], sub {
+        my ($res) = shift;
+        isa_ok $res => 'HASH';
+        is_deeply $res->{DATA} => [], 'tuple was not found';
+        is $res->{CODE}, 0, 'code';
+        is $res->{status}, 'ok', 'status';
+        $cv->end;
+    });
+
+    $cv->begin;
+    $tnt->select(7, 0, 1, sub {
+        my ($res) = @_;
+        is_deeply $res->{DATA}, [[1,4,5]], 'data in db';
+        $tnt->update(7, 1, [['+', 1, 1], ['-', 2, 1], ['-', 2, 2]], sub {
+            my ($res) = @_;
+            ok $res->{CODE}, 'code != 0';
+            like $res->{ERROR} => qr{double update of the same field},
+                'error msg';
+            $cv->end;
+        });
+
+    });
+
+    $cv->begin;
+    $tnt->update(7, 1, [['+', 1, 1], ['-', 2, 3]], sub {
+        my ($res) = @_;
+        is_deeply $res->{DATA}, [[1,5,2]], 'data after update';
+        $cv->end;
+    });
+
+    my $timer;
+    $timer = AE::timer 1.5, 0, sub { $cv->end };
+    $cv->recv;
+    undef $timer;
+}

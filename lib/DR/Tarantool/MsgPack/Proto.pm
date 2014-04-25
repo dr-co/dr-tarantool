@@ -321,7 +321,6 @@ sub ping($) {
 }
 
 
-
 sub strxor($$) {
     my ($x, $y) = @_;
 

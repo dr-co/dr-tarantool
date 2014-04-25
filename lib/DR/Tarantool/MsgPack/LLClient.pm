@@ -204,14 +204,69 @@ sub select {
     my $pkt = DR::Tarantool::MsgPack::Proto::select(
         $id, $space, $index, $key, $limit, $offset, $iterator);
 
-#     warn Dumper DR::Tarantool::MsgPack::Proto::response($pkt);
-
     $self->_request($id, $pkt, $cb);
     return;
 }
 
 
+sub insert {
+    my $self = shift;
+
+    my $space = shift;
+    my $tuple = shift;
+    my $cb = pop;
+    $self->_check_tuple( $tuple );
+    $self->_check_cb( $cb );
+
+    my $id = $self->_req_id;
+    my $pkt = DR::Tarantool::MsgPack::Proto::insert($id, $space, $tuple);
+
+    $self->_request($id, $pkt, $cb);
+    return;
+}
+
+sub replace {
+    my $self = shift;
+
+    my $space = shift;
+    my $tuple = shift;
+    my $cb = pop;
+    $self->_check_tuple( $tuple );
+    $self->_check_cb( $cb );
+
+    my $id = $self->_req_id;
+    my $pkt = DR::Tarantool::MsgPack::Proto::replace($id, $space, $tuple);
+
+    $self->_request($id, $pkt, $cb);
+    return;
+}
+
+sub delete:method {
+    my $self = shift;
+    my $cb = pop;
+    $self->_check_cb($cb);
+    my $space = shift;
+    my $key = shift;
+
+    my $id = $self->_req_id;
+    my $pkt = DR::Tarantool::MsgPack::Proto::del($id, $space, $key);
+    $self->_request($id, $pkt, $cb);
+    return;
+}
+
+sub update {
+    my $self = shift;
+    my $cb = pop;
+    $self->_check_cb($cb);
+
+    my $space = shift;
+    my $key = shift;
+    my $ops = shift;
 
 
-
+    my $id = $self->_req_id;
+    my $pkt = DR::Tarantool::MsgPack::Proto::update($id, $space, $key, $ops);
+    $self->_request($id, $pkt, $cb);
+    return;
+}
 1;
