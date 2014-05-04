@@ -1,4 +1,4 @@
-libdr-tarantool-perl (0.43-1) unstable; urgency=medium
+libdr-tarantool-perl (0.43-1) nowtaxi; urgency=medium
 
   * EINTR doesn't throw exception with RealSyncClient driver.
   * Fix randomly test segfaults, closes: #727554,
