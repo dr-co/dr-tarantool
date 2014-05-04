@@ -7,7 +7,7 @@ use open qw(:std :utf8);
 use lib qw(lib ../lib);
 use lib qw(blib/lib blib/arch ../blib/lib ../blib/arch);
 
-use constant PLAN       => 59;
+use constant PLAN       => 62;
 use Test::More tests    => PLAN;
 use Encode qw(decode encode);
 
