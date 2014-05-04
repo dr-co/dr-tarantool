@@ -1,3 +1,9 @@
+libdr-tarantool-perl (0.43-1) unstable; urgency=medium
+
+  * EINTR doesn't throw exception with RealSyncClient driver.
+
+ -- Dmitry E. Oboukhov <unera@debian.org>  Sun, 04 May 2014 10:52:41 +0400
+
 libdr-tarantool-perl (0.42-2) nowtaxi; urgency=medium
 
   * Rebuild for Nowtaxi repo.

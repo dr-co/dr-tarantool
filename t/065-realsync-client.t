@@ -27,6 +27,7 @@ BEGIN {
     use_ok 'File::Basename', 'dirname', 'basename';
     use_ok 'AnyEvent';
     use_ok 'DR::Tarantool::RealSyncClient';
+    use_ok 'Time::HiRes';
 }
 
 my $cfg_dir = catfile dirname(__FILE__), 'test-data';
@@ -34,7 +35,10 @@ ok -d $cfg_dir, 'directory with test data';
 my $tcfg = catfile $cfg_dir, 'llc-easy2.cfg';
 ok -r $tcfg, $tcfg;
 
-my $tnt = run DR::Tarantool::StartTest( cfg => $tcfg );
+my $tnt = run DR::Tarantool::StartTest(
+    cfg         => $tcfg,
+    script_dir  => catfile(dirname(__FILE__), 'test-data')
+);
 
 my $spaces = {
     0   => {
@@ -189,4 +193,14 @@ SKIP: {
 
     ok $t = $client->delete(first_space => [ 1 ], TNT_FLAG_RETURN), 'delete';
     is $t->json->{привет}, 'медвед', 'JSON delete: hash utf8 value';
+
+
+    note 'EINTR';
+    {
+        $SIG{ALRM} = sub { ok 1 , 'SIG{ALRM} received' };
+        Time::HiRes::alarm .5;
+        is_deeply
+            $client->call_lua('sleep_and_return', [2, 'rv'])->raw, ['rv'],
+            'response received';
+    }
 }
