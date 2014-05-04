@@ -1,6 +1,8 @@
 libdr-tarantool-perl (0.43-1) unstable; urgency=medium
 
   * EINTR doesn't throw exception with RealSyncClient driver.
+  * Fix randomly test segfaults, closes: #727554,
+    thanks to Colin Watson <cjwatson@ubuntu.com>.
 
  -- Dmitry E. Oboukhov <unera@debian.org>  Sun, 04 May 2014 10:52:41 +0400
 
