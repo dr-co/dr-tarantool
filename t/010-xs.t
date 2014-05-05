@@ -202,38 +202,71 @@ for my $bin (sort @bins) {
 
 SKIP: {
 #     skip 'Devel tests $ENV{DEVEL_TEST}=0', 120 unless $ENV{DEVEL_TEST};
+
+# Pack an integer into an <int32_varint>, per the Tarantool binary protocol.
+sub pack_varint {
+    my $num = shift;
+    my $out = pack 'C', ($num & 0x7f);
+    $num >>= 7;
+    while ($num) {
+        $out .= pack 'C', (($num & 0x7f) | 0x80);
+        $num >>= 7;
+    }
+    return scalar reverse $out;
+}
+
+# Pack arbitrary data into a trivial <fq_tuple>, per the Tarantool binary
+# protocol.
+sub pack_fq_tuple {
+    my $body = shift;
+    my $len = length $body;
+    # <fq_tuple> ::= <size><tuple>
+    # <tuple> ::= <cardinality><field>+
+    # <field> ::= <int32_varint><data>
+    my $len_varint = pack_varint($len);
+    return pack 'LLa*a*',
+        4 * length($len_varint) + $len,
+        1,
+        $len_varint,
+        $body
+    ;
+}
+
 for (1 .. 30) {
     my $body = join '', map { chr int rand 256 } 1 .. (300 + int rand 300);
     my $pkt =
-        pack 'LLLLa*',
+        pack 'LLLLLa*',
             TNT_SELECT,
-            length $body,
+            8 + length $body,
             int rand 500,
             0,
-            $body
+            1,
+            pack_fq_tuple($body)
         ;
     $res = DR::Tarantool::_pkt_parse_response( $pkt );
     diag explain $res unless
     is $res->{status}, 'buffer', "Broken package $_";
     $pkt =
-        pack 'LLLLa*',
+        pack 'LLLLLa*',
             TNT_SELECT,
-            10 + length $body,
+            8 + 10 + length $body,
             int rand 500,
             0,
-            $body
+            1,
+            pack_fq_tuple($body)
         ;
     $res = DR::Tarantool::_pkt_parse_response( $pkt );
     diag explain $res unless
     is $res->{status}, 'buffer', "Broken package $_, too long body";
     
     $pkt =
-        pack 'LLLLa*',
+        pack 'LLLLLa*',
             TNT_SELECT,
-            -10 + length $body,
+            8 - 10 + length $body,
             int rand 500,
             0,
-            $body
+            1,
+            pack_fq_tuple($body)
         ;
     $res = DR::Tarantool::_pkt_parse_response( $pkt );
     diag explain $res unless

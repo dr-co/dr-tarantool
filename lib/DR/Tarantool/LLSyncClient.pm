@@ -87,7 +87,10 @@ sub _request {
     while($len > 0) {
         no warnings; # closed socket
         my $slen = syswrite $self->{fh}, $pkt;
-        goto SOCKET_ERROR unless defined $slen;
+        unless(defined $slen) {
+            next if $!{EINTR};
+            goto SOCKET_ERROR;
+        }
         $len -= $slen;
         substr $pkt, 0, $slen, '';
     }
@@ -96,7 +99,10 @@ sub _request {
     while(12 > length $pkt) {
         no warnings; # closed socket
         my $rl = sysread $self->{fh}, $pkt, 12 - length $pkt, length $pkt;
-        goto SOCKET_ERROR unless defined $rl;
+        unless (defined $rl) {
+            next if $!{EINTR};
+            goto SOCKET_ERROR;
+        }
     }
 
     my (undef, $blen) = unpack "L$LE L$LE", $pkt;
@@ -105,7 +111,10 @@ sub _request {
         no warnings; # closed socket
         my $rl = sysread $self->{fh},
             $pkt, 12 + $blen - length $pkt, length $pkt;
-        goto SOCKET_ERROR unless defined $rl;
+        unless (defined $rl) {
+            next if $!{EINTR};
+            goto SOCKET_ERROR;
+        }
     }
 
     my $res = DR::Tarantool::_pkt_parse_response( $pkt );

@@ -23,3 +23,8 @@ function test_return(...)
     return { ... }
 end
 
+
+function sleep_and_return(sleep, retval) 
+    box.fiber.sleep(tonumber(sleep))
+    return retval
+end
