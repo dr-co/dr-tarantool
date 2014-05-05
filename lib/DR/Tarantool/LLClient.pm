@@ -194,29 +194,40 @@ sub connect {
     );
 
     $self->on(connected => sub {
+        my ($self) = @_;
         $self->on(connected => $self->on_connected);
         $self->on_connected->($self);
         $cb->($self);
     });
 
     $self->on(connfail => sub {
+        my ($self) = @_;
         $self->on(connfail => undef);
-        $cb->($self->error) unless $self->reconnect_always;
+        unless($self->reconnect_always) {
+            $self->on(connected => undef);
+            $cb->($self->error);
+        }
     });
 
-    $self->on(error => $self->on_error);
+    $self->on(error => sub {
+        my ($self) = @_;
+        $self->_fatal_error($self->error);
+    });
 
     $self->SUPER::connect;
+
+    unless (defined wantarray) {
+        my $cbb = $cb;
+        $cb = sub {
+            &$cbb;
+            undef $self;
+        };
+        return;
+    }
+
     return $self;
 }
 
-
-sub on_error {
-    sub {
-        my ($self) = @_;
-        $self->_fatal_error($self->error);
-    }
-}
 
 sub on_connected {
     sub {
@@ -667,6 +678,7 @@ sub _log_transaction {
 
 sub _request {
     my ($self, $id, $pkt, $cb ) = @_;
+#     Scalar::Util::weaken $self;
   
     my $cbres = $cb;
     $cbres = sub { $self->_log_transaction($id, $pkt, @_); &$cb }
@@ -693,11 +705,8 @@ sub _fatal_error {
     $self->{last_code} ||= -1;
     $self->{last_error_string} ||= $msg;
 
-    delete $self->{rhandle};
-    delete $self->{whandle};
     delete $self->{fh};
     $self->{wbuf} = '';
-    $self->{connection_status} = 'not_connected',
 
     my $wait = delete $self->{wait};
     $self->{wait} = {};
@@ -745,17 +754,17 @@ sub _check_rbuf {{
 
 
 sub on_read {
-    my ($self) = @_;
+    Scalar::Util::weaken(my $self = shift);
     sub {
         my $rd = sysread $self->fh, my $buf, 4096;
         unless(defined $rd) {
             return if $!{EINTR};
-            $self->_socket_error->($self->fh, 1, $!);
+            $self->_fatal_error("Socket error: $!");
             return;
         }
 
         unless($rd) {
-            $self->_socket_eof->($self->fh, 1);
+            $self->_fatal_error("Socket error: Server closed connection");
             return;
         }
         $self->{rbuf} .= $buf;
@@ -774,24 +783,6 @@ sub on_read {
 #             warn "$sname saved (body length: $blen)";
 #         }
 }
-
-
-
-sub _socket_error {
-    my ($self) = @_;
-    return sub {
-        my (undef, $fatal, $msg) = @_;
-        $self->_fatal_error("Socket error: $msg");
-    }
-}
-
-sub _socket_eof {
-    my ($self) = @_;
-    return sub {
-        $self->_fatal_error("Socket error: Server closed connection");
-    }
-}
-
 
 sub _check_cb {
     my ($self, $cb) = @_;

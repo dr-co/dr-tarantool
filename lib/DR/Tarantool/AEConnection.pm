@@ -108,6 +108,7 @@ sub connect {
         $self->host,
         $self->port,
         sub {
+            $self->{guard} = {};
             my ($fh) = @_;
             if ($fh) {
                 $self->{fh} = $fh;
