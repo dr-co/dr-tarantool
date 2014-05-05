@@ -8,7 +8,8 @@ Build-Depends: debhelper (>= 7), cdbs,
  libjson-xs-perl,
  tarantool,
  aspell-en,
- libtest-spelling-perl
+ libtest-spelling-perl,
+ liblist-moreutils-perl
 Standards-Version: 3.9.5
 Priority: extra
 VCS-Browser: https://github.com/dr-co/dr-tarantool
@@ -17,7 +18,8 @@ Package: libdr-tarantool-perl
 Depends: ${perl:Depends}, ${misc:Depends}, ${shlibs:Depends},
  libanyevent-perl,
  libjson-xs-perl,
- libdevel-globaldestruction-perl
+ libdevel-globaldestruction-perl,
+ liblist-moreutils-perl
 Recommends: libcoro-perl
 Architecture: any
 Suggests: tarantool

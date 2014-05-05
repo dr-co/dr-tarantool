@@ -101,6 +101,7 @@ This is a low-level driver :)
 
 
 package DR::Tarantool::LLClient;
+use base qw(DR::Tarantool::AEConnection);
 use AnyEvent;
 use AnyEvent::Socket;
 use Carp;
@@ -172,7 +173,12 @@ sub connect {
         $cb = delete $opts{cb};
     }
 
-    $class->_check_cb( $cb || sub {  });
+    $cb ||= sub {  };
+
+    $class->_check_cb( $cb );
+
+    return $class->SUPER::connect if ref $class;
+
 
     my $host = $opts{host} || 'localhost';
     my $port = $opts{port} or croak "port is undefined";
@@ -180,45 +186,59 @@ sub connect {
     my $reconnect_period    = $opts{reconnect_period} || 0;
     my $reconnect_always    = $opts{reconnect_always} || 0;
 
-    my $self = bless {
+    my $self = $class->SUPER::new(
         host                => $host,
         port                => $port,
         reconnect_period    => $reconnect_period,
         reconnect_always    => $reconnect_always,
-        first_connect       => 1,
-        connection_status   => 'not_connected',
-        wbuf                => '',
-        rbuf                => '',
-    } => ref($class) || $class;
+    );
 
-    $self->_connect_reconnect( $cb );
+    $self->on(connected => sub {
+        $self->on(connected => $self->on_connected);
+        $self->on_connected->($self);
+        $cb->($self);
+    });
 
+    $self->on(connfail => sub {
+        $self->on(connfail => undef);
+        $cb->($self->error) unless $self->reconnect_always;
+    });
+
+    $self->on(error => $self->on_error);
+
+    $self->SUPER::connect;
     return $self;
 }
+
+
+sub on_error {
+    sub {
+        my ($self) = @_;
+        $self->_fatal_error($self->error);
+    }
+}
+
+sub on_connected {
+    sub {
+        my ($self) = @_;
+        $self->{guard}{read} = AE::io $self->fh, 0, $self->on_read;
+    }
+}
+
 
 sub disconnect {
     my ($self, $cb) = @_;
     $cb ||= sub {  };
     $self->_check_cb( $cb );
 
-    delete $self->{reconnect_timer};
-    delete $self->{connecting};
-    if ($self->is_connected) {
-        delete $self->{rhandle};
-        delete $self->{whandle};
-        delete $self->{fh};
-    }
+    $self->SUPER::disconnect;
     $cb->( 'ok' );
 }
 
 sub DESTROY {
     return if in_global_destruction;
     my ($self) = @_;
-    if ($self->is_connected) {
-        delete $self->{rhandle};
-        delete $self->{whandle};
-        delete $self->{fh};
-    }
+    $self->disconnect;
 }
 
 =head2 is_connected
@@ -229,7 +249,7 @@ B<True> if this connection is established.
 
 sub is_connected {
     my ($self) = @_;
-    return $self->fh ? 1 : 0;
+    $self->state eq 'connected';
 }
 
 =head2 connection_status
@@ -262,7 +282,10 @@ is set, the driver continues to try to reconnect and update its status.
 
 sub connection_status {
     my ($self) = @_;
-    $self->{connection_status} || 'unknown';
+    return 'ok'         if $self->state eq 'connected';
+    return 'connecting' if $self->state eq 'connecting';
+    return 'fatal'      if $self->state eq 'error';
+    return 'not_connected';
 }
 
 
@@ -293,7 +316,7 @@ sub ping :method {
         return;
     }
     
-    unless($self->{reconnect_period}) {
+    unless($self->reconnect_period) {
         $cb->({
                 status  => 'fatal',
                 req_id  => $id,
@@ -307,7 +330,7 @@ sub ping :method {
     weaken $this;
 
     my $tmr;
-    $tmr = AE::timer $self->{reconnect_period}, 0, sub {
+    $tmr = AE::timer $self->reconnect_period, 0, sub {
         undef $tmr;
         if ($this and $this->is_connected) {
             $this->_request( $id, $pkt, $cb );
@@ -644,34 +667,16 @@ sub _log_transaction {
 
 sub _request {
     my ($self, $id, $pkt, $cb ) = @_;
-    
+  
     my $cbres = $cb;
     $cbres = sub { $self->_log_transaction($id, $pkt, @_); &$cb }
         if $ENV{TNT_LOG_ERRDIR} or $ENV{TNT_LOG_DIR};
 
     $self->{ wait }{ $id } = $cbres;
-    # TODO: use watcher
-    $self->{wbuf} .= $pkt;
 
-    if ($self->fh) {
-        return if $self->{whandle};
-        $self->{whandle} = AE::io $self->fh, 1, $self->_on_write;
-    }
+    $self->push_write($pkt);
 }
 
-sub _on_write {
-    my ($self) = @_;
-    sub {
-        my $wb = syswrite $self->fh, $self->{wbuf};
-        unless(defined $wb) {
-            $self->_socket_error->($self->fh, 1, $!);
-            return;
-        }
-        return unless $wb;
-        substr $self->{wbuf}, 0, $wb, '';
-        delete $self->{whandle} unless length $self->{wbuf};
-    }
-}
 sub _req_id {
     my ($self) = @_;
     for (my $id = $self->{req_id} || 0;; $id++) {
@@ -684,6 +689,7 @@ sub _req_id {
 
 sub _fatal_error {
     my ($self, $msg, $raw) = @_;
+
     $self->{last_code} ||= -1;
     $self->{last_error_string} ||= $msg;
 
@@ -700,57 +706,9 @@ sub _fatal_error {
         $cb->({ status  => 'fatal',  errstr  => $msg, req_id => $_ }, $raw);
     }
 
-    $self->_connect_reconnect;
+    $self->set_error($msg) if $self->state ne 'error';
 }
 
-sub _connect_reconnect {
-
-    my ($self, $cb) = @_;
-
-    $self->_check_cb( $cb ) if $cb;
-    return if $self->{reconnect_timer};
-    return if $self->{connecting};
-    return unless $self->{first_connect} or $self->{reconnect_period};
-
-    $self->{reconnect_timer} = AE::timer
-        $self->{first_connect} ? 0 : $self->{reconnect_period},
-        $self->{reconnect_period} || 0,
-        sub {
-            return if $self->{connecting};
-            $self->{connecting} = 1;
-
-            $self->{connection_status} = 'connecting';
-
-            tcp_connect $self->{host}, $self->{port}, sub {
-                my ($fh) = @_;
-                delete $self->{connecting};
-                if ($fh) {
-                    $self->{fh} = $fh;
-                    $self->{rbuf} = '';
-                    $self->{rhandle} = AE::io $self->fh, 0, $self->on_read;
-                    $self->{whandle} = AE::io $self->fh, 1, $self->_on_write
-                        if length $self->{wbuf};
-
-
-                    delete $self->{reconnect_timer};
-                    delete $self->{first_connect};
-                    $self->{connection_status} = 'ok';
-
-                    $cb->( $self ) if $cb;
-                    return;
-                }
-
-                my $emsg = $!;
-                if ($self->{first_connect} and not $self->{reconnect_always}) {
-                    $cb->( $! ) if $cb;
-                    delete $self->{reconnect_timer};
-                    delete $self->{connecting};
-                }
-                $self->{connection_status} = "Couldn't connect to server: $!";
-            };
-        }
-    ;
-}
 
 sub _check_rbuf {{
     my ($self) = @_;
@@ -791,6 +749,7 @@ sub on_read {
     sub {
         my $rd = sysread $self->fh, my $buf, 4096;
         unless(defined $rd) {
+            return if $!{EINTR};
             $self->_socket_error->($self->fh, 1, $!);
             return;
         }
@@ -817,10 +776,6 @@ sub on_read {
 }
 
 
-sub fh {
-    my ($self) = @_;
-    return $self->{fh};
-}
 
 sub _socket_error {
     my ($self) = @_;

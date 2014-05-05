@@ -15,6 +15,7 @@ WriteMakefile(
             'AnyEvent'                      => 0,
             'Devel::GlobalDestruction'      => 0,
             'JSON::XS'                      => 0,
+            'List::MoreUtils'               => 0,
     }, # e.g., Module::Name => 1.1
     META_MERGE => {
         resources => {

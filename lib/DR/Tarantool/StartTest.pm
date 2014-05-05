@@ -68,11 +68,11 @@ FAMILY can be:
 
 =over
 
-=item 1 (default)
+=item B<1> (default)
 
 For tarantool < 1.6.
 
-=item 2
+=item B<2>
 
 For tarantool >= 1.6.
 
