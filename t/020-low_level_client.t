@@ -49,7 +49,7 @@ my $tnt = run DR::Tarantool::StartTest( cfg => $tcfg );
 SKIP: {
     unless ($tnt->started and !$ENV{SKIP_TNT}) {
         diag $tnt->log unless $ENV{SKIP_TNT};
-        skip "tarantool isn't started", PLAN - 8;
+        skip "tarantool isn't started", PLAN - 7;
     }
 
     my $client;
@@ -377,6 +377,8 @@ SKIP: {
                         }
                     }
                 );
+
+
                 DR::Tarantool::LLClient->connect(
                     port                    => $tnt->primary_port,
                     reconnect_period        => 100,
