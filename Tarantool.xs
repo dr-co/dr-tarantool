@@ -15,7 +15,8 @@
 #include "msgpuck.h"
 
 extern void _mpack_item(SV *res, SV *o);
-extern const char *_munpack_item(const char *p, size_t len, SV **res, HV *ext);
+extern const char *_munpack_item(const char *p,
+    size_t len, SV **res, HV *ext, int utf);
 
 #define PREALLOC_SCALAR_SIZE		0
 
@@ -461,17 +462,18 @@ SV * _msgpack(o)
 	OUTPUT:
 		RETVAL
 
-SV * _msgunpack(str, ...)
-	SV *str
-	PROTOTYPE: $;$
+SV * _msgunpack(str, utf)
+	SV *str;
+	SV *utf;
+	PROTOTYPE: $$
 	CODE:
 		SV *sv = 0;
 		size_t len;
 		const char *s = SvPV(str, len);
 		if (items > 1)
-			_munpack_item(s, len, &sv, (HV *)ST(1));
+			_munpack_item(s, len, &sv, (HV *)ST(1), SvIV(utf));
 		else
-			_munpack_item(s, len, &sv, NULL);
+			_munpack_item(s, len, &sv, NULL, SvIV(utf));
 		RETVAL = sv;
 
 	OUTPUT:

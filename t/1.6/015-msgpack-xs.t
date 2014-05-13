@@ -8,7 +8,7 @@ use lib qw(lib ../lib ../../lib);
 use lib qw(blib/lib blib/arch ../blib/lib
     ../blib/arch ../../blib/lib ../../blib/arch);
 
-use Test::More tests    => 70;
+use Test::More tests    => 73;
 use Encode qw(decode encode);
 
 
@@ -184,80 +184,80 @@ note '==================== unpack ==============================';
 note 'string';
 {
     my $p = DR::Tarantool::_msgpack('test');
-    is DR::Tarantool::_msgunpack($p), 'test', 'fixed string';
+    is DR::Tarantool::_msgunpack($p, 1), 'test', 'fixed string';
 
     $p = DR::Tarantool::_msgpack('test' x 20);
-    is DR::Tarantool::_msgunpack($p), 'test' x 20, 'string 8';
+    is DR::Tarantool::_msgunpack($p, 1), 'test' x 20, 'string 8';
 
     $p = DR::Tarantool::_msgpack('test' x 200);
-    is DR::Tarantool::_msgunpack($p), 'test' x 200, 'string 16';
+    is DR::Tarantool::_msgunpack($p, 1), 'test' x 200, 'string 16';
 
     $p = DR::Tarantool::_msgpack('test' x 20000);
-    is DR::Tarantool::_msgunpack($p), 'test' x 20000, 'string 32';
+    is DR::Tarantool::_msgunpack($p, 1), 'test' x 20000, 'string 32';
 }
 note 'numbers';
 {
     my $p = DR::Tarantool::_msgpack(10);
-    is DR::Tarantool::_msgunpack($p), 10, 'fixed int';
+    is DR::Tarantool::_msgunpack($p, 1), 10, 'fixed int';
 
     $p = DR::Tarantool::_msgpack(-10);
-    is DR::Tarantool::_msgunpack($p), -10, 'fixed negative';
+    is DR::Tarantool::_msgunpack($p, 1), -10, 'fixed negative';
 
     $p = DR::Tarantool::_msgpack(-100);
-    is DR::Tarantool::_msgunpack($p), -100, 'negative int8';
+    is DR::Tarantool::_msgunpack($p, 1), -100, 'negative int8';
 
     $p = DR::Tarantool::_msgpack(10000);
-    is DR::Tarantool::_msgunpack($p), 10000, 'uint16';
+    is DR::Tarantool::_msgunpack($p, 1), 10000, 'uint16';
 
     $p = DR::Tarantool::_msgpack(123333939393939);
-    is DR::Tarantool::_msgunpack($p), 123333939393939, 'uint64';
+    is DR::Tarantool::_msgunpack($p, 1), 123333939393939, 'uint64';
 }
 
 note 'nil';
 {
     my $p = DR::Tarantool::_msgpack(undef);
-    is DR::Tarantool::_msgunpack($p), undef, 'undef';
+    is DR::Tarantool::_msgunpack($p, 1), undef, 'undef';
 }
 
 
 note 'bool';
 {
     my $p = DR::Tarantool::_msgpack(DR::Tarantool::MsgPack::TRUE);
-    ok DR::Tarantool::_msgunpack($p), 'true';
+    ok DR::Tarantool::_msgunpack($p, 1), 'true';
     $p = DR::Tarantool::_msgpack(DR::Tarantool::MsgPack::FALSE);
-    ok !DR::Tarantool::_msgunpack($p), 'false';
+    ok !DR::Tarantool::_msgunpack($p, 1), 'false';
 }
 
 note 'hash';
 {
     my $p = DR::Tarantool::_msgpack({});
-    is_deeply DR::Tarantool::_msgunpack($p), {}, 'empty hash';
+    is_deeply DR::Tarantool::_msgunpack($p, 1), {}, 'empty hash';
 }
 {
     my $p = DR::Tarantool::_msgpack({ a => 'b' });
-    is_deeply DR::Tarantool::_msgunpack($p), {a => 'b'}, 'non-empty hash';
+    is_deeply DR::Tarantool::_msgunpack($p, 1), {a => 'b'}, 'non-empty hash';
 }
 {
     my $p = DR::Tarantool::_msgpack({ a => 'b', c => 'd' });
-    is_deeply DR::Tarantool::_msgunpack($p), {a => 'b', c => 'd'},
+    is_deeply DR::Tarantool::_msgunpack($p, 1), {a => 'b', c => 'd'},
         'non-empty hash';
 }
 {
     my $p = DR::Tarantool::_msgpack({ a => 'b', c => undef });
-    is_deeply DR::Tarantool::_msgunpack($p), {a => 'b', c => undef},
+    is_deeply DR::Tarantool::_msgunpack($p, 1), {a => 'b', c => undef},
         'non-empty hash';
 }
 
 note 'arrays';
 {
     my $p = DR::Tarantool::_msgpack([]);
-    diag explain DR::Tarantool::_msgunpack($p) unless
-    is_deeply DR::Tarantool::_msgunpack($p), [], 'empty array';
+    diag explain DR::Tarantool::_msgunpack($p, 1) unless
+    is_deeply DR::Tarantool::_msgunpack($p, 1), [], 'empty array';
 }
 {
     my $p = DR::Tarantool::_msgpack([ a => 'b' ]);
-    diag explain DR::Tarantool::_msgunpack($p) unless
-    is_deeply DR::Tarantool::_msgunpack($p), [a => 'b'], 'non-empty array';
+    diag explain DR::Tarantool::_msgunpack($p, 1) unless
+    is_deeply DR::Tarantool::_msgunpack($p, 1), [a => 'b'], 'non-empty array';
 }
 {
     my $p = DR::Tarantool::_msgpack([ a => 'b', c => 'd', undef ]);
@@ -265,8 +265,8 @@ note 'arrays';
     is DR::Tarantool::_msgcheck($p), DR::Tarantool::_msgcheck($p . 'aaa'),
         'msgcheck return length';
     is DR::Tarantool::_msgcheck($p), length($p), 'length is valid';
-    diag explain DR::Tarantool::_msgunpack($p) unless
-    is_deeply DR::Tarantool::_msgunpack($p), [ a => 'b', c => 'd', undef ],
+    diag explain DR::Tarantool::_msgunpack($p, 1) unless
+    is_deeply DR::Tarantool::_msgunpack($p, 1), [ a => 'b', c => 'd', undef ],
         'non-empty array';
 }
 
@@ -275,7 +275,16 @@ note 'unpack errors';
 {
     my $p = substr DR::Tarantool::_msgpack([1,2,3,4,5, 6, 7, 5000]), 0, 8;
     is DR::Tarantool::_msgcheck($p), 0, 'broken msgpack';
-    ok !eval { DR::Tarantool::_msgunpack($p); 1 }, '_msgpack(broken)';
+    ok !eval { DR::Tarantool::_msgunpack($p, 1); 1 }, '_msgpack(broken)';
     like $@ => qr{Unexpected EOF}, 'message error';
+}
 
+note 'utf8';
+{
+    my $p = DR::Tarantool::_msgpack(['привет']);
+    ok $p => 'encode msgpack';
+
+    is_deeply DR::Tarantool::_msgunpack($p, 1), ['привет'], 'decode msgpack';
+    is_deeply DR::Tarantool::_msgunpack($p, 0),
+        [encode utf8 => 'привет'], 'decode msgpack';
 }

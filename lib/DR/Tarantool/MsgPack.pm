@@ -12,8 +12,11 @@ sub msgpack($) {
     DR::Tarantool::_msgpack($_[0])
 }
 
-sub msgunpack($) {
-    DR::Tarantool::_msgunpack($_[0])
+sub msgunpack($;$) {
+    my ($pkt, $utf8) = @_;
+    $utf8 ||= 0;
+    $utf8 &&= 1;
+    DR::Tarantool::_msgunpack($pkt, $utf8)
 }
 
 sub msgcheck($) {

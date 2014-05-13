@@ -218,6 +218,7 @@ note 'select';
 }
 {
     my ($p) = response select('10', 'space_name', 'index_name', [1], 5, 1, 'GT');
+
     is_deeply $p => {
         CODE            => 'CALL',
         SYNC            => 10,
@@ -227,7 +228,7 @@ note 'select';
             {
                 limit       => 5,
                 offset      => 1,
-                iterator    => 'GT',
+                iterator    => 6,
             }
         ]
     }, 'Select request with space & index numbers';
@@ -235,6 +236,7 @@ note 'select';
 
 note 'auth';
 {
+    local $DR::Tarantool::MsgPack::Proto::DECODE_UTF8 = 0;
     my ($p) = response auth 19, 'user', 'password', '1234';
     isa_ok $p => 'HASH';
     my $tuple = delete $p->{TUPLE};

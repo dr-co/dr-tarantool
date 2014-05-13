@@ -11,6 +11,7 @@ use Scalar::Util 'looks_like_number';
 use Digest::SHA 'sha1';
 use MIME::Base64;
 
+our $DECODE_UTF8    = 1;
 
 my (%resolve, %tresolve);
 
@@ -86,7 +87,7 @@ sub raw_response($) {
             substr $response, 0, 10 : $response;
         return unless my $lenlen = msgcheck($lenheader);
 
-        $len = msgunpack($lenheader);
+        $len = msgunpack $lenheader, $DECODE_UTF8;
         croak 'Unexpected msgpack object ' . ref($len) if ref $len;
         $len += $lenlen;
     }
@@ -102,7 +103,7 @@ sub raw_response($) {
         my $len_item = msgcheck $sp;
         croak 'Broken response'
             unless $len_item and $len_item + $off <= length $response;
-        push @r => msgunpack $sp;
+        push @r => msgunpack $sp, $DECODE_UTF8;
         $off += $len_item;
 
         if ($_ eq 2 and $off == length $response) {

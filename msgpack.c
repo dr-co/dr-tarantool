@@ -155,7 +155,7 @@ void _mpack_item(SV *res, SV *o)
 
 
 const char *
-_munpack_item(const char *p, size_t len, SV **res, HV *ext)
+_munpack_item(const char *p, size_t len, SV **res, HV *ext, int utf)
 {
 	if (!len || !p)
 		croak("Internal error: out of pointer");
@@ -179,7 +179,7 @@ _munpack_item(const char *p, size_t len, SV **res, HV *ext)
 			const char *s;
 			uint32_t len;
 			s = mp_decode_str(&p, &len);
-			*res = newSVpvn( s, len );
+			*res = newSVpvn_flags(s, len, utf ? SVf_UTF8 : 0);
 			break;
 		}
 		case MP_NIL: {
@@ -204,11 +204,11 @@ _munpack_item(const char *p, size_t len, SV **res, HV *ext)
 				SV *v = 0;
 				if (p >= pe)
 					croak("Unexpected EOF msgunpack str");
-				p = _munpack_item(p, pe - p, &k, ext);
+				p = _munpack_item(p, pe - p, &k, ext, utf);
 				sv_2mortal(k);
 				if (p >= pe)
 					croak("Unexpected EOF msgunpack str");
-				p = _munpack_item(p, pe - p, &v, ext);
+				p = _munpack_item(p, pe - p, &v, ext, utf);
 				hv_store_ent(h, k, v, 0);
 			}
 			*res = newRV((SV *)h);
@@ -223,7 +223,7 @@ _munpack_item(const char *p, size_t len, SV **res, HV *ext)
 				SV *item = 0;
 				if (p >= pe)
 					croak("Unexpected EOF msgunpack str");
-				p = _munpack_item(p, pe - p, &item, ext);
+				p = _munpack_item(p, pe - p, &item, ext, utf);
 				av_push(a, item);
 
 			}

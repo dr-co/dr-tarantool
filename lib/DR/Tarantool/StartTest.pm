@@ -94,8 +94,13 @@ sub is_version($;$) {
         $box = $ENV{TARANTOOL_BOX} || 'tarantool';
     }
    
-    my $str = `$box -V`;
+    my $str;
+    {
+        local $SIG{__WARN__} = sub {  };
+        $str = `$box -V`;
+    }
 
+    return 0 unless $str;
     return 0 if $str =~ /^tarantool client, version/;
     my ($vt) = $str =~ /^Tarantool:?\s+(\d(?:\.\d+)+).*\s*$/s;
     return 0 unless $vt;
