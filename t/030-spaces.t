@@ -6,7 +6,7 @@ use utf8;
 use open qw(:std :utf8);
 use lib qw(lib ../lib);
 
-use Test::More tests    => 144;
+use Test::More tests    => 149;
 use Encode qw(decode encode);
 
 my $LE = $] > 5.01 ? '<' : '';
@@ -79,6 +79,12 @@ my $s = MODEL->new({
         indexes => {}
     }
 });
+
+is $s->family, 1, 'default family';
+is $s->family(2), 2, 'change family';
+is $s->space('test')->family, 2, 'space changed family';
+is $s->family(1), 1, 'change again';
+is $s->space('test')->family, 1, 'space changed family again';
 
 is eval { $s->space('test')->index_number}, undef, 'index_number: undefined';
 like $@, qr{name is undefined}, 'error string';

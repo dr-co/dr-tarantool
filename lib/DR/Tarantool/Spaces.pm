@@ -98,13 +98,16 @@ from the server.
 =cut
 
 sub new {
-    my ($class, $spaces) = @_;
+    my ($class, $spaces, %opts) = @_;
+
+    $opts{family} ||= 1;
+
     $spaces = {} unless defined $spaces;
     croak 'spaces must be a HASHREF' unless 'HASH' eq ref $spaces;
 
     my (%spaces, %fast);
     for (keys %$spaces) {
-        my $s = new DR::Tarantool::Space($_ => $spaces->{ $_ });
+        my $s = new DR::Tarantool::Space($_ => $spaces->{ $_ }, %opts);
         $spaces{ $s->name } = $s;
         $fast{ $_ } = $s->name;
     }
@@ -112,7 +115,17 @@ sub new {
     return bless {
         spaces  => \%spaces,
         fast    => \%fast,
+        family  => $opts{family},
     } => ref($class) || $class;
+}
+
+
+sub family {
+    my ($self, $family) = @_;
+    return $self->{family} if @_ == 1;
+    $self->{family} = $family;
+    $_->family($family) for values %{ $self->{spaces} };
+    return $self->{family};
 }
 
 
@@ -232,7 +245,9 @@ constructor
 =cut
 
 sub new {
-    my ($class, $no, $space) = @_;
+    my ($class, $no, $space, %opts) = @_;
+
+    $opts{family} ||= 1;
     croak 'space number must conform the regexp qr{^\d+}'
         unless defined $no and $no =~ /^\d+$/;
     croak "'fields' not defined in space hash"
@@ -330,8 +345,16 @@ sub new {
         default_type    => $default_type,
         indexes         => \%indexes,
         tuple_class     => $tuple_class,
+        family          => $opts{family},
     } => ref($class) || $class;
 
+}
+
+
+sub family {
+    my ($self, $family) = @_;
+    return $self->{family} if @_ == 1;
+    return $self->{family} = $family;
 }
 
 
