@@ -555,8 +555,12 @@ sub pack_tuple {
     my ($self, $tuple) = @_;
     croak 'tuple must be ARRAYREF' unless 'ARRAY' eq ref $tuple;
     my @res;
-    for (my $i = 0; $i < @$tuple; $i++) {
-        push @res => $self->pack_field($i, $tuple->[ $i ]);
+    if ($self->family == 1) {
+        for (my $i = 0; $i < @$tuple; $i++) {
+            push @res => $self->pack_field($i, $tuple->[ $i ]);
+        }
+    } else {
+        @res = @$tuple;
     }
     return \@res;
 }
@@ -572,8 +576,12 @@ sub unpack_tuple {
     my ($self, $tuple) = @_;
     croak 'tuple must be ARRAYREF' unless 'ARRAY' eq ref $tuple;
     my @res;
-    for (my $i = 0; $i < @$tuple; $i++) {
-        push @res => $self->unpack_field($i, $tuple->[ $i ]);
+    if ($self->family == 1) {
+        for (my $i = 0; $i < @$tuple; $i++) {
+            push @res => $self->unpack_field($i, $tuple->[ $i ]);
+        }
+    } else {
+        @res = @$tuple;
     }
     return \@res;
 }
