@@ -228,10 +228,14 @@ sub connect {
     return $self;
 }
 
+sub _reconnected {
+}
+
 
 sub on_connected {
     sub {
         my ($self) = @_;
+        $self->_reconnected;
         $self->{guard}{read} = AE::io $self->fh, 0, $self->on_read;
     }
 }
@@ -754,7 +758,7 @@ sub _check_rbuf {{
 
 
 sub on_read {
-    Scalar::Util::weaken(my $self = shift);
+    my $self = shift;
     sub {
         my $rd = sysread $self->fh, my $buf, 4096;
         unless(defined $rd) {

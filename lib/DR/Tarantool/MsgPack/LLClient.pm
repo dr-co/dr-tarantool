@@ -25,7 +25,6 @@ sub connect {
                     $tnt->{user}        = $user;
                     $tnt->{password}    = $password;
                 }
-                $tnt->{handshake}   = 1;
                 $tnt->{_connect_cb} = $cb;
                 return;
             }
@@ -35,6 +34,12 @@ sub connect {
     );
 }
 
+
+sub _reconnected {
+    my ($self) = @_;
+    $self->{handshake} = 1;
+    delete $self->{tnt_salt};
+}
 
 sub _check_rbuf {
     my ($self) = @_;
@@ -103,14 +108,6 @@ sub _fatal_error {
     my ($self, $msg, $raw) = @_;
     $self->{last_code} ||= -1;
     $self->{last_error_string} ||= $msg;
-    $self->{handshake} = 1;
-    delete $self->{tnt_salt};
-
-    delete $self->{rhandle};
-    delete $self->{whandle};
-    delete $self->{fh};
-    $self->{wbuf} = '';
-    $self->{connection_status} = 'not_connected',
 
     my $wait = delete $self->{wait};
     $self->{wait} = {};

@@ -93,6 +93,7 @@ SKIP: {
     );
 
     $c2->_llc->disconnect;
+    $c2->_llc->connect;
     Coro::AnyEvent::sleep 0.5;
 
     my $dsid = $c1->call_lua('box.dostring', [ 'return sessions' ])->raw(0);
