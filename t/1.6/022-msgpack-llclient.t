@@ -9,7 +9,7 @@ use lib qw(blib/lib blib/arch ../blib/lib
     ../blib/arch ../../blib/lib ../../blib/arch);
 
 BEGIN {
-    use constant PLAN       => 134;
+    use constant PLAN       => 127;
     use Test::More;
     use DR::Tarantool::StartTest;
 
@@ -74,7 +74,7 @@ for my $cv (AE::cv) {
     $cv->recv;
     undef $timer;
 
-    ok $tnt => 'connector was saved';
+    ok $tnt => 'connector was saved 1';
 }
 
 
@@ -94,8 +94,6 @@ for my $cv (AE::cv) {
     $timer = AE::timer 1.5, 0, sub { $cv->end };
     $cv->recv;
     undef $timer;
-
-    ok $tnt => 'connector was saved';
 }
 
 
@@ -117,8 +115,6 @@ for my $cv (AE::cv) {
     $timer = AE::timer 1.5, 0, sub { $cv->end };
     $cv->recv;
     undef $timer;
-
-    ok $tnt => 'connector was saved';
 }
 
 note 'auth';
@@ -140,8 +136,6 @@ for my $cv (AE::cv) {
     $timer = AE::timer 1.5, 0, sub { $cv->end };
     $cv->recv;
     undef $timer;
-
-    ok $tnt => 'connector was saved';
 }
 
 note
@@ -164,7 +158,6 @@ for my $cv (AE::cv) {
     $cv->recv;
     undef $timer;
 
-    ok $tnt => 'connector was saved';
 }
 
 note
@@ -186,7 +179,6 @@ for my $cv (AE::cv) {
     $cv->recv;
     undef $timer;
 
-    ok $tnt => 'connector was saved';
 }
 
 note 'call again';
@@ -211,7 +203,6 @@ for my $cv (AE::cv) {
     $cv->recv;
     undef $timer;
 
-    ok $tnt => 'connector was saved';
 }
 
 my $sid;
@@ -236,7 +227,6 @@ for my $cv (AE::cv) {
     $cv->recv;
     undef $timer;
 
-    ok $tnt => 'connector was saved';
 }
 
 note 'autologin';
@@ -264,6 +254,7 @@ note 'autologin';
         $timer = AE::timer 1.5, 0, sub { $cv->end };
         $cv->recv;
         undef $timer;
+        ok $tnt => 'connector was saved';
     }
     is scalar @warns, 1, 'One warning';
     like $warns[0] => qr{Incorrect password}, 'text of warning';
@@ -311,8 +302,6 @@ for my $cv (AE::cv) {
         $timer = AE::timer 1.5, 0, sub { $cv->end };
         $cv->recv;
         undef $timer;
-
-        ok $tnt => 'connector was saved';
     }
 }
 

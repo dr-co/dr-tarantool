@@ -20,6 +20,9 @@ clean::
 	rm -fr .pc
 	rm -f DR-Tarantool-*.tar.gz*
 
+manifest: clean
+	find -type f | grep -v '^./\.git'|sed 's/^..//' | sort -u > $@
+
 tarball:
 	cd .. && tar \
 		--exclude=debian \

@@ -9,9 +9,21 @@ use DR::Tarantool::MsgPack::Proto;
 use Data::Dumper;
 
 sub connect {
-    my ($class, %opts) = @_;
+    
+    my $class = shift;
+    my (%opts, $cb);
 
-    $class->_check_cb( my $cb = $opts{cb} || sub {  } );
+    if (@_ % 2) {
+        $cb = pop;
+        %opts = @_;
+    } else {
+        %opts = @_;
+        $cb = delete $opts{cb};
+    }
+    $cb ||= sub {  };
+
+    $class->_check_cb( $cb );
+
     my $user        = delete $opts{user};
     my $password    = delete $opts{password};
 
@@ -116,7 +128,7 @@ sub _fatal_error {
         $cb->({ status  => 'fatal',  ERROR  => $msg, SYNC => $_ }, $raw);
     }
 
-    $self->_connect_reconnect;
+    $self->set_error($msg) if $self->state ne 'error';
 }
 
 sub ping {
