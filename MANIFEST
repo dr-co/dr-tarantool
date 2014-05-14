@@ -11,6 +11,7 @@ lib/DR/Tarantool/CoroClient.pm
 lib/DR/Tarantool/Iterator.pm
 lib/DR/Tarantool/LLClient.pm
 lib/DR/Tarantool/LLSyncClient.pm
+lib/DR/Tarantool/MsgPack/AsyncClient.pm
 lib/DR/Tarantool/MsgPack/LLClient.pm
 lib/DR/Tarantool/MsgPack.pm
 lib/DR/Tarantool/MsgPack/Proto.pm
@@ -57,6 +58,7 @@ t/130-reconnect.t
 t/1.6/015-msgpack-xs.t
 t/1.6/017-msgpack-proto.t
 t/1.6/022-msgpack-llclient.t
+t/1.6/030-msgpack-async.t
 t/1.6/data/ll-grant.lua
 t/1.6/data/ll.lua
 t/900-podspell.t

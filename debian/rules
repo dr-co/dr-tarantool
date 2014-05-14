@@ -21,7 +21,7 @@ clean::
 	rm -f DR-Tarantool-*.tar.gz*
 
 manifest: clean
-	find -type f | grep -v '^./\.git'|sed 's/^..//' | sort -u > $@
+	find -type f | grep -v '^./\.git'|sed 's/^..//' | sort -u > MANIFEST
 
 tarball:
 	cd .. && tar \
