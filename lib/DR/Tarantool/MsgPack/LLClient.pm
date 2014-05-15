@@ -103,6 +103,9 @@ sub _check_rbuf {
 
         return unless $resp;
         $self->{rbuf} = $tail;
+    
+        $self->{last_code} = $resp->{CODE};
+        $self->{last_error_string} = $resp->{ERROR};
 
         my $id = $resp->{SYNC};
         my $cb = delete $self->{ wait }{ $id };

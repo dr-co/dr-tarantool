@@ -255,4 +255,33 @@ sub update :method {
     );
 }
 
+sub call_lua {
+    my $self = shift;
+    my $cb = pop;
+    $self->_llc->_check_cb( $cb );
+
+    my $proc = shift;
+    my $tuple = shift;
+
+    $tuple = [ $tuple ] unless ref $tuple;
+    $self->_llc->_check_tuple( $tuple );
+
+
+    $self->_llc->call_lua(
+        $proc,
+        $tuple,
+        sub {
+            my ($res) = @_;
+            _cb_default($res, undef, $cb);
+        }
+    );
+    return;
+}
+
+
+sub last_code { $_[0]->_llc->last_code }
+
+
+sub last_error_string { $_[0]->_llc->last_error_string }
+
 1;
