@@ -7,7 +7,7 @@ use open qw(:std :utf8);
 use lib qw(lib ../lib);
 
 BEGIN {
-    use constant PLAN       => 19;
+    use constant PLAN       => 20;
     use Test::More;
     use DR::Tarantool::StartTest;
 
@@ -96,6 +96,11 @@ is_deeply
     $tnt->replace('name_in_script', [ 2, 'петя', 23 ])->raw,
     [ 2, 'петя', 23 ],
     'insert';
+
+is
+    $tnt->select('name_in_script', 0, [1], iterator => 'ALL')->iter->count,
+    2,
+    'select with iterator ALL';
 
 is_deeply
     $tnt->delete('name_in_script', 1)->raw,
