@@ -3,6 +3,64 @@ use strict;
 use warnings;
 
 package DR::Tarantool::MsgPack::AsyncClient;
+
+=head1 NAME
+
+DR::Tarantool::MsgPack::AsyncClient - async client for tarantool.
+
+=head1 SYNOPSIS
+
+    use DR::Tarantool::MsgPack::AsyncClient;
+
+    DR::Tarantool::MsgPack::AsyncClient->connect(
+        host => '127.0.0.1',
+        port => 12345,
+        spaces => $spaces,
+        sub {
+            my ($client) = @_;
+        }
+    );
+
+    $client->insert('space_name', [1,2,3], sub { ... });
+
+
+=head1 Class methods
+
+=head2 connect
+
+Connect to <Tarantool:http://tarantool.org>, returns (by callback) an
+object which can be used to make requests.
+
+=head3 Arguments
+
+=over
+
+=item host & port & user & password
+
+Address and auth information of remote tarantool.
+
+=item space
+
+A hash with space description or a L<DR::Tarantool::Spaces> reference.
+
+=item reconnect_period
+
+An interval to wait before trying to reconnect after a fatal error
+or unsuccessful connect. If the field is defined and is greater than
+0, the driver tries to reconnect to the server after this interval.
+
+Important: the driver does not reconnect after the first
+unsuccessful connection. It calls callback instead.
+
+=item reconnect_always
+
+Try to reconnect even after the first unsuccessful connection.
+
+=back
+
+=cut
+
+
 use DR::Tarantool::MsgPack::LLClient;
 use DR::Tarantool::Spaces;
 use DR::Tarantool::Tuple;
@@ -90,6 +148,128 @@ sub _cb_default {
     $cb->(ok => DR::Tarantool::Tuple->new($res->{DATA}), $res->{CODE});
     return;
 }
+
+=head1 Worker methods
+
+All methods accept callbacks which are invoked with the following
+arguments:
+
+=over
+
+=item status
+
+On success, this field has value 'ok'. The value of this parameter
+determines the contents of the rest of the callback arguments.
+
+=item a tuple or tuples or an error code
+
+On success, the second argument contains tuple(s) produced by the
+request. On error, it contains the server error code.
+
+=item errorstr
+
+Error string in case of an error.
+
+    sub {
+        if ($_[0] eq 'ok') {
+            my ($status, $tuples) = @_;
+            ...
+        } else {
+            my ($status, $code, $errstr) = @_;
+            ...
+        }
+    }
+
+=back
+
+
+=head2 ping
+
+Ping the server.
+
+    $client->ping(sub { ... });
+
+=head2 insert, replace
+
+
+Insert/replace a tuple into a space.
+
+    $client->insert('space', [ 1, 'Vasya', 20 ], sub { ... });
+    $client->replace('space', [ 2, 'Petya', 22 ], sub { ... });
+
+
+=head2 call_lua
+
+Call Lua function.
+
+    $client->call_lua(foo => ['arg1', 'arg2'], sub {  });
+
+
+=head2 select
+
+Select a tuple (or tuples) from a space by index.
+
+    $client->select('space_name', 'index_name', [ 'key' ], %opts, sub { .. });
+
+Options can be:
+
+=over
+
+=item limit
+
+=item offset
+
+=item iterator
+
+An iterator for index. Can be:
+
+=over
+
+=item ALL
+
+Returns all tuples in space.
+
+=item EQ, GE, LE, GT, LT
+
+=back
+
+=back
+
+
+=head2 delete
+
+Delete a tuple.
+
+    $client->delete('space_name', [ 'key' ], sub { ... });
+
+
+=head2 update
+
+Update a tuple.
+
+    $client->update('space', [ 'key' ], \@ops, sub { ... });
+
+C<@ops> is array of operations to update.
+Each operation is array of elements:
+
+=over
+
+=item code
+
+Code of operation: C<=>, C<+>, C<->, C<&>, C<|>, etc
+
+=item field
+
+Field number or name.
+
+=item arguments
+
+=back
+
+=cut
+
+
+
 
 sub ping {
     my $self = shift;

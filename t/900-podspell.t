@@ -40,3 +40,5 @@ deserialized
 iproto
 multi
 unicode
+msgpack
+auth
