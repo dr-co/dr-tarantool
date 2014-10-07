@@ -8,15 +8,22 @@ use lib qw(lib ../lib);
 use lib qw(blib/lib blib/arch ../blib/lib ../blib/arch);
 
 use constant PLAN => 17;
+
 BEGIN {
     use Test::More;
-    
-    $ENV{TARANTOOL_BOX} ||= 'tarantool_box';
-    plan skip_all => 'Tarantool is not found'
-        if $ENV{SKIP_TNT} or !qx[which $ENV{TARANTOOL_BOX} ];
-    plan tests    => PLAN;
+    use DR::Tarantool::StartTest;
 
+    unless (DR::Tarantool::StartTest::is_version('1.5.2', 1)) {
+
+        plan skip_all => 'Incorrect tarantool version';
+    } else {
+        plan tests => PLAN;
+    }
 }
+
+
+
+
 use Encode qw(decode encode);
 
 

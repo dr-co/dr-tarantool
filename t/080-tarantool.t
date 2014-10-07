@@ -8,9 +8,19 @@ use lib qw(lib ../lib);
 use lib qw(blib/lib blib/arch ../blib/lib ../blib/arch);
 
 use constant PLAN       => 33;
-use Test::More tests    => PLAN;
 use Encode qw(decode encode);
 
+BEGIN {
+    use Test::More;
+    use DR::Tarantool::StartTest;
+
+    unless (DR::Tarantool::StartTest::is_version('1.5.2')) {
+
+        plan skip_all => 'Incorrect tarantool version';
+    } else {
+        plan tests => PLAN;
+    }
+}
 
 BEGIN {
     # Подготовка объекта тестирования для работы с utf8

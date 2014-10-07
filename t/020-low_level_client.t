@@ -14,7 +14,7 @@ BEGIN {
 
     unless (DR::Tarantool::StartTest::is_version('1.5.2')) {
 
-        plan skip_all => 'Too low tarantool version';
+        plan skip_all => 'Incorrect tarantool version';
     } else {
         plan tests => PLAN;
     }

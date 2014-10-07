@@ -106,7 +106,7 @@ void _mpack_item(SV *res, SV *o)
 		return;
 	}
 
-	switch(SvTYPE(o) & SVt_MASK) {
+	switch(SvTYPE(o)) {
 		case SVt_PV:
 		case SVt_PVIV:
 		case SVt_PVNV:

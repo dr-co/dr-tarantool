@@ -254,25 +254,23 @@ sub _start_tarantool {
     } else {
         $self->{box} = $ENV{TARANTOOL_BOX} || 'tarantool';
         for ($self->{config_body}) {
-            if (/admin_port\s*=/) {
-                s{admin_port\s*=\s*['"]?\d+['"]}
-                    /admin_port = @{[$self->admin_port]}/;
-            } else {
-                s<box\.cfg\s*\(?\s*\{>
-                    /$& admin_port = @{[$self->admin_port]},/;
-            }
             if (/primary_port\s*=/) {
-                s{primary_port\s*=\s*['"]?\d+['"]}
-                    /primary_port = @{[$self->primary_port]}/;
+                s{listen\s*=\s*['"]?\d+['"]}
+                    /listen = @{[$self->primary_port]}/;
             } else {
                 s<box\.cfg\s*\(?\s*\{>
-                    /$& primary_port = @{[$self->primary_port]},/;
+                    /$& listen = '127.0.0.1:@{[$self->primary_port]}',/;
             }
+
+            $_ .= "\n\nrequire('console')".
+                ".listen('127.0.0.1:@{[$self->admin_port]}')";
         }
     }
 
     return unless open my $fh, '>:encoding(UTF-8)', $self->{cfg};
+
     print $fh $self->{config_body};
+
     close $fh;
 
     chdir $self->{temp};

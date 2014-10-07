@@ -12,9 +12,17 @@ my $LE = $] > 5.01 ? '<' : '';
 use constant PLAN       => 100;
 use Test::More;
 BEGIN {
-    eval "use Coro";
-    plan skip_all => "Coro isn't installed" if $@;
-    plan tests => PLAN;
+    use Test::More;
+    use DR::Tarantool::StartTest;
+
+    unless (DR::Tarantool::StartTest::is_version('1.5.2')) {
+
+        plan skip_all => 'Incorrect tarantool version';
+    } else {
+        eval "use Coro";
+        plan skip_all => "Coro isn't installed" if $@;
+        plan tests => PLAN;
+    }
 }
 
 use Encode qw(decode encode);

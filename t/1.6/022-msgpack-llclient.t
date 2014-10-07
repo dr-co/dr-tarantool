@@ -9,7 +9,7 @@ use lib qw(blib/lib blib/arch ../blib/lib
     ../blib/arch ../../blib/lib ../../blib/arch);
 
 BEGIN {
-    use constant PLAN       => 127;
+    use constant PLAN       => 128;
     use Test::More;
     use DR::Tarantool::StartTest;
 
@@ -75,6 +75,11 @@ for my $cv (AE::cv) {
     undef $timer;
 
     ok $tnt => 'connector was saved 1';
+}
+unless ( isa_ok $tnt => 'DR::Tarantool::MsgPack::LLClient' ) {
+    diag eval { decode utf8 => $tnt } || $tnt;
+    note $t->log;
+    exit;
 }
 
 
@@ -351,7 +356,7 @@ $t->admin(q[box.space.test:insert({2,2,3})]);
             my ($res) = @_;
             isa_ok $res => 'HASH', 'select response';
             ok $res->{CODE}, 'code != 0';
-            like $res->{ERROR} => qr{Space \d+ does not exist}, 'error str';
+            like $res->{ERROR} => qr{Space '\#\d+' does not exist}, 'error str';
             $cv->end;
         });
         
@@ -396,7 +401,7 @@ $t->admin(q[box.space.test:insert({2,2,3})]);
             my ($res) = @_;
             isa_ok $res => 'HASH', 'select response';
             ok $res->{CODE}, 'code != 0';
-            like $res->{ERROR} => qr{No index.*is defined in space 7},
+            like $res->{ERROR} => qr{No index.*is defined in space 'test'},
                 'error str';
             $cv->end;
         });
@@ -415,7 +420,7 @@ for my $cv (AE::cv) {
         my ($res) = shift;
         isa_ok $res => 'HASH';
         ok $res->{CODE}, 'CODE is not 0';
-        like $res->{ERROR} => qr{Space 6 does not exist}, 'error message';
+        like $res->{ERROR} => qr{Space '\#6' does not exist}, 'error message';
 
         $cv->end;
     });
@@ -454,7 +459,7 @@ for my $cv (AE::cv) {
         my ($res) = shift;
         isa_ok $res => 'HASH';
         ok $res->{CODE}, 'CODE is not 0';
-        like $res->{ERROR} => qr{Space 6 does not exist}, 'error message';
+        like $res->{ERROR} => qr{Space '\#6' does not exist}, 'error message';
 
         $cv->end;
     });
@@ -493,7 +498,7 @@ for my $cv (AE::cv) {
         my ($res) = shift;
         isa_ok $res => 'HASH';
         ok $res->{CODE}, 'CODE is not 0';
-        like $res->{ERROR} => qr{Space 6 does not exist}, 'error message';
+        like $res->{ERROR} => qr{Space '\#6' does not exist}, 'error message';
 
         $cv->end;
     });
@@ -545,7 +550,7 @@ for my $cv (AE::cv) {
         my ($res) = shift;
         isa_ok $res => 'HASH';
         ok $res->{CODE}, 'CODE is not 0';
-        like $res->{ERROR} => qr{Space 6 does not exist}, 'error message';
+        like $res->{ERROR} => qr{Space '\#6' does not exist}, 'error message';
 
         $cv->end;
     });
