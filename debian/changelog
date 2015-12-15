@@ -1,6 +1,7 @@
 libdr-tarantool-perl (0.44-1) unstable; urgency=medium
 
   * FTBFS (Fix build deps), closes: #798484
+  * Bump Standards-Version to 3.9.6
 
  -- Dmitry E. Oboukhov <unera@debian.org>  Tue, 15 Dec 2015 13:11:48 +0300
 

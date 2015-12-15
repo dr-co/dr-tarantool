@@ -10,7 +10,7 @@ Build-Depends: debhelper (>= 7), cdbs,
  aspell-en,
  libtest-spelling-perl,
  liblist-moreutils-perl
-Standards-Version: 3.9.5
+Standards-Version: 3.9.6
 Priority: extra
 VCS-Browser: https://github.com/dr-co/dr-tarantool
 
