@@ -116,7 +116,6 @@ SV * _pkt_select( req_id, ns, idx, offset, limit, keys )
 			SV *t = *av_fetch(keys, k, 0);
 			if (!SvROK(t) || (SvTYPE(SvRV(t)) != SVt_PVAV))
 				croak("keys must be ARRAYREF of ARRAYREF");
-			AV *tuple = (AV *)SvRV(t);
 			tp_av_tuple(&req, (AV *)SvRV(t));
 		}
 		tp_reqid(&req, req_id);
@@ -483,7 +482,6 @@ size_t _msgcheck(str)
         SV *str
         PROTOTYPE: $
         CODE:
-            int res;
             size_t len;
             if (SvOK(str)) {
                 const char *p = SvPV(str, len);
