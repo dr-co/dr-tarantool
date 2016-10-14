@@ -3,6 +3,12 @@ sudo: required
 services:
   - docker
 
+env:
+  matrix:
+    - TRAVIS_DEBIAN_DISTRIBUTION=wheezy
+    - TRAVIS_DEBIAN_DISTRIBUTION=jessie
+    - TRAVIS_DEBIAN_DISTRIBUTION=sid
+
 script:
   - git describe
   - wget -O- http://travis.debian.net/script.sh | sh -
