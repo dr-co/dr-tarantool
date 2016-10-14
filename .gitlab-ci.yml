@@ -1,25 +1,9 @@
-services:
-  - docker
+image: debian:jessie
 
-env:
-  matrix:
-    - TRAVIS_DEBIAN_DISTRIBUTION=wheezy
-    - TRAVIS_DEBIAN_DISTRIBUTION=jessie
-    - TRAVIS_DEBIAN_DISTRIBUTION=sid
-
-
-before_install:
-  - sudo apt-get -qq --yes install devscripts dpkg-dev
-  - dch --newversion `git describe|sed -E 's#.*/##'|sed -E 's/-([0-9]+)-(.{8})$/+\1.\2/'` 'Autobuilt by git commit'
-  - git commit -m 'update changelog' debian/changelog
-  - dpkg-parsechangelog
 
 script:
-  - wget -O- http://travis.debian.net/script.sh | sh -
-  - ls -lR
   - pwd
-  - echo $TRAVIS_DEBIAN_DISTRIBUTION
-  - ls -l ..
+  - ls -l
 
 branches:
   only:
