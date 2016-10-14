@@ -1,4 +1,5 @@
 before_script:
+  - apt-get update
   - apt-get -qq --yes install devscripts dpkg-dev sudo
   - dch --newversion `git describe|sed -E 's#.*/##'|sed -E 's/-([0-9]+)-(.{8})$/+\1.\2/'` 'Autobuilt by git commit'
   - git commit -m 'update changelog' debian/changelog
