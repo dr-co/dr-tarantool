@@ -1,0 +1,4 @@
+image: debian:wheezy
+  script:
+    - git describe
+    - ls
