@@ -6,7 +6,7 @@ Build-Depends: debhelper (>= 7), cdbs,
  libanyevent-perl,
  libdevel-globaldestruction-perl,
  libjson-xs-perl,
- tarantool-lts,
+ tarantool (<< 1.6) | tarantool-lts,
  aspell-en,
  libtest-spelling-perl,
  liblist-moreutils-perl
