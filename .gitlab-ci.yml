@@ -1,11 +1,9 @@
-image: debian:jessie
-
-
-script:
-  - pwd
-  - ls -l
-
-branches:
+test:
+  image: debian:jessie
   only:
     - master
+  script:
+    - pwd
+    - ls -l
+
 
