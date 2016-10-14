@@ -20,6 +20,7 @@ script:
   - wget -O- http://travis.debian.net/script.sh | sh -
   - ls -lR
   - pwd
+  - echo $TRAVIS_DEBIAN_DISTRIBUTION
   - ls -l ..
 
 branches:
