@@ -1,3 +1,6 @@
+services:
+  - docker
+
 before_script:
   - echo deb http://ftp.de.debian.org/debian sid main contrib non-free > /etc/apt/sources.list
   - apt-get update
@@ -9,7 +12,7 @@ before_script:
 
 
 test:
-  image: docker
+  image: debian:sid
   only:
     - master
   script:
