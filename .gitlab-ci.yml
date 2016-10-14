@@ -17,7 +17,7 @@ test:
   script:
     - pwd
     - ls -l
-    - curl -s http://travis.debian.net/script.sh | bash -
+    - curl -s http://travis.debian.net/script.sh | TRAVIS_DEBIAN_DISTRIBUTION=wheezy bash -
 
 
 
