@@ -4,9 +4,9 @@ services:
   - docker
 
 script:
-  - wget -O- http://travis.debian.net/script.sh | sh -
   - git describe
+  - wget -O- http://travis.debian.net/script.sh | sh -
 
 branches:
-  except:
-    - /^debian\/\d/
+  only:
+    - master
