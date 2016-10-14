@@ -9,8 +9,12 @@ env:
     - TRAVIS_DEBIAN_DISTRIBUTION=jessie
     - TRAVIS_DEBIAN_DISTRIBUTION=sid
 
+
+before_install:
+  - sudo apt-get -qq --yes install devscripts
+
 script:
-  - git describe
+  - dch --newversion `git describe|sed -E 's#.*/##'|sed -E 's/-([0-9]+)-(.{8})$/+\1.\2/'` 'Autobuilt by git commit'
   - wget -O- http://travis.debian.net/script.sh | sh -
 
 branches:
