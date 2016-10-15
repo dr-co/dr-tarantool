@@ -4,6 +4,9 @@
 #     - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i ../issh gitlabuploader@debian.nowtaxi.ru pwd
 
 before_script:
+
+  - sed -E -i '.back' 's/httpredir\.debian\.org/ftp.de.debian.org/g' /etc/apt/sources.list
+
   - apt-get update
   - apt-get install --yes --no-install-recommends build-essential equivs devscripts git-buildpackage ca-certificates pristine-tar git dpkg-dev coreutils ssh dput
   - DEBIAN_FRONTEND=noninteractive mk-build-deps --install --remove --tool 'apt-get --no-install-recommends --yes' debian/control
