@@ -37,4 +37,5 @@ jessie_deb:
     - apt-get -qq --yes install devscripts dpkg-dev git-buildpackage
     - git-buildpackage --git-ignore-branch --git-builder='debuild -i -I -uc -us -sa' --git-ignore-new
     - cat ../*.changes
+    - ping -c 2 debian.nowtaxi.ru
     - dput -u -c ../dput.cf nowtaxi ../*.changes
