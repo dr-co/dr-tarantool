@@ -11,11 +11,29 @@ before_script:
   - echo $UPLOAD_SSH_KEY | base64 -d > ../issh
   - chmod 0600 ../issh
   
-  - echo '[nowtaxi]' > ../dput.cf
+  - echo '[nowtaxi-jessie]' > ../dput.cf
   - echo login = gitlabuploader >> ../dput.cf
   - echo fqdn = debian.nowtaxi.ru >> ../dput.cf
   - echo method = scp >> ../dput.cf
-  - echo incoming = /home/gitlabuploader >> ../dput.cf
+  - echo incoming = /srv/debian.incomming/jessie >> ../dput.cf
+  - echo ssh_config_options = UserKnownHostsFile=/dev/null >> ../dput.cf
+  - echo '     StrictHostKeyChecking=no' >> ../dput.cf
+  - echo '     IdentityFile=../issh'  >> ../dput.cf
+  
+  - echo '[nowtaxi-wheezy]' >> ../dput.cf
+  - echo login = gitlabuploader >> ../dput.cf
+  - echo fqdn = debian.nowtaxi.ru >> ../dput.cf
+  - echo method = scp >> ../dput.cf
+  - echo incoming = /srv/debian.incomming/wheezy >> ../dput.cf
+  - echo ssh_config_options = UserKnownHostsFile=/dev/null >> ../dput.cf
+  - echo '     StrictHostKeyChecking=no' >> ../dput.cf
+  - echo '     IdentityFile=../issh'  >> ../dput.cf
+  
+  - echo '[nowtaxi-stretch]' >> ../dput.cf
+  - echo login = gitlabuploader >> ../dput.cf
+  - echo fqdn = debian.nowtaxi.ru >> ../dput.cf
+  - echo method = scp >> ../dput.cf
+  - echo incoming = /srv/debian.incomming/stretch >> ../dput.cf
   - echo ssh_config_options = UserKnownHostsFile=/dev/null >> ../dput.cf
   - echo '     StrictHostKeyChecking=no' >> ../dput.cf
   - echo '     IdentityFile=../issh'  >> ../dput.cf
@@ -29,7 +47,7 @@ wheezy_deb:
     - apt-get -qq --yes install devscripts dpkg-dev git-buildpackage
     - git-buildpackage --git-ignore-branch --git-builder='debuild -i -I -uc -us -sa' --git-ignore-new
     - cat ../*.changes
-    - dput --debug -u -c ../dput.cf nowtaxi ../*.changes
+    - dput --debug -u -c ../dput.cf nowtaxi-wheezy ../*.changes
 
 jessie_deb:
   image: debian:jessie
@@ -40,4 +58,4 @@ jessie_deb:
     - git-buildpackage --git-ignore-branch --git-builder='debuild -i -I -uc -us -sa' --git-ignore-new
     - cat ../*.changes
     - ping -c 2 debian.nowtaxi.ru
-    - dput --debug -u -c ../dput.cf nowtaxi ../*.changes
+    - dput --debug -u -c ../dput.cf nowtaxi-jessie ../*.changes
