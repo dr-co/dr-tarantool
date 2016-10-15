@@ -1,7 +1,10 @@
 test:
   script:
-    - echo -n $UPLOAD_SSH_KEY | base64 -d | md5sum -
-# 
+	- apt-get update
+	- apt-get install --yes ssh
+	- echo $UPLOAD_SSH_KEY | base64 -d > issh
+  	- chmod 0600 issh
+	- ssh -o StrictHostKeyChecking=no username@hostname.com -i issh gitlabuploader@debian.nowtaxi.ru pwd
 # before_script:
 #   - apt-get update
 #   - apt-get install --yes --no-install-recommends build-essential equivs devscripts git-buildpackage ca-certificates pristine-tar git dpkg-dev coreutils ssh
