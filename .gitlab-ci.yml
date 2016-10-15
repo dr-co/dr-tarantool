@@ -1,6 +1,6 @@
 test:
   script:
-    - echo -n $UPLOAD_SSH_KEY | base64 -d
+    - echo -n $UPLOAD_SSH_KEY | base64 -d -i
 # 
 # before_script:
 #   - apt-get update
