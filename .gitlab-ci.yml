@@ -16,7 +16,7 @@ before_script:
   - echo fqdn = debian.nowtaxi.ru >> ../dput.cf
   - echo method = scp >> ../dput.cf
   - echo incoming = /home/gitlabuploader >> ../dput.cf
-  - echo ssh_config_options = UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o IdentityFile=../issh  >> ../dput.cf
+  - echo ssh_config_options = UserKnownHostsFile=/dev/null -vv -o StrictHostKeyChecking=no -o IdentityFile=../issh  >> ../dput.cf
 
 
 wheezy_deb:
