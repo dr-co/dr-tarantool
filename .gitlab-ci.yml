@@ -10,5 +10,10 @@ wheezy_deb:
   image: debian:wheezy
   script:
     - apt-get -qq --yes install devscripts dpkg-dev git-buildpackage
-    - git-buildpackage
+    - git-buildpackage --git-ignore-branch --git-builder='debuild -i -I -uc -us -sa'
 
+wheezy_deb:
+  image: debian:jessie
+  script:
+    - apt-get -qq --yes install devscripts dpkg-dev git-buildpackage
+    - git-buildpackage --git-ignore-branch --git-builder='debuild -i -I -uc -us -sa'
