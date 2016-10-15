@@ -1,29 +1,32 @@
-test:
-  script:
-    - echo $UPLOAD_SSH_KEY
+# test:
+#   script:
+#     - echo $UPLOAD_SSH_KEY
+# 
+before_script:
+  - apt-get update
+  - apt-get install --yes --no-install-recommends build-essential equivs devscripts git-buildpackage ca-certificates pristine-tar git dpkg-dev coreutils ssh
+  - DEBIAN_FRONTEND=noninteractive mk-build-deps --install --remove --tool 'apt-get --no-install-recommends --yes' debian/control
+  - git describe
+  - echo $UPLOAD_SSH_KEY | base64 -d > issh
+  - chmod 0600 issh
+  - cat issh
 
-# before_script:
-#   - apt-get update
-#   - apt-get install --yes --no-install-recommends build-essential equivs devscripts git-buildpackage ca-certificates pristine-tar git dpkg-dev
-#   - DEBIAN_FRONTEND=noninteractive mk-build-deps --install --remove --tool 'apt-get --no-install-recommends --yes' debian/control
-#   - git describe
-# 
-# wheezy_deb:
-#   image: debian:wheezy
-#   script:
-#     - dch --newversion `git describe|sed -E 's#.*/##'|sed -E 's/-([0-9]+)-(.{8})$/+\1.\2/'` --force-distribution --distribution nowtaxi-wheezy 'Autobuilt by git commit' 
-#     - dpkg-parsechangelog
-#     - apt-get -qq --yes install devscripts dpkg-dev git-buildpackage
-#     - git-buildpackage --git-ignore-branch --git-builder='debuild -i -I -uc -us -sa' --git-ignore-new
-#     - cat ../*.changes
-#     - pwd
-# 
-# jessie_deb:
-#   image: debian:jessie
-#   script:
-#     - dch --newversion `git describe|sed -E 's#.*/##'|sed -E 's/-([0-9]+)-(.{8})$/+\1.\2/'` --force-distribution --distribution nowtaxi-jessie 'Autobuilt by git commit'
-#     - dpkg-parsechangelog
-#     - apt-get -qq --yes install devscripts dpkg-dev git-buildpackage
-#     - git-buildpackage --git-ignore-branch --git-builder='debuild -i -I -uc -us -sa' --git-ignore-new
-#     - cat ../*.changes
-#     - pwd
+wheezy_deb:
+  image: debian:wheezy
+  script:
+    - dch --newversion `git describe|sed -E 's#.*/##'|sed -E 's/-([0-9]+)-(.{8})$/+\1.\2/'` --force-distribution --distribution nowtaxi-wheezy 'Autobuilt by git commit' 
+    - dpkg-parsechangelog
+    - apt-get -qq --yes install devscripts dpkg-dev git-buildpackage
+    - git-buildpackage --git-ignore-branch --git-builder='debuild -i -I -uc -us -sa' --git-ignore-new
+    - cat ../*.changes
+    - pwd
+
+jessie_deb:
+  image: debian:jessie
+  script:
+    - dch --newversion `git describe|sed -E 's#.*/##'|sed -E 's/-([0-9]+)-(.{8})$/+\1.\2/'` --force-distribution --distribution nowtaxi-jessie 'Autobuilt by git commit'
+    - dpkg-parsechangelog
+    - apt-get -qq --yes install devscripts dpkg-dev git-buildpackage
+    - git-buildpackage --git-ignore-branch --git-builder='debuild -i -I -uc -us -sa' --git-ignore-new
+    - cat ../*.changes
+    - pwd
