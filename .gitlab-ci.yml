@@ -16,7 +16,7 @@ before_script:
   - echo fqdn = debian.nowtaxi.ru >> ../dput.cf
   - echo method = scp >> ../dput.cf
   - echo incoming = /home/gitlabuploader >> ../dput.cf
-  - echo ssh_config_options = UserKnownHostsFile=/dev/null -vv -o StrictHostKeyChecking=no -o IdentityFile=../issh  >> ../dput.cf
+  - echo ssh_config_options = UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o IdentityFile=../issh  >> ../dput.cf
 
 
 wheezy_deb:
@@ -27,7 +27,7 @@ wheezy_deb:
     - apt-get -qq --yes install devscripts dpkg-dev git-buildpackage
     - git-buildpackage --git-ignore-branch --git-builder='debuild -i -I -uc -us -sa' --git-ignore-new
     - cat ../*.changes
-    - dput -u -c ../dput.cf nowtaxi ../*.changes
+    - dput --debug -u -c ../dput.cf nowtaxi ../*.changes
 
 jessie_deb:
   image: debian:jessie
@@ -38,4 +38,4 @@ jessie_deb:
     - git-buildpackage --git-ignore-branch --git-builder='debuild -i -I -uc -us -sa' --git-ignore-new
     - cat ../*.changes
     - ping -c 2 debian.nowtaxi.ru
-    - dput -u -c ../dput.cf nowtaxi ../*.changes
+    - dput --debug -u -c ../dput.cf nowtaxi ../*.changes
