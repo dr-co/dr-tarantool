@@ -5,7 +5,7 @@
 
 before_script:
   - apt-get update
-  - apt-get install --yes --no-install-recommends build-essential equivs devscripts git-buildpackage ca-certificates pristine-tar git dpkg-dev coreutils ssh
+  - apt-get install --yes --no-install-recommends build-essential equivs devscripts git-buildpackage ca-certificates pristine-tar git dpkg-dev coreutils ssh dput
   - DEBIAN_FRONTEND=noninteractive mk-build-deps --install --remove --tool 'apt-get --no-install-recommends --yes' debian/control
   - git describe
   - echo $UPLOAD_SSH_KEY | base64 -d > ../issh
