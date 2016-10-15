@@ -3,7 +3,7 @@ test:
     - apt-get update
     - apt-get install --yes ssh
     - echo $UPLOAD_SSH_KEY | base64 -d > ../issh
-    - scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i ../issh ../issh gitlabuploader@debian.nowtaxi.ru:/dev/null
+    - scp -o 'UserKnownHostsFile=/dev/null StrictHostKeyChecking=no IdentityFile=../issh' ../issh gitlabuploader@debian.nowtaxi.ru:/dev/null
 
 # before_script:
 #   - apt-get update
