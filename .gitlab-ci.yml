@@ -8,7 +8,7 @@ wheezy_deb:
   image: debian:wheezy
   script:
     - dch --newversion `git describe|sed -E 's#.*/##'|sed -E 's/-([0-9]+)-(.{8})$/+\1.\2/'` --force-distribution --distribution nowtaxi-wheezy 'Autobuilt by git commit' 
-    - git commit -m 'update changelog' --author 'Buildbot <it@nowtaxi.ru>' debian/changelog
+    - git commit -m 'update changelog' --author='Buildbot <it@nowtaxi.ru>' debian/changelog
     - dpkg-parsechangelog
     - apt-get -qq --yes install devscripts dpkg-dev git-buildpackage
     - git-buildpackage --git-ignore-branch --git-builder='debuild -i -I -uc -us -sa'
@@ -19,7 +19,7 @@ jessie_deb:
   image: debian:jessie
   script:
     - dch --newversion `git describe|sed -E 's#.*/##'|sed -E 's/-([0-9]+)-(.{8})$/+\1.\2/'` --force-distribution --distribution nowtaxi-jessie 'Autobuilt by git commit'
-    - git commit -m 'update changelog' --author 'Buildbot <it@nowtaxi.ru>' debian/changelog
+    - git commit -m 'update changelog' --author='it@nowtaxi.ru' debian/changelog
     - dpkg-parsechangelog
     - apt-get -qq --yes install devscripts dpkg-dev git-buildpackage
     - git-buildpackage --git-ignore-branch --git-builder='debuild -i -I -uc -us -sa'
