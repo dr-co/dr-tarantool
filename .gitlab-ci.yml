@@ -1,43 +1,43 @@
-test:
-  script:
-    - apt-get update
-    - apt-get install --yes ssh
-    - echo $UPLOAD_SSH_KEY | base64 -d > ../issh
-    - scp -o 'UserKnownHostsFile=/dev/null:StrictHostKeyChecking=no:IdentityFile=../issh' ../issh gitlabuploader@debian.nowtaxi.ru:/dev/null
+# test:
+#   script:
+#     - apt-get update
+#     - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i ../issh gitlabuploader@debian.nowtaxi.ru pwd
 
-# before_script:
-#   - apt-get update
-#   - apt-get install --yes --no-install-recommends build-essential equivs devscripts git-buildpackage ca-certificates pristine-tar git dpkg-dev coreutils ssh dput
-#   - DEBIAN_FRONTEND=noninteractive mk-build-deps --install --remove --tool 'apt-get --no-install-recommends --yes' debian/control
-#   - git describe
-#   - echo $UPLOAD_SSH_KEY | base64 -d > ../issh
-#   - chmod 0600 ../issh
-#   
-#   - echo '[nowtaxi]' > ../dput.cf
-#   - echo login = gitlabuploader >> ../dput.cf
-#   - echo fqdn = debian.nowtaxi.ru >> ../dput.cf
-#   - echo method = scp >> ../dput.cf
-#   - echo incoming = /home/gitlabuploader >> ../dput.cf
-#   - echo ssh_config_options = UserKnownHostsFile=/dev/null StrictHostKeyChecking=no IdentityFile=../issh  >> ../dput.cf
-# 
-# 
-# wheezy_deb:
-#   image: debian:wheezy
-#   script:
-#     - dch --newversion `git describe|sed -E 's#.*/##'|sed -E 's/-([0-9]+)-(.{8})$/+\1.\2/'` --force-distribution --distribution nowtaxi-wheezy 'Autobuilt by git commit' 
-#     - dpkg-parsechangelog
-#     - apt-get -qq --yes install devscripts dpkg-dev git-buildpackage
-#     - git-buildpackage --git-ignore-branch --git-builder='debuild -i -I -uc -us -sa' --git-ignore-new
-#     - cat ../*.changes
-#     - dput --debug -u -c ../dput.cf nowtaxi ../*.changes
-# 
-# jessie_deb:
-#   image: debian:jessie
-#   script:
-#     - dch --newversion `git describe|sed -E 's#.*/##'|sed -E 's/-([0-9]+)-(.{8})$/+\1.\2/'` --force-distribution --distribution nowtaxi-jessie 'Autobuilt by git commit'
-#     - dpkg-parsechangelog
-#     - apt-get -qq --yes install devscripts dpkg-dev git-buildpackage
-#     - git-buildpackage --git-ignore-branch --git-builder='debuild -i -I -uc -us -sa' --git-ignore-new
-#     - cat ../*.changes
-#     - ping -c 2 debian.nowtaxi.ru
-#     - dput --debug -u -c ../dput.cf nowtaxi ../*.changes
+before_script:
+  - apt-get update
+  - apt-get install --yes --no-install-recommends build-essential equivs devscripts git-buildpackage ca-certificates pristine-tar git dpkg-dev coreutils ssh dput
+  - DEBIAN_FRONTEND=noninteractive mk-build-deps --install --remove --tool 'apt-get --no-install-recommends --yes' debian/control
+  - git describe
+  - echo $UPLOAD_SSH_KEY | base64 -d > ../issh
+  - chmod 0600 ../issh
+  
+  - echo '[nowtaxi]' > ../dput.cf
+  - echo login = gitlabuploader >> ../dput.cf
+  - echo fqdn = debian.nowtaxi.ru >> ../dput.cf
+  - echo method = scp >> ../dput.cf
+  - echo incoming = /home/gitlabuploader >> ../dput.cf
+  - echo ssh_config_options = UserKnownHostsFile=/dev/null >> ../dput.cf
+  - echo '     StrictHostKeyChecking=no' >> ../dput.cf
+  - echo '     IdentityFile=../issh'  >> ../dput.cf
+
+
+wheezy_deb:
+  image: debian:wheezy
+  script:
+    - dch --newversion `git describe|sed -E 's#.*/##'|sed -E 's/-([0-9]+)-(.{8})$/+\1.\2/'` --force-distribution --distribution nowtaxi-wheezy 'Autobuilt by git commit' 
+    - dpkg-parsechangelog
+    - apt-get -qq --yes install devscripts dpkg-dev git-buildpackage
+    - git-buildpackage --git-ignore-branch --git-builder='debuild -i -I -uc -us -sa' --git-ignore-new
+    - cat ../*.changes
+    - dput --debug -u -c ../dput.cf nowtaxi ../*.changes
+
+jessie_deb:
+  image: debian:jessie
+  script:
+    - dch --newversion `git describe|sed -E 's#.*/##'|sed -E 's/-([0-9]+)-(.{8})$/+\1.\2/'` --force-distribution --distribution nowtaxi-jessie 'Autobuilt by git commit'
+    - dpkg-parsechangelog
+    - apt-get -qq --yes install devscripts dpkg-dev git-buildpackage
+    - git-buildpackage --git-ignore-branch --git-builder='debuild -i -I -uc -us -sa' --git-ignore-new
+    - cat ../*.changes
+    - ping -c 2 debian.nowtaxi.ru
+    - dput --debug -u -c ../dput.cf nowtaxi ../*.changes
