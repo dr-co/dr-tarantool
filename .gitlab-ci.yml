@@ -1,0 +1,13 @@
+before_script:
+  - apt-get install --yes --no-install-recommends build-essential equivs devscripts git-buildpackage ca-certificates pristine-tar git dpkg-dev
+  - dch --newversion `git describe|sed -E 's#.*/##'|sed -E 's/-([0-9]+)-(.{8})$/+\1.\2/'` --force-distribution --distribution nowtaxi-$TRAVIS_DEBIAN_DISTRIBUTION 'Autobuilt by git commit' 
+  - git commit -m 'update changelog' debian/changelog
+  - dpkg-parsechangelog
+  - DEBIAN_FRONTEND=noninteractive mk-build-deps --install --remove --tool 'apt-get --no-install-recommends --yes' debian/control
+
+wheezy_deb:
+  image: debian:wheezy
+  script:
+    - apt-get -qq --yes install devscripts dpkg-dev git-buildpackage
+    - git-buildpackage
+
