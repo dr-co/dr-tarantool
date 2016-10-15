@@ -26,7 +26,7 @@ wheezy_deb:
     - apt-get -qq --yes install devscripts dpkg-dev git-buildpackage
     - git-buildpackage --git-ignore-branch --git-builder='debuild -i -I -uc -us -sa' --git-ignore-new
     - cat ../*.changes
-    - dput -c ../dput.cf nowtaxi ../*.changes
+    - dput -u -c ../dput.cf nowtaxi ../*.changes
 
 jessie_deb:
   image: debian:jessie
@@ -36,4 +36,4 @@ jessie_deb:
     - apt-get -qq --yes install devscripts dpkg-dev git-buildpackage
     - git-buildpackage --git-ignore-branch --git-builder='debuild -i -I -uc -us -sa' --git-ignore-new
     - cat ../*.changes
-    - dput -c ../dput.cf nowtaxi ../*.changes
+    - dput -u -c ../dput.cf nowtaxi ../*.changes
