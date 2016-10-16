@@ -12,8 +12,8 @@ before_script:
   - apt-get install --yes --no-install-recommends build-essential equivs devscripts git-buildpackage ca-certificates pristine-tar git dpkg-dev coreutils ssh dput
   - DEBIAN_FRONTEND=noninteractive mk-build-deps --install --remove --tool 'apt-get --no-install-recommends --yes' debian/control
   - git describe
-  - echo $UPLOAD_SSH_KEY | base64 -d > ../issh
-  - chmod 0600 ../issh
+  - if ! test -z "$UPLOAD_SSH_KEY"; then echo $UPLOAD_SSH_KEY | base64 -d > ../issh; fi
+  - if test -r ../issh; then chmod 0600 ../issh; fi
   
   - echo '[nowtaxi-jessie]' > ../dput.cf
   - echo login = gitlabuploader >> ../dput.cf
@@ -42,8 +42,14 @@ before_script:
   - echo '     StrictHostKeyChecking=no' >> ../dput.cf
   - echo '     IdentityFile=../issh'  >> ../dput.cf
 
+test:
+  script:
+    - perl Makefile.PL
+    - make test
+
 wheezy_deb:
   image: debian:wheezy
+  only: nowtaxi
   script:
     - dch --newversion `git describe|sed -E 's#.*/##'|sed -E 's/-([0-9]+)-(.{8})$/+\1.\2/'`~wheezy --force-distribution --distribution nowtaxi-wheezy 'Autobuilt by git commit' 
     - dpkg-parsechangelog
@@ -55,6 +61,7 @@ wheezy_deb:
 
 jessie_deb:
   image: debian:jessie
+  only: nowtaxi
   script:
     - dch --newversion `git describe|sed -E 's#.*/##'|sed -E 's/-([0-9]+)-(.{8})$/+\1.\2/'`~jessie --force-distribution --distribution nowtaxi-jessie 'Autobuilt by git commit'
     - dpkg-parsechangelog
