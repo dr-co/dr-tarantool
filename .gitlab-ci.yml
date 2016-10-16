@@ -37,15 +37,11 @@ before_script:
   - echo '     StrictHostKeyChecking=no' >> ../dput.cf
   - echo '     IdentityFile=../issh'  >> ../dput.cf
 
-run_tests:
-  image: debian:jessie
-  script:
-    - perl Makefile.PL
-    - make test
 
 wheezy_deb:
   image: debian:wheezy
-  only: nowtaxi
+  only:
+    - nowtaxi
   script:
     - dch --newversion `git describe|sed -E 's#.*/##'|sed -E 's/-([0-9]+)-(.{8})$/+\1.\2/'`~wheezy --force-distribution --distribution nowtaxi-wheezy 'Autobuilt by git commit'
     - dpkg-parsechangelog
@@ -57,7 +53,8 @@ wheezy_deb:
 
 jessie_deb:
   image: debian:jessie
-  only: nowtaxi
+  only:
+    - nowtaxi
   script:
     - dch --newversion `git describe|sed -E 's#.*/##'|sed -E 's/-([0-9]+)-(.{8})$/+\1.\2/'`~jessie --force-distribution --distribution nowtaxi-jessie 'Autobuilt by git commit'
     - dpkg-parsechangelog
@@ -66,3 +63,9 @@ jessie_deb:
     - cat ../*.changes
     - ping -c 2 debian.nowtaxi.ru
     - dput --debug -u -c ../dput.cf nowtaxi-jessie ../*.changes
+
+run_tests:
+  image: debian:jessie
+  script:
+    - perl Makefile.PL
+    - make test
