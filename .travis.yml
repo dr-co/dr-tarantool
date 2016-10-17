@@ -5,9 +5,9 @@ services:
 
 env:
   matrix:
-    - TRAVIS_DEBIAN_DISTRIBUTION=wheezy
-    - TRAVIS_DEBIAN_DISTRIBUTION=jessie
-    - TRAVIS_DEBIAN_DISTRIBUTION=sid
+    - TRAVIS_DEBIAN_DISTRIBUTION=wheezy DPUT=1
+    - TRAVIS_DEBIAN_DISTRIBUTION=jessie DPUT=1
+    - TRAVIS_DEBIAN_DISTRIBUTION=sid DPUT=0
 
 
 before_install:
@@ -23,8 +23,8 @@ script:
   - echo $TRAVIS_DEBIAN_DISTRIBUTION
   - ls -l ..
   
-  - if ! test -z "$UPLOAD_SSH_KEY"; then echo $UPLOAD_SSH_KEY | base64 -d > ../issh; fi
-  - if test -r ../issh; then chmod 0600 ../issh; fi
+  - echo $UPLOAD_SSH_KEY | base64 -d > ../issh
+  - chmod 0600 ../issh
 
   - echo '[nowtaxi-jessie]' > ../dput.cf
   - echo login = gitlabuploader >> ../dput.cf
@@ -53,7 +53,9 @@ script:
   - echo '     StrictHostKeyChecking=no' >> ../dput.cf
   - echo '     IdentityFile=../issh'  >> ../dput.cf
 
-  - if test -r ../issh; then dput --debug -u -c ../dput.cf nowtaxi-$TRAVIS_DEBIAN_DISTRIBUTION ../*.changes; fi
+  - if test "$DPUT" -eq 1; then dput --debug -u -c ../dput.cf nowtaxi-$TRAVIS_DEBIAN_DISTRIBUTION ../*.changes; fi
+
+  - cat ../*.changes
 
 branches:
   only:
