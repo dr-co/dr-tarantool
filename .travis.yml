@@ -12,7 +12,7 @@ env:
 
 before_install:
   - sudo apt-get -qq --yes install devscripts dpkg-dev
-  - dch --newversion `git describe|sed -E 's#.*/##'|sed -E 's/-([0-9]+)-(.{8})$/+\1.\2/'` --force-distribution --distribution nowtaxi-$TRAVIS_DEBIAN_DISTRIBUTION 'Autobuilt by git commit' 
+  - dch --newversion `git describe|sed -E 's#.*/##'|sed -E 's/-([0-9]+)-(.{8})$/+\1.\2/'`~$TRAVIS_DEBIAN_DISTRIBUTION --force-distribution --distribution nowtaxi-$TRAVIS_DEBIAN_DISTRIBUTION 'Autobuilt by git commit' 
   - git commit -m 'update changelog' debian/changelog
   - dpkg-parsechangelog
 
@@ -22,6 +22,38 @@ script:
   - pwd
   - echo $TRAVIS_DEBIAN_DISTRIBUTION
   - ls -l ..
+  
+  - if ! test -z "$UPLOAD_SSH_KEY"; then echo $UPLOAD_SSH_KEY | base64 -d > ../issh; fi
+  - if test -r ../issh; then chmod 0600 ../issh; fi
+
+  - echo '[nowtaxi-jessie]' > ../dput.cf
+  - echo login = gitlabuploader >> ../dput.cf
+  - echo fqdn = debian.nowtaxi.ru >> ../dput.cf
+  - echo method = scp >> ../dput.cf
+  - echo incoming = /srv/debian.incomming/jessie >> ../dput.cf
+  - echo ssh_config_options = UserKnownHostsFile=/dev/null >> ../dput.cf
+  - echo '     StrictHostKeyChecking=no' >> ../dput.cf
+  - echo '     IdentityFile=../issh'  >> ../dput.cf
+
+  - echo '[nowtaxi-wheezy]' >> ../dput.cf
+  - echo login = gitlabuploader >> ../dput.cf
+  - echo fqdn = debian.nowtaxi.ru >> ../dput.cf
+  - echo method = scp >> ../dput.cf
+  - echo incoming = /srv/debian.incomming/wheezy >> ../dput.cf
+  - echo ssh_config_options = UserKnownHostsFile=/dev/null >> ../dput.cf
+  - echo '     StrictHostKeyChecking=no' >> ../dput.cf
+  - echo '     IdentityFile=../issh'  >> ../dput.cf
+
+  - echo '[nowtaxi-stretch]' >> ../dput.cf
+  - echo login = gitlabuploader >> ../dput.cf
+  - echo fqdn = debian.nowtaxi.ru >> ../dput.cf
+  - echo method = scp >> ../dput.cf
+  - echo incoming = /srv/debian.incomming/stretch >> ../dput.cf
+  - echo ssh_config_options = UserKnownHostsFile=/dev/null >> ../dput.cf
+  - echo '     StrictHostKeyChecking=no' >> ../dput.cf
+  - echo '     IdentityFile=../issh'  >> ../dput.cf
+
+  - if test -r ../issh; then dput -c ../dput.cf nowtaxi-$TRAVIS_DEBIAN_DISTRIBUTION ../*.changes; fi
 
 branches:
   only:
