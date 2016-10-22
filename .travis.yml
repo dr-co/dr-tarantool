@@ -9,7 +9,6 @@ env:
     - TRAVIS_DEBIAN_DISTRIBUTION=jessie DPUT=1
     - TRAVIS_DEBIAN_DISTRIBUTION=sid DPUT=0
 
-
 before_install:
   - sudo apt-get -qq --yes install devscripts dpkg-dev
   - dch --newversion `git describe|sed -E 's#.*/##'|sed -E 's/-([0-9]+)-(.{8})$/+\1.\2/'`~$TRAVIS_DEBIAN_DISTRIBUTION --force-distribution --distribution nowtaxi-$TRAVIS_DEBIAN_DISTRIBUTION 'Autobuilt by git commit' 
